@@ -1,0 +1,5 @@
+{
+  "passed": false,
+  "mode": "--gui-check-report",
+  "error": "Traceback (most recent call last):\n  File \"desktop_entry.py\", line 68, in main\n    gui_check()\n  File \"desktop_entry.py\", line 58, in gui_check\n    raise RuntimeError(f'Native GUI check failed: {failures}')\nRuntimeError: Native GUI check failed: ['Traceback (most recent call last):\\n  File \"tkinter\\\\__init__.py\", line 1968, in __call__\\n  File \"tkinter\\\\__init__.py\", line 862, in callit\\n  File \"desktop_entry.py\", line 37, in check\\n    assert Path(self.iconbitmap()).name == \\'LoongLens-WhiteIcon.ico\\'\\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\nAssertionError\\n']\n"
+}
