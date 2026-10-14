@@ -1,0 +1,115 @@
+....................................sss................................. [ 47%]
+...F....................................F................F.............. [ 94%]
+........                                                                 [100%]
+================================== FAILURES ===================================
+______ test_csv_keeps_all_events_coordinates_times_and_plain_text_notes _______
+
+tmp_path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-0/test_csv_keeps_all_events_coor0')
+
+    def test_csv_keeps_all_events_coordinates_times_and_plain_text_notes(tmp_path):
+        history = PickupHistory(tmp_path / 'history.db')
+        history.record(158, 67, collected_at=1000, anchor=(150, 70), note=' =HYPERLINK("x")')
+        history.record(157, 68, collected_at=2000, anchor=(150, 70), note='comma, quote " and\nnewline')
+        path = tmp_path / 'export.csv'
+>       history.export_csv(path)
+
+tests\test_pickup_history.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pickup_history.PickupHistory object at 0x0000020174B932C0>
+path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-0/test_csv_keeps_all_events_coor0/export.csv')
+
+    def export_csv(self,path):
+        with Path(path).open('w',encoding='utf-8-sig',newline='') as f:
+            writer=csv.writer(f)
+            writer.writerow(['id','map_id','x','y','collected_at_local','collected_at_utc','reminder_minutes','timer_marker_x','timer_marker_y','note'])
+            for pickup in self.list():
+                stamp=datetime.fromtimestamp(pickup.collected_at,timezone.utc).isoformat()
+>               local=datetime.fromtimestamp(pickup.collected_at).astimezone().isoformat()
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               OSError: [Errno 22] Invalid argument
+
+pickup_history.py:137: OSError
+__ test_old_history_schema_is_preserved_and_only_pending_rows_are_recovered ___
+
+tmp_path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-0/test_old_history_schema_is_pre0')
+
+    def test_old_history_schema_is_preserved_and_only_pending_rows_are_recovered(tmp_path):
+        path=tmp_path/'old.sqlite3'
+        with sqlite3.connect(path) as db:
+            db.execute('CREATE TABLE sightings(id INTEGER PRIMARY KEY,event_id TEXT UNIQUE,seen_at REAL,screen_x REAL,screen_y REAL,score REAL,test_mode INTEGER)')
+            db.execute("INSERT INTO sightings VALUES(1,'old',1000,116,311,.95,0)")
+        history=SightingHistory(path)
+        history.record([event('pending',seen_at=1001)])
+        history.recover_pending()
+        assert len(history.list())==2 and history.get(1).capture_status=='legacy'
+        assert history.list()[0].capture_status=='interrupted'
+>       assert 'Location unavailable' in history.get(1).spotted
+                                         ^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_sighting_capture.py:186: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = Sighting(id=1, event_id='old', seen_at=1000.0, screen_x=116.0, screen_y=311.0, score=0.95, test_mode=0, zone=None, gam...None, game_y=None, screenshot_path=None, capture_status='legacy', capture_note='', captured_at=None, manual_location=0)
+
+    @property
+    def spotted(self):
+>       stamp = datetime.fromtimestamp(self.seen_at).astimezone().strftime('%d/%m/%y %H:%M')
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       OSError: [Errno 22] Invalid argument
+
+sighting_history.py:39: OSError
+____ test_export_uses_local_and_utc_dates_and_explicit_screen_coordinates _____
+
+tmp_path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-0/test_export_uses_local_and_utc0')
+
+    def test_export_uses_local_and_utc_dates_and_explicit_screen_coordinates(tmp_path):
+        history = SightingHistory(tmp_path / 'history.db')
+        history.record([dict(event_id='live', seen_at=1000, screen_x=116, screen_y=311, score=.95, test_mode=False),
+                        dict(event_id='test', seen_at=1001, screen_x=116, screen_y=311, score=.95, test_mode=True)])
+        path = tmp_path / 'history.csv'
+>       history.export_csv(path)
+
+tests\test_sighting_history.py:168: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sighting_history.SightingHistory object at 0x0000020174A24A40>
+path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-0/test_export_uses_local_and_utc0/history.csv')
+include_tests = False
+
+    def export_csv(self, path, include_tests=False):
+        with Path(path).open('w', encoding='utf-8-sig', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['id', 'spotted', 'seen_at_local', 'seen_at_utc', 'source', 'match_score', 'screen_x', 'screen_y',
+                             'zone','game_x','game_y','screenshot_path','capture_status','capture_note','captured_at_utc'])
+            for row in self.list(include_tests=include_tests):
+                captured = datetime.fromtimestamp(row.captured_at,timezone.utc).isoformat() if row.captured_at is not None else ''
+>               writer.writerow([row.id, row.spotted, datetime.fromtimestamp(row.seen_at).astimezone().isoformat(),
+                                         ^^^^^^^^^^^
+                                 datetime.fromtimestamp(row.seen_at, timezone.utc).isoformat(), row.source,
+                                 row.score, row.screen_x, row.screen_y, row.zone, row.game_x, row.game_y, row.screenshot_path,
+                                 row.capture_status, row.capture_note, captured])
+
+sighting_history.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = Sighting(id=1, event_id='live', seen_at=1000.0, screen_x=116.0, screen_y=311.0, score=0.95, test_mode=0, zone=None, ga...None, game_y=None, screenshot_path=None, capture_status='legacy', capture_note='', captured_at=None, manual_location=0)
+
+    @property
+    def spotted(self):
+>       stamp = datetime.fromtimestamp(self.seen_at).astimezone().strftime('%d/%m/%y %H:%M')
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       OSError: [Errno 22] Invalid argument
+
+sighting_history.py:39: OSError
+============================== warnings summary ===============================
+tests/test_location_ocr.py::test_bundled_models_read_the_requested_minimap_format[1.0]
+  C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\onnxruntime\capi\onnxruntime_validation.py:27: UserWarning: Unsupported Windows version (2025server). ONNX Runtime supports Windows 10 and above, only.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_pickup_history.py::test_csv_keeps_all_events_coordinates_times_and_plain_text_notes - OSError: [Errno 22] Invalid argument
+FAILED tests/test_sighting_capture.py::test_old_history_schema_is_preserved_and_only_pending_rows_are_recovered - OSError: [Errno 22] Invalid argument
+FAILED tests/test_sighting_history.py::test_export_uses_local_and_utc_dates_and_explicit_screen_coordinates - OSError: [Errno 22] Invalid argument
+3 failed, 146 passed, 3 skipped, 1 warning in 13.35s
