@@ -1,0 +1,83 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'LoongLens-WindowsBuild-v9.zip'
+      - '.github/workflows/windows-exe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Extract source
+        shell: pwsh
+        run: Expand-Archive LoongLens-WindowsBuild-v9.zip -DestinationPath source
+      - name: Install pinned dependencies
+        working-directory: source/LoongLens
+        run: python -m pip install -r requirements.txt pyinstaller==6.16.0 pytest==8.4.2 pefile==2023.2.7
+      - name: Run application tests
+        working-directory: source/LoongLens
+        run: python -m pytest -q
+      - name: Build executable
+        working-directory: source/LoongLens
+        run: python tools/build_windows_exe.py
+      - name: Verify embedded icon
+        working-directory: source/LoongLens
+        run: python tools/check_exe_icon.py dist/LoongLens.exe LoongLens-WhiteIcon.ico
+      - name: Validate frozen resources and native app window
+        working-directory: source/LoongLens
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path dist/LoongLens.exe).Path
+          foreach ($mode in @('self-check', 'gui-check')) {
+            $report = Join-Path $PWD "$mode.json"
+            $process = Start-Process -FilePath $exe -ArgumentList "--$mode-report", $report -PassThru
+            if (-not $process.WaitForExit(120000)) {
+              $process.Kill()
+              throw "$mode timed out"
+            }
+            if (-not (Test-Path $report)) { throw "$mode did not write a report" }
+            Get-Content $report
+            $result = Get-Content $report -Raw | ConvertFrom-Json
+            if (-not $result.passed) { throw "$mode failed" }
+          }
+      - name: Prepare download
+        working-directory: source/LoongLens
+        shell: pwsh
+        run: |
+          Copy-Item README.md dist/README.md
+          Compress-Archive -Path dist/LoongLens.exe,dist/README.md -DestinationPath dist/LoongLens-Windows.zip
+          (Get-FileHash dist/LoongLens.exe -Algorithm SHA256).Hash.ToLower() + '  LoongLens.exe' | Set-Content dist/SHA256.txt
+      - name: Publish executable
+        working-directory: source/LoongLens
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release view windows-exe-v9 --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create windows-exe-v9 --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Loong Lens Windows EXE" --notes "Standalone Windows executable with the supplied white gem icon embedded. No Python installation or shortcut setup required. Existing local history is retained."
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create release' }
+          }
+          gh release upload windows-exe-v9 dist/LoongLens.exe dist/LoongLens-Windows.zip dist/SHA256.txt self-check.json gui-check.json --repo $env:GITHUB_REPOSITORY --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Could not upload release assets' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-build-results
+          path: |
+            source/LoongLens/self-check.json
+            source/LoongLens/gui-check.json
+            source/LoongLens/build/LoongLens/warn-LoongLens.txt
