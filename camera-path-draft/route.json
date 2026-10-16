@@ -1,0 +1,1554 @@
+{
+  "title": "Loong Haven fixed camera path \u2014 draft",
+  "start_zone": "Emerald Corner",
+  "default_zoom_scale": 12.45,
+  "camera_recenter_model": [
+    285,
+    530
+  ],
+  "clickable_reference_bounds": [
+    32,
+    510,
+    150,
+    800
+  ],
+  "assumed_recenter_uncertainty_px": [
+    0,
+    0
+  ],
+  "known_spawn_count": 86,
+  "check_count": 77,
+  "bridge_click_count": 16,
+  "loop_return_extra_clicks": 1,
+  "notes": [
+    "A camera diagram, not an updated EXE or a live-tested route.",
+    "Numbers are grouped camera checks; pink dots are the original 86 spawn locations.",
+    "B markers are extra camera selections, followed by close/reopen, without a gem inspection.",
+    "Account-specific locked areas are unknown and may break a bridge.",
+    "Recentring must be re-recognised after each close/reopen; nominal geometry is not a substitute for screenshot verification."
+  ],
+  "stops": [
+    {
+      "number": 1,
+      "original_index": 1,
+      "zone": "Emerald Corner",
+      "x": 244.25,
+      "y": 102.05,
+      "spawn_spots": [
+        [
+          246,
+          101
+        ]
+      ]
+    },
+    {
+      "number": 2,
+      "original_index": 0,
+      "zone": "Loong Haven I",
+      "x": 224.25,
+      "y": 109.05,
+      "spawn_spots": [
+        [
+          225,
+          106
+        ]
+      ]
+    },
+    {
+      "number": 3,
+      "original_index": 3,
+      "zone": "Loong Haven II",
+      "x": 204.25,
+      "y": 112.55,
+      "spawn_spots": [
+        [
+          202,
+          113
+        ]
+      ]
+    },
+    {
+      "number": 4,
+      "original_index": 4,
+      "zone": "Bamboo Thicket",
+      "x": 206.75,
+      "y": 96.05,
+      "spawn_spots": [
+        [
+          206,
+          93
+        ]
+      ]
+    },
+    {
+      "number": 5,
+      "original_index": 69,
+      "zone": "Fairy Greens",
+      "x": 210.25,
+      "y": 83.55,
+      "spawn_spots": [
+        [
+          211,
+          83
+        ]
+      ]
+    },
+    {
+      "number": 6,
+      "original_index": 8,
+      "zone": "Hush Yard",
+      "x": 193.75,
+      "y": 81.55,
+      "spawn_spots": [
+        [
+          195,
+          80
+        ]
+      ]
+    },
+    {
+      "number": 7,
+      "original_index": 7,
+      "zone": "Hunt Plain",
+      "x": 192.25,
+      "y": 94.55,
+      "spawn_spots": [
+        [
+          194,
+          94
+        ]
+      ]
+    },
+    {
+      "number": 8,
+      "original_index": 6,
+      "zone": "Loong Haven III",
+      "x": 181.25,
+      "y": 122.55,
+      "spawn_spots": [
+        [
+          178,
+          123
+        ]
+      ]
+    },
+    {
+      "number": 9,
+      "original_index": 14,
+      "zone": "Enchanted Garden",
+      "x": 164.5,
+      "y": 106.5,
+      "spawn_spots": [
+        [
+          164,
+          106
+        ]
+      ]
+    },
+    {
+      "number": 10,
+      "original_index": 70,
+      "zone": "Desolate Yard",
+      "x": 146.75,
+      "y": 88.55,
+      "spawn_spots": [
+        [
+          144,
+          88
+        ]
+      ]
+    },
+    {
+      "number": 11,
+      "original_index": 15,
+      "zone": "Scented Yard",
+      "x": 161.25,
+      "y": 83.05,
+      "spawn_spots": [
+        [
+          160,
+          81
+        ]
+      ]
+    },
+    {
+      "number": 12,
+      "original_index": 42,
+      "zone": "Demonbind Tower",
+      "x": 157.75,
+      "y": 70.05,
+      "spawn_spots": [
+        [
+          158,
+          70
+        ],
+        [
+          159,
+          69
+        ],
+        [
+          159,
+          71
+        ],
+        [
+          160,
+          70
+        ]
+      ]
+    },
+    {
+      "number": 13,
+      "original_index": 22,
+      "zone": "Coastal Plain",
+      "x": 131.75,
+      "y": 59.05,
+      "spawn_spots": [
+        [
+          134,
+          57
+        ]
+      ]
+    },
+    {
+      "number": 14,
+      "original_index": 21,
+      "zone": "Loong Haven VII",
+      "x": 119.25,
+      "y": 78.55,
+      "spawn_spots": [
+        [
+          121,
+          78
+        ]
+      ]
+    },
+    {
+      "number": 15,
+      "original_index": 34,
+      "zone": "Warlord's Rest",
+      "x": 100.75,
+      "y": 97.05,
+      "spawn_spots": [
+        [
+          103,
+          97
+        ]
+      ]
+    },
+    {
+      "number": 16,
+      "original_index": 33,
+      "zone": "Warlord's Rest",
+      "x": 98.25,
+      "y": 97.05,
+      "spawn_spots": [
+        [
+          95,
+          97
+        ]
+      ]
+    },
+    {
+      "number": 17,
+      "original_index": 37,
+      "zone": "Loong Haven XI",
+      "x": 92.75,
+      "y": 124.05,
+      "spawn_spots": [
+        [
+          92,
+          123
+        ]
+      ]
+    },
+    {
+      "number": 18,
+      "original_index": 32,
+      "zone": "Loong Haven X",
+      "x": 80.25,
+      "y": 88.55,
+      "spawn_spots": [
+        [
+          79,
+          89
+        ]
+      ]
+    },
+    {
+      "number": 19,
+      "original_index": 23,
+      "zone": "Loong Haven VIII",
+      "x": 94.25,
+      "y": 63.55,
+      "spawn_spots": [
+        [
+          91,
+          63
+        ]
+      ]
+    },
+    {
+      "number": 20,
+      "original_index": 24,
+      "zone": "Wilted Garden",
+      "x": 106.75,
+      "y": 62.05,
+      "spawn_spots": [
+        [
+          108,
+          61
+        ]
+      ]
+    },
+    {
+      "number": 21,
+      "original_index": 25,
+      "zone": "Withered Ravine",
+      "x": 103.75,
+      "y": 51.55,
+      "spawn_spots": [
+        [
+          102,
+          51
+        ]
+      ]
+    },
+    {
+      "number": 22,
+      "original_index": 26,
+      "zone": "Dying Sun",
+      "x": 109.25,
+      "y": 41.55,
+      "spawn_spots": [
+        [
+          110,
+          40
+        ]
+      ]
+    },
+    {
+      "number": 23,
+      "original_index": 27,
+      "zone": "Dying Sun",
+      "x": 98.25,
+      "y": 45.55,
+      "spawn_spots": [
+        [
+          96,
+          45
+        ]
+      ]
+    },
+    {
+      "number": 24,
+      "original_index": 30,
+      "zone": "Dusky Wilderness",
+      "x": 79.75,
+      "y": 39.55,
+      "spawn_spots": [
+        [
+          82,
+          39
+        ]
+      ]
+    },
+    {
+      "number": 25,
+      "original_index": 28,
+      "zone": "Loong Haven IX",
+      "x": 69.25,
+      "y": 45.55,
+      "spawn_spots": [
+        [
+          69,
+          43
+        ]
+      ]
+    },
+    {
+      "number": 26,
+      "original_index": 31,
+      "zone": "Forsaken Lotus Pond",
+      "x": 48.75,
+      "y": 34.05,
+      "spawn_spots": [
+        [
+          49,
+          34
+        ]
+      ]
+    },
+    {
+      "number": 27,
+      "original_index": 29,
+      "zone": "Gourd Vale",
+      "x": 63.25,
+      "y": 56.55,
+      "spawn_spots": [
+        [
+          64,
+          58
+        ]
+      ]
+    },
+    {
+      "number": 28,
+      "original_index": 35,
+      "zone": "Warfield",
+      "x": 48.75,
+      "y": 71.55,
+      "spawn_spots": [
+        [
+          46,
+          71
+        ]
+      ]
+    },
+    {
+      "number": 29,
+      "original_index": 36,
+      "zone": "Twilight Shoal",
+      "x": 47.75,
+      "y": 91.55,
+      "spawn_spots": [
+        [
+          45,
+          94
+        ],
+        [
+          50,
+          94
+        ]
+      ]
+    },
+    {
+      "number": 30,
+      "original_index": 39,
+      "zone": "Mirage Cauldron",
+      "x": 55.75,
+      "y": 113.05,
+      "spawn_spots": [
+        [
+          54,
+          111
+        ],
+        [
+          55,
+          110
+        ],
+        [
+          57,
+          111
+        ]
+      ]
+    },
+    {
+      "number": 31,
+      "original_index": 38,
+      "zone": "Fallen Wilderness",
+      "x": 64.75,
+      "y": 119.05,
+      "spawn_spots": [
+        [
+          63,
+          120
+        ]
+      ]
+    },
+    {
+      "number": 32,
+      "original_index": 71,
+      "zone": "Swordsmith Pavilion",
+      "x": 28.25,
+      "y": 163.05,
+      "spawn_spots": [
+        [
+          26,
+          160
+        ]
+      ]
+    },
+    {
+      "number": 33,
+      "original_index": 48,
+      "zone": "Ironpeak",
+      "x": 26.25,
+      "y": 186.05,
+      "spawn_spots": [
+        [
+          24,
+          185
+        ]
+      ]
+    },
+    {
+      "number": 34,
+      "original_index": 47,
+      "zone": "Golden Cliff",
+      "x": 34.75,
+      "y": 180.55,
+      "spawn_spots": [
+        [
+          37,
+          179
+        ]
+      ]
+    },
+    {
+      "number": 35,
+      "original_index": 45,
+      "zone": "Old Trail",
+      "x": 50.25,
+      "y": 162.05,
+      "spawn_spots": [
+        [
+          51,
+          160
+        ]
+      ]
+    },
+    {
+      "number": 36,
+      "original_index": 44,
+      "zone": "Lightless Isle",
+      "x": 54.75,
+      "y": 142.05,
+      "spawn_spots": [
+        [
+          55,
+          141
+        ]
+      ]
+    },
+    {
+      "number": 37,
+      "original_index": 43,
+      "zone": "Autumnal Plain",
+      "x": 71.25,
+      "y": 151.55,
+      "spawn_spots": [
+        [
+          69,
+          151
+        ]
+      ]
+    },
+    {
+      "number": 38,
+      "original_index": 41,
+      "zone": "Loong Haven XII",
+      "x": 75.75,
+      "y": 166.05,
+      "spawn_spots": [
+        [
+          73,
+          166
+        ],
+        [
+          78,
+          168
+        ]
+      ]
+    },
+    {
+      "number": 39,
+      "original_index": 40,
+      "zone": "Loong Haven XII",
+      "x": 88.75,
+      "y": 168.05,
+      "spawn_spots": [
+        [
+          87,
+          167
+        ]
+      ]
+    },
+    {
+      "number": 40,
+      "original_index": 46,
+      "zone": "Inferno Hollow",
+      "x": 78.25,
+      "y": 178.55,
+      "spawn_spots": [
+        [
+          75,
+          175
+        ],
+        [
+          80,
+          182
+        ]
+      ]
+    },
+    {
+      "number": 41,
+      "original_index": 74,
+      "zone": "Bladeshire",
+      "x": 63.75,
+      "y": 190.55,
+      "spawn_spots": [
+        [
+          66,
+          189
+        ]
+      ]
+    },
+    {
+      "number": 42,
+      "original_index": 73,
+      "zone": "Bladeshire",
+      "x": 57.25,
+      "y": 190.55,
+      "spawn_spots": [
+        [
+          54,
+          189
+        ]
+      ]
+    },
+    {
+      "number": 43,
+      "original_index": 51,
+      "zone": "Frontier Vault",
+      "x": 52.5,
+      "y": 209.5,
+      "spawn_spots": [
+        [
+          52,
+          209
+        ]
+      ]
+    },
+    {
+      "number": 44,
+      "original_index": 52,
+      "zone": "Crowcry Plain",
+      "x": 68.25,
+      "y": 211.05,
+      "spawn_spots": [
+        [
+          67,
+          210
+        ]
+      ]
+    },
+    {
+      "number": 45,
+      "original_index": 67,
+      "zone": "Seal Stone",
+      "x": 55.5,
+      "y": 235.5,
+      "spawn_spots": [
+        [
+          55,
+          235
+        ]
+      ]
+    },
+    {
+      "number": 46,
+      "original_index": 68,
+      "zone": "Acme Nexus",
+      "x": 72.25,
+      "y": 249.05,
+      "spawn_spots": [
+        [
+          71,
+          246
+        ]
+      ]
+    },
+    {
+      "number": 47,
+      "original_index": 64,
+      "zone": "Loong Haven XVIII",
+      "x": 94.25,
+      "y": 251.55,
+      "spawn_spots": [
+        [
+          92,
+          253
+        ]
+      ]
+    },
+    {
+      "number": 48,
+      "original_index": 66,
+      "zone": "Frostrealm",
+      "x": 96.25,
+      "y": 230.05,
+      "spawn_spots": [
+        [
+          98,
+          230
+        ]
+      ]
+    },
+    {
+      "number": 49,
+      "original_index": 50,
+      "zone": "Golden Plain",
+      "x": 89.75,
+      "y": 206.05,
+      "spawn_spots": [
+        [
+          89,
+          203
+        ]
+      ]
+    },
+    {
+      "number": 50,
+      "original_index": 49,
+      "zone": "Loong Haven XIV",
+      "x": 107.75,
+      "y": 179.55,
+      "spawn_spots": [
+        [
+          105,
+          179
+        ]
+      ]
+    },
+    {
+      "number": 51,
+      "original_index": 20,
+      "zone": "Jadetoad Isle",
+      "x": 121.25,
+      "y": 160.55,
+      "spawn_spots": [
+        [
+          121,
+          163
+        ]
+      ]
+    },
+    {
+      "number": 52,
+      "original_index": 18,
+      "zone": "Reed Marsh",
+      "x": 131.5,
+      "y": 141.5,
+      "spawn_spots": [
+        [
+          131,
+          141
+        ]
+      ]
+    },
+    {
+      "number": 53,
+      "original_index": 19,
+      "zone": "Reed Plain",
+      "x": 113.75,
+      "y": 136.55,
+      "spawn_spots": [
+        [
+          113,
+          136
+        ]
+      ]
+    },
+    {
+      "number": 54,
+      "original_index": 16,
+      "zone": "Loong Haven VI",
+      "x": 120.25,
+      "y": 115.05,
+      "spawn_spots": [
+        [
+          121,
+          115
+        ]
+      ]
+    },
+    {
+      "number": 55,
+      "original_index": 17,
+      "zone": "Streamside",
+      "x": 131.75,
+      "y": 107.55,
+      "spawn_spots": [
+        [
+          134,
+          107
+        ]
+      ]
+    },
+    {
+      "number": 56,
+      "original_index": 12,
+      "zone": "Loong Haven V",
+      "x": 143.25,
+      "y": 120.55,
+      "spawn_spots": [
+        [
+          141,
+          120
+        ]
+      ]
+    },
+    {
+      "number": 57,
+      "original_index": 13,
+      "zone": "Iron Latch",
+      "x": 155.25,
+      "y": 120.05,
+      "spawn_spots": [
+        [
+          155,
+          122
+        ]
+      ]
+    },
+    {
+      "number": 58,
+      "original_index": 10,
+      "zone": "Bamboo Hill",
+      "x": 157.25,
+      "y": 149.05,
+      "spawn_spots": [
+        [
+          156,
+          147
+        ]
+      ]
+    },
+    {
+      "number": 59,
+      "original_index": 54,
+      "zone": "Loong's Perch",
+      "x": 163.75,
+      "y": 176.55,
+      "spawn_spots": [
+        [
+          165,
+          177
+        ]
+      ]
+    },
+    {
+      "number": 60,
+      "original_index": 55,
+      "zone": "Evergreen Trail",
+      "x": 155.75,
+      "y": 192.05,
+      "spawn_spots": [
+        [
+          154,
+          192
+        ]
+      ]
+    },
+    {
+      "number": 61,
+      "original_index": 53,
+      "zone": "Loong Haven XV",
+      "x": 142.5,
+      "y": 187.5,
+      "spawn_spots": [
+        [
+          142,
+          187
+        ]
+      ]
+    },
+    {
+      "number": 62,
+      "original_index": 61,
+      "zone": "Loong Haven XVII",
+      "x": 124.25,
+      "y": 215.55,
+      "spawn_spots": [
+        [
+          124,
+          214
+        ]
+      ]
+    },
+    {
+      "number": 63,
+      "original_index": 65,
+      "zone": "Gleam Vault",
+      "x": 130.25,
+      "y": 240.55,
+      "spawn_spots": [
+        [
+          129,
+          240
+        ]
+      ]
+    },
+    {
+      "number": 64,
+      "original_index": 75,
+      "zone": "Celestship",
+      "x": 136.25,
+      "y": 248.05,
+      "spawn_spots": [
+        [
+          134,
+          251
+        ],
+        [
+          135,
+          243
+        ]
+      ]
+    },
+    {
+      "number": 65,
+      "original_index": 76,
+      "zone": "Celestship",
+      "x": 139.75,
+      "y": 247.55,
+      "spawn_spots": [
+        [
+          142,
+          245
+        ]
+      ]
+    },
+    {
+      "number": 66,
+      "original_index": 63,
+      "zone": "Mount Jade",
+      "x": 163.25,
+      "y": 235.05,
+      "spawn_spots": [
+        [
+          165,
+          237
+        ]
+      ]
+    },
+    {
+      "number": 67,
+      "original_index": 62,
+      "zone": "Permanent Icefield",
+      "x": 171.75,
+      "y": 227.05,
+      "spawn_spots": [
+        [
+          170,
+          226
+        ]
+      ]
+    },
+    {
+      "number": 68,
+      "original_index": 58,
+      "zone": "Loong Haven XVI",
+      "x": 163.75,
+      "y": 213.05,
+      "spawn_spots": [
+        [
+          164,
+          215
+        ]
+      ]
+    },
+    {
+      "number": 69,
+      "original_index": 59,
+      "zone": "Snowy Miles",
+      "x": 181.25,
+      "y": 212.05,
+      "spawn_spots": [
+        [
+          180,
+          211
+        ]
+      ]
+    },
+    {
+      "number": 70,
+      "original_index": 72,
+      "zone": "Glacial Hollow",
+      "x": 198.25,
+      "y": 238.55,
+      "spawn_spots": [
+        [
+          199,
+          238
+        ]
+      ]
+    },
+    {
+      "number": 71,
+      "original_index": 60,
+      "zone": "Crystalheart Lake",
+      "x": 194.75,
+      "y": 222.05,
+      "spawn_spots": [
+        [
+          197,
+          224
+        ]
+      ]
+    },
+    {
+      "number": 72,
+      "original_index": 56,
+      "zone": "Frosted Plain",
+      "x": 202.75,
+      "y": 188.55,
+      "spawn_spots": [
+        [
+          205,
+          186
+        ]
+      ]
+    },
+    {
+      "number": 73,
+      "original_index": 57,
+      "zone": "Icebound Trail",
+      "x": 180.25,
+      "y": 178.05,
+      "spawn_spots": [
+        [
+          179,
+          175
+        ]
+      ]
+    },
+    {
+      "number": 74,
+      "original_index": 11,
+      "zone": "Breeze Cliff",
+      "x": 178.75,
+      "y": 153.55,
+      "spawn_spots": [
+        [
+          180,
+          154
+        ]
+      ]
+    },
+    {
+      "number": 75,
+      "original_index": 9,
+      "zone": "Loong Haven IV",
+      "x": 185.25,
+      "y": 140.55,
+      "spawn_spots": [
+        [
+          182,
+          140
+        ]
+      ]
+    },
+    {
+      "number": 76,
+      "original_index": 5,
+      "zone": "Eaglegrim Ridge",
+      "x": 210.75,
+      "y": 132.55,
+      "spawn_spots": [
+        [
+          208,
+          132
+        ]
+      ]
+    },
+    {
+      "number": 77,
+      "original_index": 2,
+      "zone": "Vale of Light",
+      "x": 230.75,
+      "y": 129.05,
+      "spawn_spots": [
+        [
+          233,
+          129
+        ]
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "from_number": 1,
+      "to_number": 2,
+      "bridge": []
+    },
+    {
+      "from_number": 2,
+      "to_number": 3,
+      "bridge": []
+    },
+    {
+      "from_number": 3,
+      "to_number": 4,
+      "bridge": []
+    },
+    {
+      "from_number": 4,
+      "to_number": 5,
+      "bridge": []
+    },
+    {
+      "from_number": 5,
+      "to_number": 6,
+      "bridge": []
+    },
+    {
+      "from_number": 6,
+      "to_number": 7,
+      "bridge": []
+    },
+    {
+      "from_number": 7,
+      "to_number": 8,
+      "bridge": []
+    },
+    {
+      "from_number": 8,
+      "to_number": 9,
+      "bridge": []
+    },
+    {
+      "from_number": 9,
+      "to_number": 10,
+      "bridge": []
+    },
+    {
+      "from_number": 10,
+      "to_number": 11,
+      "bridge": []
+    },
+    {
+      "from_number": 11,
+      "to_number": 12,
+      "bridge": []
+    },
+    {
+      "from_number": 12,
+      "to_number": 13,
+      "bridge": [
+        {
+          "label": "B1",
+          "x": 145.5,
+          "y": 66.5
+        }
+      ]
+    },
+    {
+      "from_number": 13,
+      "to_number": 14,
+      "bridge": []
+    },
+    {
+      "from_number": 14,
+      "to_number": 15,
+      "bridge": []
+    },
+    {
+      "from_number": 15,
+      "to_number": 16,
+      "bridge": []
+    },
+    {
+      "from_number": 16,
+      "to_number": 17,
+      "bridge": []
+    },
+    {
+      "from_number": 17,
+      "to_number": 18,
+      "bridge": [
+        {
+          "label": "B2",
+          "x": 86.5,
+          "y": 105.5
+        }
+      ]
+    },
+    {
+      "from_number": 18,
+      "to_number": 19,
+      "bridge": [
+        {
+          "label": "B3",
+          "x": 84.5,
+          "y": 78.5
+        }
+      ]
+    },
+    {
+      "from_number": 19,
+      "to_number": 20,
+      "bridge": []
+    },
+    {
+      "from_number": 20,
+      "to_number": 21,
+      "bridge": []
+    },
+    {
+      "from_number": 21,
+      "to_number": 22,
+      "bridge": []
+    },
+    {
+      "from_number": 22,
+      "to_number": 23,
+      "bridge": []
+    },
+    {
+      "from_number": 23,
+      "to_number": 24,
+      "bridge": []
+    },
+    {
+      "from_number": 24,
+      "to_number": 25,
+      "bridge": []
+    },
+    {
+      "from_number": 25,
+      "to_number": 26,
+      "bridge": [
+        {
+          "label": "B4",
+          "x": 58.5,
+          "y": 39.5
+        }
+      ]
+    },
+    {
+      "from_number": 26,
+      "to_number": 27,
+      "bridge": [
+        {
+          "label": "B5",
+          "x": 60.5,
+          "y": 45.5
+        }
+      ]
+    },
+    {
+      "from_number": 27,
+      "to_number": 28,
+      "bridge": []
+    },
+    {
+      "from_number": 28,
+      "to_number": 29,
+      "bridge": []
+    },
+    {
+      "from_number": 29,
+      "to_number": 30,
+      "bridge": []
+    },
+    {
+      "from_number": 30,
+      "to_number": 31,
+      "bridge": []
+    },
+    {
+      "from_number": 31,
+      "to_number": 32,
+      "bridge": [
+        {
+          "label": "B6",
+          "x": 48.5,
+          "y": 140.5
+        }
+      ]
+    },
+    {
+      "from_number": 32,
+      "to_number": 33,
+      "bridge": []
+    },
+    {
+      "from_number": 33,
+      "to_number": 34,
+      "bridge": []
+    },
+    {
+      "from_number": 34,
+      "to_number": 35,
+      "bridge": []
+    },
+    {
+      "from_number": 35,
+      "to_number": 36,
+      "bridge": []
+    },
+    {
+      "from_number": 36,
+      "to_number": 37,
+      "bridge": []
+    },
+    {
+      "from_number": 37,
+      "to_number": 38,
+      "bridge": []
+    },
+    {
+      "from_number": 38,
+      "to_number": 39,
+      "bridge": []
+    },
+    {
+      "from_number": 39,
+      "to_number": 40,
+      "bridge": []
+    },
+    {
+      "from_number": 40,
+      "to_number": 41,
+      "bridge": []
+    },
+    {
+      "from_number": 41,
+      "to_number": 42,
+      "bridge": []
+    },
+    {
+      "from_number": 42,
+      "to_number": 43,
+      "bridge": []
+    },
+    {
+      "from_number": 43,
+      "to_number": 44,
+      "bridge": []
+    },
+    {
+      "from_number": 44,
+      "to_number": 45,
+      "bridge": []
+    },
+    {
+      "from_number": 45,
+      "to_number": 46,
+      "bridge": []
+    },
+    {
+      "from_number": 46,
+      "to_number": 47,
+      "bridge": [
+        {
+          "label": "B7",
+          "x": 82.5,
+          "y": 250.5
+        }
+      ]
+    },
+    {
+      "from_number": 47,
+      "to_number": 48,
+      "bridge": []
+    },
+    {
+      "from_number": 48,
+      "to_number": 49,
+      "bridge": [
+        {
+          "label": "B8",
+          "x": 91.5,
+          "y": 213.5
+        }
+      ]
+    },
+    {
+      "from_number": 49,
+      "to_number": 50,
+      "bridge": [
+        {
+          "label": "B9",
+          "x": 93.5,
+          "y": 192.5
+        }
+      ]
+    },
+    {
+      "from_number": 50,
+      "to_number": 51,
+      "bridge": []
+    },
+    {
+      "from_number": 51,
+      "to_number": 52,
+      "bridge": []
+    },
+    {
+      "from_number": 52,
+      "to_number": 53,
+      "bridge": []
+    },
+    {
+      "from_number": 53,
+      "to_number": 54,
+      "bridge": []
+    },
+    {
+      "from_number": 54,
+      "to_number": 55,
+      "bridge": []
+    },
+    {
+      "from_number": 55,
+      "to_number": 56,
+      "bridge": []
+    },
+    {
+      "from_number": 56,
+      "to_number": 57,
+      "bridge": []
+    },
+    {
+      "from_number": 57,
+      "to_number": 58,
+      "bridge": []
+    },
+    {
+      "from_number": 58,
+      "to_number": 59,
+      "bridge": []
+    },
+    {
+      "from_number": 59,
+      "to_number": 60,
+      "bridge": []
+    },
+    {
+      "from_number": 60,
+      "to_number": 61,
+      "bridge": []
+    },
+    {
+      "from_number": 61,
+      "to_number": 62,
+      "bridge": []
+    },
+    {
+      "from_number": 62,
+      "to_number": 63,
+      "bridge": []
+    },
+    {
+      "from_number": 63,
+      "to_number": 64,
+      "bridge": []
+    },
+    {
+      "from_number": 64,
+      "to_number": 65,
+      "bridge": []
+    },
+    {
+      "from_number": 65,
+      "to_number": 66,
+      "bridge": [
+        {
+          "label": "B10",
+          "x": 155.5,
+          "y": 230.5
+        }
+      ]
+    },
+    {
+      "from_number": 66,
+      "to_number": 67,
+      "bridge": []
+    },
+    {
+      "from_number": 67,
+      "to_number": 68,
+      "bridge": []
+    },
+    {
+      "from_number": 68,
+      "to_number": 69,
+      "bridge": []
+    },
+    {
+      "from_number": 69,
+      "to_number": 70,
+      "bridge": [
+        {
+          "label": "B11",
+          "x": 189.5,
+          "y": 225.5
+        }
+      ]
+    },
+    {
+      "from_number": 70,
+      "to_number": 71,
+      "bridge": []
+    },
+    {
+      "from_number": 71,
+      "to_number": 72,
+      "bridge": [
+        {
+          "label": "B12",
+          "x": 188.5,
+          "y": 205.5
+        }
+      ]
+    },
+    {
+      "from_number": 72,
+      "to_number": 73,
+      "bridge": [
+        {
+          "label": "B13",
+          "x": 196.5,
+          "y": 187.5
+        }
+      ]
+    },
+    {
+      "from_number": 73,
+      "to_number": 74,
+      "bridge": [
+        {
+          "label": "B14",
+          "x": 176.5,
+          "y": 156.5
+        }
+      ]
+    },
+    {
+      "from_number": 74,
+      "to_number": 75,
+      "bridge": []
+    },
+    {
+      "from_number": 75,
+      "to_number": 76,
+      "bridge": [
+        {
+          "label": "B15",
+          "x": 195.5,
+          "y": 139.5
+        }
+      ]
+    },
+    {
+      "from_number": 76,
+      "to_number": 77,
+      "bridge": [
+        {
+          "label": "B16",
+          "x": 222.5,
+          "y": 130.5
+        }
+      ]
+    }
+  ],
+  "loop_return_bridge": [
+    {
+      "label": "R1",
+      "x": 236.5,
+      "y": 115.5
+    }
+  ]
+}
