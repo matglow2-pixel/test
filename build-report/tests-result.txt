@@ -1,0 +1,12 @@
+...................................................................sss.. [ 20%]
+........................................................................ [ 41%]
+........................................................................ [ 62%]
+........................................................................ [ 83%]
+........................................................                 [100%]
+============================== warnings summary ===============================
+tests/test_location_ocr.py::test_bundled_models_read_the_requested_minimap_format[1.0]
+  C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\onnxruntime\capi\onnxruntime_validation.py:27: UserWarning: Unsupported Windows version (2025server). ONNX Runtime supports Windows 10 and above, only.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+341 passed, 3 skipped, 1 warning in 91.35s (0:01:31)
