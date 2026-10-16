@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'LoongLens-WindowsBuild-v20.zip'
+      - 'LoongLens-WindowsBuild-v21.zip'
       - '.github/workflows/windows-exe.yml'
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ jobs:
           architecture: x64
       - name: Extract source
         shell: pwsh
-        run: Expand-Archive LoongLens-WindowsBuild-v20.zip -DestinationPath source
+        run: Expand-Archive LoongLens-WindowsBuild-v21.zip -DestinationPath source
       - name: Install pinned dependencies
         working-directory: source/LoongLens
         run: python -m pip install -r requirements.txt pyinstaller==6.16.0 pytest==8.4.2 pefile==2023.2.7
@@ -63,7 +63,7 @@ jobs:
         run: |
           Copy-Item README.md dist/README.md
           Compress-Archive -Path dist/LoongLens.exe,dist/README.md -DestinationPath dist/LoongLens-Windows.zip
-          Copy-Item ../../LoongLens-WindowsBuild-v20.zip dist/LoongLens-FullPackage.zip
+          Copy-Item ../../LoongLens-WindowsBuild-v21.zip dist/LoongLens-FullPackage.zip
           python -c "import zipfile; z=zipfile.ZipFile('dist/LoongLens-FullPackage.zip','a',compression=zipfile.ZIP_DEFLATED); z.write('dist/LoongLens.exe','LoongLens/LoongLens.exe'); z.close()"
           (Get-FileHash dist/LoongLens.exe -Algorithm SHA256).Hash.ToLower() + '  LoongLens.exe' | Set-Content dist/SHA256.txt
       - name: Publish executable
@@ -72,12 +72,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          gh release view windows-exe-v20 --repo $env:GITHUB_REPOSITORY 2>$null
+          gh release view windows-exe-v21 --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -ne 0) {
-            gh release create windows-exe-v20 --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Loong Lens Windows EXE" --notes "Follows the fixed Emerald Corner camera path with old route IDs 26, 51 and 72 removed: 74 checks / 83 spots. Snipe runs once; Loop Sniping repeats the same remaining order. Extra camera selections are replaced by shorter held-button drags only when the next fixed target is offscreen. Faster mouse motion retains the anti-fling endpoint hold, fresh screenshot alignment, recovery and F10 guards. Includes updated route map and coordinate list in the full package. Preserves history, timers, gem confirmation, approach clicks and both icons."
+            gh release create windows-exe-v21 --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Loong Lens Windows EXE" --notes "Adds a full-map camera route editor with draggable numbered targets, view rectangles, zoom, reset and saved local adjustments. Fixes the Crowcry portal click and lowers Demonbind framing. Splits unsafe vertical groups into a/b checks: 76 checks / 83 original spots, with IDs 26, 51 and 72 still excluded. Offscreen held drags move farther toward centre while retaining settled alignment, recovery and F10 guards. Preserves icons, history, gem confirmation and approach behavior. Includes the EXE, full source/assets and updated route map."
             if ($LASTEXITCODE -ne 0) { throw 'Could not create release' }
           }
-          gh release upload windows-exe-v20 dist/LoongLens.exe dist/LoongLens-Windows.zip dist/LoongLens-FullPackage.zip dist/SHA256.txt self-check.json gui-check.json input-check.json --repo $env:GITHUB_REPOSITORY --clobber
+          gh release upload windows-exe-v21 dist/LoongLens.exe dist/LoongLens-Windows.zip dist/LoongLens-FullPackage.zip dist/SHA256.txt self-check.json gui-check.json input-check.json --repo $env:GITHUB_REPOSITORY --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Could not upload release assets' }
       - uses: actions/upload-artifact@v4
         if: always()
