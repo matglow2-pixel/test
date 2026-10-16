@@ -48,7 +48,11 @@ for s in r['stops']:
 # B / R markers: visibly distinct from numbered gem checks.
 for p in [p for t in r['transitions'] for p in t['bridge']]+r['loop_return_bridge']:
  x,y=xy(p);is_return=p['label'].startswith('R');color='#baa6ff' if is_return else '#ffc477'
- svg.append(f'<g><title>{p["label"]}: camera selection only ({p["x"]:.2f},{p["y"]:.2f})</title><circle cx="{x}" cy="{y}" r="13" fill="#0e1622" stroke="{color}" stroke-width="4"/><text x="{x+20}" y="{y-15}" font-family="DejaVu Sans" font-size="22" font-weight="bold" fill="{color}" stroke="#07111c" stroke-width="5" paint-order="stroke">{p["label"]}</text></g>')
+ lx,ly=x+20,y-15
+ if min(math.dist((x,y),xy(s)) for s in r['stops'])<55:
+  lx,ly=x+85,y+45
+  svg.append(f'<path d="M{x+12} {y+10} L{lx-8} {ly-8}" stroke="{color}" stroke-width="3"/>')
+ svg.append(f'<g><title>{p["label"]}: camera selection only ({p["x"]:.2f},{p["y"]:.2f})</title><circle cx="{x}" cy="{y}" r="13" fill="#0e1622" stroke="{color}" stroke-width="4"/><text x="{lx}" y="{ly}" font-family="DejaVu Sans" font-size="22" font-weight="bold" fill="{color}" stroke="#07111c" stroke-width="5" paint-order="stroke">{p["label"]}</text></g>')
 labels=[list(xy(s)) for s in r['stops']]
 for _ in range(40):
  for i in range(len(labels)):
