@@ -1,0 +1,5 @@
+{
+  "passed": false,
+  "mode": "--self-check-report",
+  "error": "Traceback (most recent call last):\n  File \"desktop_entry.py\", line 134, in main\n    loong_lens.self_check()\n  File \"loong_lens.py\", line 43, in self_check\n    assert len(plan.views) == len(plan.spawns) == 86\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+}
