@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'LoongLens-WindowsBuild-v19.zip'
+      - 'LoongLens-WindowsBuild-v20.zip'
       - '.github/workflows/windows-exe.yml'
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ jobs:
           architecture: x64
       - name: Extract source
         shell: pwsh
-        run: Expand-Archive LoongLens-WindowsBuild-v19.zip -DestinationPath source
+        run: Expand-Archive LoongLens-WindowsBuild-v20.zip -DestinationPath source
       - name: Install pinned dependencies
         working-directory: source/LoongLens
         run: python -m pip install -r requirements.txt pyinstaller==6.16.0 pytest==8.4.2 pefile==2023.2.7
@@ -63,7 +63,7 @@ jobs:
         run: |
           Copy-Item README.md dist/README.md
           Compress-Archive -Path dist/LoongLens.exe,dist/README.md -DestinationPath dist/LoongLens-Windows.zip
-          Copy-Item ../../LoongLens-WindowsBuild-v19.zip dist/LoongLens-FullPackage.zip
+          Copy-Item ../../LoongLens-WindowsBuild-v20.zip dist/LoongLens-FullPackage.zip
           python -c "import zipfile; z=zipfile.ZipFile('dist/LoongLens-FullPackage.zip','a',compression=zipfile.ZIP_DEFLATED); z.write('dist/LoongLens.exe','LoongLens/LoongLens.exe'); z.close()"
           (Get-FileHash dist/LoongLens.exe -Algorithm SHA256).Hash.ToLower() + '  LoongLens.exe' | Set-Content dist/SHA256.txt
       - name: Publish executable
@@ -72,12 +72,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          gh release view windows-exe-v19 --repo $env:GITHUB_REPOSITORY 2>$null
+          gh release view windows-exe-v20 --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -ne 0) {
-            gh release create windows-exe-v19 --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Loong Lens Windows EXE" --notes "Removes Patrol preview and obsolete simulation files. Refreshes Map overlay, Gem Watch and renamed Gem Sniping with grouped controls, clear actions and progress. Snipe checks one full pass; Loop Sniping repeats until F10 or a gem. Live controls ready at launch with F10 stop. Starts nearest the character marker on a new pass; shorter startup and default waits, retaining full gem confirmation and extra time for late candidates. Keeps controlled pans, recovery, locked skips, portal avoidance, history, timers, approach clicks and both icons."
+            gh release create windows-exe-v20 --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Loong Lens Windows EXE" --notes "Follows the fixed Emerald Corner camera path with old route IDs 26, 51 and 72 removed: 74 checks / 83 spots. Snipe runs once; Loop Sniping repeats the same remaining order. Extra camera selections are replaced by shorter held-button drags only when the next fixed target is offscreen. Faster mouse motion retains the anti-fling endpoint hold, fresh screenshot alignment, recovery and F10 guards. Includes updated route map and coordinate list in the full package. Preserves history, timers, gem confirmation, approach clicks and both icons."
             if ($LASTEXITCODE -ne 0) { throw 'Could not create release' }
           }
-          gh release upload windows-exe-v19 dist/LoongLens.exe dist/LoongLens-Windows.zip dist/LoongLens-FullPackage.zip dist/SHA256.txt self-check.json gui-check.json input-check.json --repo $env:GITHUB_REPOSITORY --clobber
+          gh release upload windows-exe-v20 dist/LoongLens.exe dist/LoongLens-Windows.zip dist/LoongLens-FullPackage.zip dist/SHA256.txt self-check.json gui-check.json input-check.json --repo $env:GITHUB_REPOSITORY --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Could not upload release assets' }
       - uses: actions/upload-artifact@v4
         if: always()
