@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'LoongLens-WindowsBuild-v23.zip'
+      - 'LoongLens-WindowsBuild-v24.zip'
       - '.github/workflows/windows-exe.yml'
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ jobs:
           architecture: x64
       - name: Extract source
         shell: pwsh
-        run: Expand-Archive LoongLens-WindowsBuild-v23.zip -DestinationPath source
+        run: Expand-Archive LoongLens-WindowsBuild-v24.zip -DestinationPath source
       - name: Install pinned dependencies
         working-directory: source/LoongLens
         run: python -m pip install -r requirements.txt pyinstaller==6.16.0 pytest==8.4.2 pefile==2023.2.7
@@ -63,7 +63,7 @@ jobs:
         run: |
           Copy-Item README.md dist/README.md
           Compress-Archive -Path dist/LoongLens.exe,dist/README.md -DestinationPath dist/LoongLens-Windows.zip
-          Copy-Item ../../LoongLens-WindowsBuild-v23.zip dist/LoongLens-FullPackage.zip
+          Copy-Item ../../LoongLens-WindowsBuild-v24.zip dist/LoongLens-FullPackage.zip
           python -c "import zipfile; z=zipfile.ZipFile('dist/LoongLens-FullPackage.zip','a',compression=zipfile.ZIP_DEFLATED); z.write('dist/LoongLens.exe','LoongLens/LoongLens.exe'); z.close()"
           (Get-FileHash dist/LoongLens.exe -Algorithm SHA256).Hash.ToLower() + '  LoongLens.exe' | Set-Content dist/SHA256.txt
       - name: Publish executable
@@ -72,12 +72,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          gh release view windows-exe-v23 --repo $env:GITHUB_REPOSITORY 2>$null
+          gh release view windows-exe-v24 --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -ne 0) {
-            gh release create windows-exe-v23 --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Loong Lens Windows EXE" --notes "Fixes unnecessary map dragging for visible dots near the edges. The map click surface follows the supplied yellow outline with cutouts for the legend and zoom controls, extending down to the lower map edge above the tabs. Visible targets are clicked directly; only targets outside that surface require dragging. Includes an updated route map and preserves saved extra views, camera adjustments, fixed order, excluded spots, icons, history, timer and gem-stop behavior."
+            gh release create windows-exe-v24 --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Loong Lens Windows EXE" --notes "Clicks the confirmed gem itself once using its latest visually detected centre, then stops. Captures the screenshot before clicking and retains F10, scene-change and interface guards. Loop Sniping keeps cumulative time and finds across passes and resumes until Reset checks. The last three completed pass times appear separately in newest-first order. Preserves saved camera adjustments, extra views, expanded map click area, fixed route, excluded locations, icons and history. Downloads contain the Windows EXE and complete project files."
             if ($LASTEXITCODE -ne 0) { throw 'Could not create release' }
           }
-          gh release upload windows-exe-v23 dist/LoongLens.exe dist/LoongLens-Windows.zip dist/LoongLens-FullPackage.zip dist/SHA256.txt self-check.json gui-check.json input-check.json --repo $env:GITHUB_REPOSITORY --clobber
+          gh release upload windows-exe-v24 dist/LoongLens.exe dist/LoongLens-Windows.zip dist/LoongLens-FullPackage.zip dist/SHA256.txt self-check.json gui-check.json input-check.json --repo $env:GITHUB_REPOSITORY --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Could not upload release assets' }
       - uses: actions/upload-artifact@v4
         if: always()
