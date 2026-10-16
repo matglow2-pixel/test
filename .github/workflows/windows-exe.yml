@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'LoongLens-WindowsBuild-v17.zip'
+      - 'LoongLens-WindowsBuild-v18.zip'
       - '.github/workflows/windows-exe.yml'
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ jobs:
           architecture: x64
       - name: Extract source
         shell: pwsh
-        run: Expand-Archive LoongLens-WindowsBuild-v17.zip -DestinationPath source
+        run: Expand-Archive LoongLens-WindowsBuild-v18.zip -DestinationPath source
       - name: Install pinned dependencies
         working-directory: source/LoongLens
         run: python -m pip install -r requirements.txt pyinstaller==6.16.0 pytest==8.4.2 pefile==2023.2.7
@@ -63,7 +63,7 @@ jobs:
         run: |
           Copy-Item README.md dist/README.md
           Compress-Archive -Path dist/LoongLens.exe,dist/README.md -DestinationPath dist/LoongLens-Windows.zip
-          Copy-Item ../../LoongLens-WindowsBuild-v17.zip dist/LoongLens-FullPackage.zip
+          Copy-Item ../../LoongLens-WindowsBuild-v18.zip dist/LoongLens-FullPackage.zip
           python -c "import zipfile; z=zipfile.ZipFile('dist/LoongLens-FullPackage.zip','a',compression=zipfile.ZIP_DEFLATED); z.write('dist/LoongLens.exe','LoongLens/LoongLens.exe'); z.close()"
           (Get-FileHash dist/LoongLens.exe -Algorithm SHA256).Hash.ToLower() + '  LoongLens.exe' | Set-Content dist/SHA256.txt
       - name: Publish executable
@@ -72,12 +72,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          gh release view windows-exe-v17 --repo $env:GITHUB_REPOSITORY 2>$null
+          gh release view windows-exe-v18 --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -ne 0) {
-            gh release create windows-exe-v17 --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Loong Lens Windows EXE" --notes "Fixes the Loong Haven IV camera click opening its blue portal, while retaining 77 views covering all 86 spots. Adds per-pass Time spent in minutes:seconds, continuing through pauses and gem stops and freezing only when all views are processed, plus a live Gems found counter. Adds History beside Live settings, using the same gem history. Existing lock skipping, one-tile horizontal approach, overlay, screenshots, personal history and icons are preserved."
+            gh release create windows-exe-v18 --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Loong Lens Windows EXE" --notes "Controls map overshoot with shorter, slower drags and a stationary hold before release. Measures settled movement, adapts pan distance, and uses up to six small reverse pans to regain alignment while retaining pass progress and timer. No gem selection until recognition returns. F10 and normal input guards remain active. Keeps all 77 views, portal avoidance, locked skips, History, approach clicks and icons."
             if ($LASTEXITCODE -ne 0) { throw 'Could not create release' }
           }
-          gh release upload windows-exe-v17 dist/LoongLens.exe dist/LoongLens-Windows.zip dist/LoongLens-FullPackage.zip dist/SHA256.txt self-check.json gui-check.json input-check.json --repo $env:GITHUB_REPOSITORY --clobber
+          gh release upload windows-exe-v18 dist/LoongLens.exe dist/LoongLens-Windows.zip dist/LoongLens-FullPackage.zip dist/SHA256.txt self-check.json gui-check.json input-check.json --repo $env:GITHUB_REPOSITORY --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Could not upload release assets' }
       - uses: actions/upload-artifact@v4
         if: always()
