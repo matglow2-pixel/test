@@ -1,0 +1,41 @@
+name: Package complete v25 download
+
+on:
+  push:
+    paths:
+      - '.github/workflows/package-v25-full.yml'
+      - 'tools/package_v25_full.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install archive tooling
+        run: python -m pip install py7zr==1.0.0
+      - name: Download matching Windows EXE and validation reports
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download windows-exe-v25-adb --repo matglow2-pixel/test --pattern LoongLens.exe --dir download
+          gh run download 39059794211 --repo matglow2-pixel/test --name windows-build-results --dir validation
+      - name: Verify inputs and assemble complete 7z
+        run: python tools/package_v25_full.py
+      - name: Upload full archive to the existing v25 test release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload windows-exe-v25-adb dist/LoongLens-v25-Full.7z dist/LoongLens-v25-Full.7z.sha256 --repo matglow2-pixel/test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LoongLens-v25-Full
+          path: dist/LoongLens-v25-Full.7z*
+          if-no-files-found: error
