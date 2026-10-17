@@ -1,0 +1,42 @@
+name: Package v25 Android focus fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/package-v25-focus-fix.yml'
+      - 'tools/package_v25_focus_fix.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install archive tooling
+        run: python -m pip install py7zr==1.0.0
+      - name: Download the corrected verified Windows build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 39066413479 --repo matglow2-pixel/test --name LoongLens-ADB-Windows --dir download
+          gh run download 39066413479 --repo matglow2-pixel/test --name windows-build-results --dir validation
+      - name: Verify inputs and assemble complete hotfix package
+        run: python tools/package_v25_focus_fix.py
+      - name: Publish the complete corrected package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create windows-exe-v25-adb-fix1 dist/LoongLens-v25-ADB-Fix1-Full.7z dist/LoongLens-v25-ADB-Fix1-Full.7z.sha256 --repo matglow2-pixel/test --target ff230bb730240215ac7a135256729971cf71ce01 --prerelease --title 'Loong Lens v25 — Android 11 ADB focus fix' --notes 'Complete Windows EXE, source, assets, models, launchers, tests and tools in one 7z. Fixes active-app detection by reading the complete Android window state and, when focus fields are absent, the resumed Android activity. Unknown or conflicting app state still stops input; no desktop-mouse fallback. Windows tests: 385 passed, 3 skipped. Frozen resources, GUI, native input and icon checks passed. Close the old app before running this EXE; test the ADB preview, calibrate the game area, and save ADB mode. Live BlueStacks behavior still needs verification on the target PC.'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LoongLens-v25-ADB-Fix1-Full
+          path: dist/LoongLens-v25-ADB-Fix1-Full.7z*
+          if-no-files-found: error
