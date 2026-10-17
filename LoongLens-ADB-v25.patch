@@ -1,0 +1,926 @@
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -23,6 +23,26 @@
+ Detection uses full-resolution captures. The small live view displays the latest inspected screenshot and pink candidate boxes; it is a monitor, not the detector's input resolution. Covered or minimized gameplay cannot be inspected.
+ 
+ ## Gem Sniping
++
++### ADB input (v25, live BlueStacks validation pending)
++
++**Sniping settings → Input method → ADB** sends screenshots, taps and swipes through the selected Android device. It does not move the PC cursor, send Windows keys or bring BlueStacks to the foreground. Mouse mode remains the default for existing settings. Only Gem Sniping uses ADB; the Map overlay and ordinary Gem Watch continue using the visible Windows desktop.
++
++1. Close the old Loong Lens app. For this source package, launch `RUN_LOONG_LENS.bat` with 64-bit Python 3.12 installed; it prepares its own dependencies. Alternatively build the Windows EXE as described under Development. An older EXE will not contain this change.
++2. Enable **Android Debug Bridge** under BlueStacks **Settings → Advanced**. Use the port shown for the instance running your game. In Sniping settings choose **ADB**, enter that exact address (for example `127.0.0.1:5555`), and optionally choose the ADB executable. The app looks for `BlueStacks_nxt/HD-Adb.exe` under Program Files and then `adb` on PATH. You can use Google's Android SDK platform-tools instead. No ADB binary is downloaded or bundled with this package.
++3. Open the game in portrait orientation. With BlueStacks visible for this one-time calibration, press **Pick game area**. Click the top-left and bottom-right of the Android display inside the BlueStacks window, excluding Windows title bar, side toolbar and emulator bottom controls. This preserves the existing 570×1029 reference geometry used by map recognition and HUD guards. If Android navigation bars are included in the device screenshot, include their corresponding image area. Recalibrate after changing the emulator layout or resolution.
++4. Use **Test connection / preview**. This reads device screenshots without sending game input. Check that the game is placed correctly; use **Pick on screenshot** for the minimap and large-map Back button if needed. Save settings. ADB uses the selected address only; it does not auto-select among connected devices. Non-loopback serials must already be connected via your ADB installation.
++5. Start a single **Snipe** pass first. Switch to another desktop app and confirm that map opening, camera checks, screenshots and the final gem tap work correctly. Then try **Loop Sniping**. Keep BlueStacks running and the game active inside Android; some BlueStacks configurations stop rendering when minimized. Covering the desktop window does not cover ADB screenshots.
++
++Route order, saved camera adjustments, extra views, detector confirmation, screenshot/history cooldowns, cumulative timing and repeat/resume behavior are shared with mouse mode. Connection errors never switch to mouse input. Changing input settings clears cached map alignment while retaining processed checks; use Reset checks for a fresh pass. A detected Android app change, invalid screenshot, landscape orientation or resolution change stops input.
++
++F10 prevents subsequent commands and interrupts a waiting local ADB process. A gesture already delivered to Android can finish; swipe durations are bounded to 350–850 ms. Android swipes do not provide the mouse backend's stationary endpoint hold, so inertia, pan speed, screenshot latency and live detector performance need testing on your instance. The current fast 1.2-second inspection interval may need increasing in Sniping settings if ADB capture is slow.
++
++Linux validation covers simulated ADB responses and the real Tk settings flow. It does not establish live BlueStacks compatibility, background/minimized rendering, Android input permission or Windows executable behavior.
++
++ADB captures retain native image detail for gem detection and screenshot history, padded into the existing reference layout. The route's alignment stage still normalizes its own frames to 570×1029. No Windows desktop pixels are used in ADB mode.
++
++### Route and controls
+ 
+ This replaces the former Live patrol tab. The separate Patrol preview tab and its simulation controls have been removed; screenshot-based engine and UI checks remain in the development tools.
+ 
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,4 +1,12 @@
+-# Verification — Loong Lens v24
++# Verification — Loong Lens v25 ADB candidate
++
++## ADB backend verification
++
++`tests/test_adb_patrol.py` exercises exact instance targeting, loopback connection, read-only preview, binary PNG decoding, BGR color order, reference padding and tap/swipe coordinate conversion. Failure cases cover corrupt screenshots, invalid profiles, disconnects, command timeout, F10 while waiting, Android foreground-app changes, launcher/settings screens and resolution/orientation changes. An integrated simulation runs the existing patrol engine through map selection, map closing, repeated empty views and a confirmed gem's final device tap. No test invokes Windows cursor APIs or sends input to a real device.
++
++`tools/ui_adb_settings_smoke.py` runs real Tk widgets with simulated screenshots: backend selection, asynchronous preview, two-corner game-area calibration, persistence and backend routing. Existing settings default to mouse input; malformed ADB configuration blocks sniping until repaired and is preserved on disk. Native-resolution capture tests preserve an individual high-resolution image pixel through reference padding and map its detected centre back to the exact Android tap coordinate.
++
++Live BlueStacks ADB tests, Windows EXE packaging, native Android input permissions, capture latency and background/minimized rendering are **unrun in this Linux environment**. ADB's bounded Android swipe differs from native held-button dragging and needs a live overshoot check. The Windows workflow still runs native EXE/GUI/input verification using its own Windows test window; it has no BlueStacks instance and cannot validate live ADB behavior.
+ 
+ The app targets Windows 10 (2004+) / Windows 11 and BlueStacks at Loong Haven's default zoom. Linux checks use the pinned Python 3.12 environment and simulated desktop delivery. No live game input is sent by these checks.
+ 
+--- /dev/null
++++ b/LoongLens/patrol_adb.py
+@@ -0,0 +1,216 @@
++"""Device-only screenshots and gestures; never captures or controls the PC desktop."""
++from __future__ import annotations
++
++from dataclasses import dataclass
++import math
++import os
++from pathlib import Path
++import re
++import shutil
++import subprocess
++import threading
++import time
++
++import cv2
++import numpy as np
++
++from patrol_windows import PatrolStopped
++
++
++@dataclass(frozen=True)
++class InputSettings:
++    mode: str = 'Mouse'
++    adb_path: str = ''
++    serial: str = '127.0.0.1:5555'
++    # Android content bounds within the existing Windows reference screenshot.
++    # Padding preserves title recognition, HUD masks and the route's geometry.
++    content_rect: tuple = (0, 0, 570, 1029)
++
++    def __post_init__(self):
++        if self.mode not in ('Mouse', 'ADB'):
++            raise ValueError('Choose Mouse or ADB input.')
++        if not isinstance(self.adb_path, str) or not isinstance(self.serial, str):
++            raise ValueError('ADB path and device must be text.')
++        if not re.fullmatch(r'[A-Za-z0-9_.:-]{1,160}', self.serial) or self.serial.startswith('-'):
++            raise ValueError('Enter one exact ADB device serial, such as 127.0.0.1:5555.')
++        if len(self.content_rect) != 4 or any(type(v) is not int for v in self.content_rect):
++            raise ValueError('Game area must be four integer coordinates: left,top,right,bottom.')
++        left, top, right, bottom = self.content_rect
++        if not (0 <= left < right <= 570 and 0 <= top < bottom <= 1029):
++            raise ValueError('Game area must fit inside the 570×1029 reference screenshot.')
++        if right-left < 285 or bottom-top < 500:
++            raise ValueError('Pick the whole Android display; the game area must cover most of the reference screenshot.')
++        object.__setattr__(self, 'content_rect', tuple(self.content_rect))
++
++    @classmethod
++    def load(cls, config):
++        return cls(**config.get('input', {}))
++
++
++def find_adb(configured=''):
++    """Reuse BlueStacks' executable or the user's installed platform tools."""
++    if configured:
++        path = Path(configured).expanduser()
++        resolved = str(path) if path.is_file() else shutil.which(configured)
++        if resolved:
++            return resolved
++        raise RuntimeError('ADB executable not found. Select HD-Adb.exe from BlueStacks or adb.exe from Android platform-tools.')
++    for name in ('ProgramFiles', 'ProgramFiles(x86)'):
++        base = os.environ.get(name)
++        if base:
++            path = Path(base) / 'BlueStacks_nxt' / 'HD-Adb.exe'
++            if path.is_file():
++                return str(path)
++    resolved = shutil.which('adb') or shutil.which('HD-Adb.exe')
++    if not resolved:
++        raise RuntimeError('ADB not found. Set the ADB executable in Sniping settings.')
++    return resolved
++
++
++class AdbBackend:
++    def __init__(self, cancel, settings=None):
++        self.cancel = cancel
++        self.settings = settings or InputSettings(mode='ADB')
++        self.executable = None
++        self.size = None
++        self.package = None
++
++    def __enter__(self):
++        self.executable = find_adb(self.settings.adb_path)
++        return self
++
++    def __exit__(self, *args):
++        # ADB server and emulator are shared with the user; leave both running.
++        pass
++
++    def check(self):
++        if self.cancel.is_set():
++            raise PatrolStopped('Stopped. An already delivered Android gesture may finish (under one second).')
++
++    def wait(self, seconds):
++        if self.cancel.wait(seconds):
++            self.check()
++
++    def command(self, *args, targeted=True, timeout=10):
++        self.check()
++        command = [self.executable]
++        if targeted:
++            command += ['-s', self.settings.serial]
++        command += list(args)
++        flags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
++        try:
++            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
++                                       creationflags=flags)
++        except OSError as exc:
++            raise RuntimeError(f'Could not start ADB: {exc}') from exc
++        deadline = time.monotonic() + timeout
++        try:
++            while True:
++                self.check()
++                if time.monotonic() >= deadline:
++                    raise RuntimeError('ADB timed out. Check the device connection and keep BlueStacks running.')
++                try:
++                    output, error = process.communicate(timeout=.05)
++                    break
++                except subprocess.TimeoutExpired:
++                    continue
++            self.check()
++            if process.returncode:
++                detail = error.decode('utf-8', errors='replace').strip()[:400]
++                raise RuntimeError(f'ADB failed for {self.settings.serial}: {detail or "command rejected"}')
++            return output
++        finally:
++            if process.poll() is None:
++                process.kill()
++            process.communicate()
++
++    def foreground_package(self):
++        state = self.command('shell', 'dumpsys', 'window', 'windows').decode('utf-8', errors='replace')
++        # Android 7/9/11 used by BlueStacks expose the foreground window here.
++        match = re.search(r'mCurrentFocus=Window\{[^\n}]*\s([A-Za-z0-9_.]+)/[^\s}]+', state)
++        if not match:
++            raise RuntimeError('ADB cannot identify the active Android app. Open the game, dismiss dialogs, and retry.')
++        return match.group(1)
++
++    def focus(self):
++        """Connect the selected instance without bringing its desktop window forward."""
++        self.check()
++        # Only an explicitly selected loopback endpoint is auto-connected.
++        # Other serials must already appear in adb devices; never pick one implicitly.
++        if re.fullmatch(r'(?:127\.0\.0\.1|localhost):[0-9]{1,5}', self.settings.serial):
++            self.command('connect', self.settings.serial, targeted=False)
++        if self.command('get-state').strip() != b'device':
++            raise RuntimeError('Selected ADB device is not ready. Enable Android Debug Bridge in BlueStacks settings.')
++        package = self.foreground_package()
++        if self.package is not None and package != self.package:
++            raise RuntimeError('The active Android app changed; ADB sniping stopped.')
++        if any(word in package.lower() for word in ('launcher', 'systemui')) or package == 'com.android.settings':
++            raise RuntimeError('Open the game in BlueStacks before starting ADB sniping.')
++        self.package = package
++        self.capture()
++
++    def capture(self):
++        payload = self.command('exec-out', 'screencap', '-p')
++        if not payload.startswith(b'\x89PNG\r\n\x1a\n'):
++            raise RuntimeError('ADB did not return a PNG screenshot. Check the selected BlueStacks instance.')
++        frame = cv2.imdecode(np.frombuffer(payload, np.uint8), cv2.IMREAD_COLOR)
++        if frame is None:
++            raise RuntimeError('ADB screenshot could not be decoded.')
++        height, width = frame.shape[:2]
++        if width >= height:
++            raise RuntimeError('ADB sniping requires the existing portrait game layout. Restore portrait orientation.')
++        size = (width, height)
++        if self.size is not None and size != self.size:
++            raise RuntimeError('Android display resolution changed. Stop, check calibration, and restart sniping.')
++        self.size = size
++        left, top, right, bottom = self.settings.content_rect
++        if abs((right-left)/(bottom-top) / (width/height) - 1) > .08:
++            raise RuntimeError('ADB game area has a different aspect ratio. Calibrate the game area in Sniping settings.')
++        # Preserve native capture detail for GemDetector. Only the patrol's
++        # alignment code downsizes to its canonical reference dimensions.
++        scale = width / (right-left)
++        reference = np.zeros((round(1029*scale), round(570*scale), 3), np.uint8)
++        x1, y1, x2, y2 = (round(v*scale) for v in (left, top, right, bottom))
++        reference[y1:y2, x1:x2] = cv2.resize(frame, (x2-x1, y2-y1), interpolation=cv2.INTER_AREA)
++        return reference
++
++    def guard(self):
++        self.check()
++        if self.package is None or self.size is None:
++            raise RuntimeError('Connect and preview the ADB device before sending input.')
++        if self.foreground_package() != self.package:
++            raise RuntimeError('The active Android app changed; ADB sniping stopped.')
++        # Detect rotations/resolution changes before sending coordinates.
++        self.capture()
++
++    def point(self, reference):
++        x, y = reference
++        left, top, right, bottom = self.settings.content_rect
++        if not (math.isfinite(x) and math.isfinite(y) and left <= x < right and top <= y < bottom):
++            raise ValueError('ADB input point is outside the calibrated Android game area.')
++        if self.size is None:
++            raise RuntimeError('ADB screenshot dimensions are unavailable.')
++        width, height = self.size
++        return min(width-1, round((x-left)*width/(right-left))), min(height-1, round((y-top)*height/(bottom-top)))
++
++    def click(self, reference):
++        self.guard()
++        x, y = self.point(reference)
++        self.command('shell', 'input', 'touchscreen', 'tap', str(x), str(y))
++
++    def drag(self, start, end):
++        self.guard()
++        x1, y1 = self.point(start)
++        x2, y2 = self.point(end)
++        # One bounded Android gesture avoids a stuck touch on disconnect/F10.
++        # Android swipe has no stationary endpoint hold; visual pan recovery
++        # remains responsible for inertia and overshoot.
++        duration = max(350, min(850, round(math.dist(start, end)*2)))
++        self.command('shell', 'input', 'touchscreen', 'swipe', str(x1), str(y1), str(x2), str(y2), str(duration))
++
++    @classmethod
++    def peek(cls, settings):
++        """Read-only connection preview; sends no taps, swipes or focus requests."""
++        with cls(threading.Event(), settings) as backend:
++            backend.focus()
++            return backend.capture()
+--- a/LoongLens/patrol_live_panel.py
++++ b/LoongLens/patrol_live_panel.py
+@@ -3,6 +3,7 @@
+ from dataclasses import asdict
+ import json
+ import queue
++import threading
+ import tkinter as tk
+ from tkinter import ttk,messagebox
+ from pathlib import Path
+@@ -11,6 +12,7 @@
+ from patrol_route import load_fixed_route,load_camera_adjustments,save_camera_adjustments
+ from patrol_live import LiveSettings,LiveRunner,load_live_config,LIVE_SETTINGS_VERSION
+ from patrol_windows import WindowsBackend,GlobalPatrolKeys
++from patrol_adb import AdbBackend,InputSettings
+ from sighting_capture import SightingCapture
+ from resources import user_dir
+ 
+@@ -27,24 +29,34 @@
+         self.events=queue.Queue();self.keys=None;self.closed=False;self.busy=False
+         self.job=None;self.photo=None;self.futures=[];self.editing=False;self.editor=None
+         self.path=user_dir()/'patrol-live-settings.json'
++        self.input_settings=InputSettings();self.input_error=None
+         try:
+             config=json.loads(self.path.read_text('utf-8'))
+             self.settings,key,migrated=load_live_config(config)
+             self.key.set(key)
+             if migrated:self.status.set('Updated Open map to the top-right minimap.')
+         except (OSError,ValueError,KeyError,TypeError):self.settings=LiveSettings()
++        try:
++            if self.path.exists():self.input_settings=InputSettings.load(json.loads(self.path.read_text('utf-8')))
++        except (OSError,ValueError,KeyError,TypeError) as exc:
++            self.input_error=f'Check input settings before sniping: {exc}'
+         self.base_views=load_fixed_route(data);self.route_path=user_dir()/'camera-route-adjustments.json'
+         warning=None
+         try:views=load_camera_adjustments(self.base_views,self.route_path)
+         except (OSError,ValueError,TypeError) as exc:
+             views=self.base_views;warning=f'Using default camera targets: {exc}'
+-        self.runner=LiveRunner(views,WindowsBackend,self.events.put)
++        self.runner=LiveRunner(views,self.make_backend,self.events.put)
+         self.update_count()
+         # Patrol captures already have their map location and bypass player OCR.
+         self.capture_store=SightingCapture(user_dir(),reader=object())
+         self.save_pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='Patrol-screenshot')
+         self.build_ui();self.bind_keys();self.job=self.root.after(100,self.poll)
+         if warning:self.status.set(warning)
++        if self.input_error:self.status.set(self.input_error)
++
++    def make_backend(self,cancel):
++        if self.input_settings.mode=='ADB':return AdbBackend(cancel,self.input_settings)
++        return WindowsBackend(cancel)
+ 
+     def build_ui(self):
+         from ui_theme import FONT, heading, card, row, CARD, MUTED
+@@ -78,7 +90,7 @@
+         ttk.Button(actions,text='Reset checks',command=self.reset).pack(side='right')
+         footer=ttk.Frame(body)
+         footer.pack(side='bottom',fill='x',pady=(10,0))
+-        ttk.Label(footer,text='Snipe checks once. Loop Sniping repeats until a gem or F10.\nLocked areas are skipped. On a gem: save photo, click gem, stop.\nKeep BlueStacks visible. Click options: Sniping settings.',
++        ttk.Label(footer,text='Snipe checks once. Loop Sniping repeats until a gem or F10.\nMouse mode needs a visible, focused BlueStacks window.\nADB mode frees your mouse. Choose input in Sniping settings.',
+                   style='Muted.TLabel',font=(FONT,9),wraplength=470).pack(anchor='w')
+         viewport=tk.Frame(body,bg=CARD,height=220)
+         viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
+@@ -134,6 +146,7 @@
+ 
+     def start(self,repeat=False):
+         if self.keys is None or self.busy or self.editing:return
++        if self.input_error:self.status.set(self.input_error);return
+         if not repeat and len(self.runner.checked)>=len(self.runner.views):
+             self.status.set('Pass complete. Use Reset checks to start a new timed pass.');return
+         with self.watch.worker.lock:
+@@ -149,7 +162,7 @@
+ 
+     def stop(self,silent=False):
+         self.runner.stop()
+-        if not silent:self.status.set('Stop requested. Mouse input is being released.')
++        if not silent:self.status.set('Stop requested. A delivered ADB gesture may take under a second to finish.' if self.input_settings.mode=='ADB' else 'Stop requested. Mouse input is being released.')
+ 
+     def reset(self):
+         if self.busy:
+@@ -233,9 +246,13 @@
+     def save_config(self):
+         try:
+             tmp=self.path.with_suffix('.tmp')
+-            tmp.write_text(json.dumps(dict(version=LIVE_SETTINGS_VERSION,settings=asdict(self.settings),key=self.key.get()),indent=2),'utf-8')
++            # Preserve an invalid input profile until the user explicitly repairs it.
++            config=dict(version=LIVE_SETTINGS_VERSION,settings=asdict(self.settings),key=self.key.get(),input=asdict(self.input_settings))
++            if self.input_error and self.path.exists():
++                config['input']=json.loads(self.path.read_text('utf-8')).get('input',{})
++            tmp.write_text(json.dumps(config,indent=2),'utf-8')
+             tmp.replace(self.path)
+-        except OSError:
++        except (OSError,ValueError,TypeError):
+             import logging
+             logging.exception('Could not save patrol settings')
+ 
+@@ -257,26 +274,93 @@
+             field=ttk.Entry(body,width=15);field.insert(0,str(getattr(self.settings,name)));field.grid(row=row,column=1,padx=8);fields[name]=field
+         approach=tk.BooleanVar(value=self.settings.approach_gem)
+         ttk.Checkbutton(body,text='On gem: click the gem itself once, then stop',variable=approach).grid(row=6,column=0,columnspan=3,sticky='w')
+-        error=tk.StringVar();ttk.Label(body,textvariable=error,wraplength=500).grid(row=7,column=0,columnspan=3,sticky='w')
++        mode=tk.StringVar(value=self.input_settings.mode)
++        ttk.Label(body,text='Input method').grid(row=7,column=0,sticky='w')
++        ttk.Combobox(body,textvariable=mode,values=('Mouse','ADB'),state='readonly',width=12).grid(row=7,column=1,sticky='w',padx=8)
++        inputs={}
++        for row,name,label,value in ((8,'adb_path','ADB executable (blank = auto)',self.input_settings.adb_path),
++                                     (9,'serial','ADB device / loopback address',self.input_settings.serial),
++                                     (10,'content_rect','Game area: left,top,right,bottom',','.join(map(str,self.input_settings.content_rect)))):
++            ttk.Label(body,text=label).grid(row=row,column=0,sticky='w',pady=4)
++            field=ttk.Entry(body,width=32);field.insert(0,value);field.grid(row=row,column=1,columnspan=2,sticky='ew',padx=8);inputs[name]=field
++        error=tk.StringVar();ttk.Label(body,textvariable=error,wraplength=560).grid(row=13,column=0,columnspan=3,sticky='w')
++        def read_input():
++            return InputSettings(mode=mode.get(),adb_path=inputs['adb_path'].get().strip(),serial=inputs['serial'].get().strip(),
++                                 content_rect=tuple(int(v.strip()) for v in inputs['content_rect'].get().split(',')))
++        # Screenshot calibration must use the selected, unsaved backend too.
++        win.read_input=read_input
++        def preview():
++            try:options=read_input()
++            except (ValueError,TypeError) as exc:error.set(str(exc));return
++            error.set('Reading screenshot…')
++            def show(frame):
++                error.set('Screenshot received. Check game area and map-button calibration before sniping.')
++                self.show_capture_picker(win,frame,None)
++            self.read_screenshot(win,options,show,lambda exc:error.set(str(exc)))
++        ttk.Button(body,text='Test connection / preview',command=preview).grid(row=11,column=0,columnspan=2,sticky='w',pady=6)
++        ttk.Button(body,text='Pick game area',command=lambda:self.pick_game_area(win,inputs['content_rect'])).grid(row=11,column=2,sticky='e')
++        ttk.Label(body,text='Enable Android Debug Bridge in BlueStacks Settings → Advanced. Use its exact port.\nPick game area once from the visible BlueStacks window: Android image only, excluding\nWindows title bar, side toolbar and bottom controls. Then preview and pick map buttons.\nADB mode needs the game running/rendering; minimizing may pause some BlueStacks setups.',
++                  wraplength=560,style='Muted.TLabel').grid(row=12,column=0,columnspan=3,sticky='w',pady=6)
+         def apply():
++            if self.busy or self.runner.running:error.set('Stop sniping before saving settings.');return
+             try:
+                 points={name:tuple(float(v.strip()) for v in fields[name].get().split(',')) for name in ('map_open','map_close')}
+-                self.settings=LiveSettings(**points,settle_seconds=float(fields['settle_seconds'].get()),inspect_seconds=float(fields['inspect_seconds'].get()),approach_gem=approach.get())
+-            except (TypeError,ValueError):error.set('Enter X,Y pairs inside 570×1029. Loading wait: 0.2–10s. Check: 1.2–10s.');return
++                settings=LiveSettings(**points,settle_seconds=float(fields['settle_seconds'].get()),inspect_seconds=float(fields['inspect_seconds'].get()),approach_gem=approach.get())
++                options=read_input()
++            except (TypeError,ValueError) as exc:error.set(str(exc));return
++            if options!=self.input_settings:self.runner.navigation.clear()
++            self.settings=settings;self.input_settings=options;self.input_error=None
++            self.status.set(f'{options.mode} input selected. '+('Your desktop mouse is free; keep the Android game running.' if options.mode=='ADB' else 'BlueStacks must stay visible and focused.'))
+             self.save_config();win.destroy()
+-        ttk.Button(body,text='Save settings',command=apply).grid(row=8,column=0,sticky='w',pady=10)
+-        ttk.Button(body,text='Cancel',command=win.destroy).grid(row=8,column=2,sticky='e')
++        ttk.Button(body,text='Save settings',command=apply).grid(row=14,column=0,sticky='w',pady=10)
++        ttk.Button(body,text='Cancel',command=win.destroy).grid(row=14,column=2,sticky='e')
++
++    def read_screenshot(self,parent,options,done,failed):
++        # ADB discovery/capture must not block Tk or the stop button.
++        result=queue.Queue()
++        def work():
++            try:result.put((True,AdbBackend.peek(options) if options.mode=='ADB' else WindowsBackend.peek()))
++            except Exception as exc:result.put((False,exc))
++        threading.Thread(target=work,daemon=True,name='ADB-preview').start()
++        def poll():
++            if self.closed or not parent.winfo_exists():return
++            try:success,value=result.get_nowait()
++            except queue.Empty:self.root.after(50,poll);return
++            (done if success else failed)(value)
++        poll()
+ 
+     def pick_button(self,parent,field):
+-        try:frame=WindowsBackend.peek()
++        try:options=parent.read_input()
+         except Exception as exc:messagebox.showerror('Capture unavailable',str(exc),parent=parent);return
++        self.read_screenshot(parent,options,lambda frame:self.show_capture_picker(parent,frame,field),
++                             lambda exc:messagebox.showerror('Capture unavailable',str(exc),parent=parent))
++
++    def show_capture_picker(self,parent,frame,field):
+         image=Image.fromarray(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB));image.thumbnail((500,760))
+-        picker=tk.Toplevel(parent);picker.title('Click the button in this screenshot')
++        picker=tk.Toplevel(parent);picker.title('Click the button in this screenshot' if field is not None else 'Connection preview — no game input sent')
+         photo=ImageTk.PhotoImage(image)
+         canvas=tk.Canvas(picker,width=image.width,height=image.height,highlightthickness=0)
+         canvas.pack();canvas.create_image(0,0,image=photo,anchor='nw');canvas.photo=photo
+         def select(event):
+             field.delete(0,'end');field.insert(0,f'{event.x*570/image.width:.1f},{event.y*1029/image.height:.1f}');picker.destroy()
++        if field is not None:canvas.bind('<Button-1>',select)
++
++    def pick_game_area(self,parent,field):
++        # Calibration reads the visible window only; it never sends game input.
++        try:frame=WindowsBackend.peek()
++        except Exception as exc:messagebox.showerror('Show BlueStacks for calibration',str(exc),parent=parent);return
++        image=Image.fromarray(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB));image.thumbnail((500,760))
++        picker=tk.Toplevel(parent);picker.title('Pick Android image top-left, then bottom-right (exclude emulator chrome)')
++        photo=ImageTk.PhotoImage(image);points=[]
++        canvas=tk.Canvas(picker,width=image.width,height=image.height,highlightthickness=0)
++        canvas.pack();canvas.create_image(0,0,image=photo,anchor='nw');canvas.photo=photo
++        def select(event):
++            points.append((round(event.x*570/image.width),round(event.y*1029/image.height)))
++            if len(points)==1:canvas.create_oval(event.x-4,event.y-4,event.x+4,event.y+4,outline='#ff79dc',width=2);return
++            left,top=points[0];right,bottom=points[1]
++            try:InputSettings(content_rect=(left,top,right,bottom))
++            except ValueError as exc:points.clear();messagebox.showerror('Invalid game area',str(exc),parent=picker);return
++            field.delete(0,'end');field.insert(0,f'{left},{top},{right},{bottom}');picker.destroy()
+         canvas.bind('<Button-1>',select)
+ 
+     def close(self):
+--- /dev/null
++++ b/LoongLens/tests/test_adb_patrol.py
+@@ -0,0 +1,285 @@
++"""Exercise device selection, image geometry, cancellation and panel integration."""
++from dataclasses import asdict
++import json
++import subprocess
++import threading
++from types import SimpleNamespace
++
++import cv2
++import numpy as np
++import pytest
++
++import patrol_adb
++from patrol_adb import AdbBackend, InputSettings
++from patrol_windows import PatrolStopped
++
++
++def png(width=570, height=1029, color=(17, 93, 201)):
++    frame = np.full((height, width, 3), color, np.uint8)
++    return cv2.imencode('.png', frame)[1].tobytes()
++
++
++class Device:
++    def __init__(self, monkeypatch, settings=None):
++        self.commands = []
++        self.image = png()
++        self.package = 'com.example.game'
++        self.output = None
++        self.error = b''
++        self.code = 0
++        self.on_input = None
++        self.cancel = threading.Event()
++        device = self
++        monkeypatch.setattr(patrol_adb, 'find_adb', lambda path: 'chosen-adb.exe')
++
++        class Process:
++            def __init__(self, command, **kwargs):
++                assert 'shell' not in kwargs
++                device.commands.append(command)
++                self.returncode = None
++                if command[-1] == 'get-state':
++                    self.output = b'device\n'
++                elif command[-2:] == ['screencap', '-p']:
++                    self.output = device.image() if callable(device.image) else device.image
++                elif command[-2:] == ['window', 'windows']:
++                    self.output = f'mCurrentFocus=Window{{abc u0 {device.package}/.MainActivity}}'.encode()
++                else:
++                    self.output = b'connected'
++                    if 'touchscreen' in command and device.on_input is not None:
++                        device.on_input(command[command.index('touchscreen')+1:])
++
++            def communicate(self, timeout=None):
++                self.returncode = device.code
++                return device.output if device.output is not None else self.output, device.error
++
++            def poll(self): return self.returncode
++            def kill(self): self.returncode = -9
++
++        monkeypatch.setattr(patrol_adb.subprocess, 'Popen', Process)
++        self.backend = AdbBackend(self.cancel, settings or InputSettings(mode='ADB'))
++        self.backend.__enter__()
++
++    def connect(self):
++        self.backend.focus()
++        return self.backend
++
++
++def test_old_config_defaults_to_mouse_and_adb_profile_round_trips():
++    assert InputSettings.load({}).mode == 'Mouse'
++    settings = InputSettings(mode='ADB', adb_path='C:/Program Files/BlueStacks_nxt/HD-Adb.exe',
++                             serial='127.0.0.1:5565', content_rect=(0, 35, 550, 1020))
++    restored = InputSettings.load(json.loads(json.dumps({'input': asdict(settings)})))
++    assert restored == settings
++
++
++@pytest.mark.parametrize('values', [dict(mode='Other'), dict(serial=''), dict(serial='-d'),
++                                    dict(serial='device; bad'), dict(content_rect=(0, 0, 571, 1029)),
++                                    dict(content_rect=(4, 0, 4, 1029)), dict(content_rect=(0., 0, 570, 1029)),
++                                    dict(content_rect=(0, 0, 5, 10))])
++def test_bad_input_profile_is_rejected(values):
++    with pytest.raises(ValueError): InputSettings(**values)
++
++
++def test_exact_selected_instance_gets_taps_and_swipes_without_windows_mouse(monkeypatch):
++    device = Device(monkeypatch)
++    backend = device.connect()
++    backend.click((285, 500))
++    backend.drag((285, 500), (345, 600))
++    commands = device.commands
++    assert commands[0] == ['chosen-adb.exe', 'connect', '127.0.0.1:5555']
++    assert all(cmd[1:3] == ['-s', '127.0.0.1:5555'] for cmd in commands[1:])
++    assert ['chosen-adb.exe', '-s', '127.0.0.1:5555', 'shell', 'input', 'touchscreen', 'tap', '285', '500'] in commands
++    swipe = next(cmd for cmd in commands if 'swipe' in cmd)
++    assert swipe[-5:-1] == ['285', '500', '345', '600']
++    assert 350 <= int(swipe[-1]) <= 850
++    assert not any('keyevent' in cmd or 'kill-server' in cmd for cmd in commands)
++
++
++def test_usb_serial_does_not_auto_connect_or_choose_another_device(monkeypatch):
++    device = Device(monkeypatch, InputSettings(mode='ADB', serial='emulator-5554'))
++    device.connect()
++    assert all(cmd[1:3] == ['-s', 'emulator-5554'] for cmd in device.commands)
++
++
++def test_png_capture_keeps_bgr_and_maps_calibrated_reference_to_android(monkeypatch):
++    options = InputSettings(mode='ADB', content_rect=(10, 40, 550, 1000))
++    device = Device(monkeypatch, options)
++    device.image = png(1080, 1920)
++    backend = device.connect()
++    frame = backend.capture()
++    assert frame.shape == (2058, 1140, 3)
++    assert tuple(frame[80, 20]) == (17, 93, 201)
++    assert not frame[:80].any() and not frame[:, :20].any()
++    assert backend.point((280, 520)) == (540, 960)
++    assert backend.point((549.99, 999.99)) == (1079, 1919)
++    for point in [(9, 40), (550, 50), (20, 1000), (float('nan'), 50)]:
++        with pytest.raises(ValueError): backend.click(point)
++    assert not any('tap' in cmd for cmd in device.commands)
++
++
++def test_native_capture_detail_and_gem_centres_survive_padding(monkeypatch):
++    from camera_patrol import gem_click
++    options = InputSettings(mode='ADB', content_rect=(10, 40, 550, 1000))
++    device = Device(monkeypatch, options)
++    image = np.zeros((1920, 1080, 3), np.uint8)
++    image[900, 500] = (255, 42, 99)
++    device.image = cv2.imencode('.png', image)[1].tobytes()
++    backend = device.connect()
++    frame = backend.capture()
++    assert tuple(frame[980, 520]) == (255, 42, 99)
++    point = gem_click((520, 980), frame.shape)
++    assert point is not None
++    assert backend.point(point) == (500, 900)
++
++
++@pytest.mark.parametrize('payload', [b'', b'error: offline', b'\x89PNG\r\n\x1a\nbroken'], ids=['empty', 'offline', 'truncated'])
++def test_broken_capture_stops_before_input(monkeypatch, payload):
++    device = Device(monkeypatch)
++    device.image = payload
++    with pytest.raises(RuntimeError, match='screenshot|PNG'): device.connect()
++    assert not any('input' in cmd for cmd in device.commands)
++
++
++def test_display_changes_and_android_app_switch_block_input(monkeypatch):
++    device = Device(monkeypatch)
++    backend = device.connect()
++    device.package = 'com.other.app'
++    with pytest.raises(RuntimeError, match='app changed'): backend.click((200, 400))
++    device.package = 'com.example.game'
++    device.image = png(1140, 2058)
++    with pytest.raises(RuntimeError, match='resolution changed'): backend.drag((200, 400), (220, 430))
++    assert not any('input' in cmd for cmd in device.commands)
++
++
++def test_repeat_pass_does_not_retarget_another_android_app(monkeypatch):
++    device = Device(monkeypatch)
++    backend = device.connect()
++    device.package = 'com.other.game'
++    with pytest.raises(RuntimeError, match='app changed'): backend.focus()
++    assert backend.package == 'com.example.game'
++    assert not any('input' in cmd for cmd in device.commands)
++
++
++@pytest.mark.parametrize('image', [png(1029, 570), png(800, 1200)], ids=['landscape', 'wrong-aspect'])
++def test_wrong_orientation_or_geometry_is_rejected(monkeypatch, image):
++    device = Device(monkeypatch)
++    device.image = image
++    with pytest.raises(RuntimeError, match='portrait|aspect ratio'): device.connect()
++
++
++@pytest.mark.parametrize('package', ['com.android.launcher3', 'com.bluestacks.launcher', 'com.android.settings'])
++def test_starting_on_home_or_settings_is_rejected(monkeypatch, package):
++    device = Device(monkeypatch)
++    device.package = package
++    with pytest.raises(RuntimeError, match='Open the game'): device.connect()
++
++
++def test_device_error_and_stop_never_fall_back_to_mouse(monkeypatch):
++    device = Device(monkeypatch)
++    backend = device.connect()
++    device.code = 1
++    device.error = b'device offline'
++    with pytest.raises(RuntimeError, match='offline'): backend.click((200, 400))
++    device.cancel.set()
++    count = len(device.commands)
++    with pytest.raises(PatrolStopped): backend.click((200, 400))
++    assert len(device.commands) == count
++
++
++def test_f10_interrupts_pending_adb_command_and_reaps_process(monkeypatch):
++    cancel = threading.Event()
++    calls = []
++    class Pending:
++        returncode = None
++        def __init__(self, *args, **kwargs): pass
++        def communicate(self, timeout=None):
++            calls.append(timeout)
++            if timeout is not None:
++                cancel.set()
++                raise subprocess.TimeoutExpired('adb', timeout)
++            return b'', b''
++        def poll(self): return self.returncode
++        def kill(self): calls.append('kill'); self.returncode = -9
++    monkeypatch.setattr(patrol_adb.subprocess, 'Popen', Pending)
++    backend = AdbBackend(cancel)
++    backend.executable = 'adb'
++    with pytest.raises(PatrolStopped): backend.command('get-state')
++    assert calls == [.05, 'kill', None]
++
++
++def test_timeout_kills_pending_adb_without_retries(monkeypatch):
++    device = Device(monkeypatch)
++    ticks = iter([0, 11])
++    monkeypatch.setattr(patrol_adb.time, 'monotonic', lambda: next(ticks))
++    with pytest.raises(RuntimeError, match='timed out'): device.backend.command('get-state')
++    assert len(device.commands) == 1
++
++
++def test_connection_preview_is_read_only(monkeypatch):
++    device = Device(monkeypatch)
++    frame = AdbBackend.peek(InputSettings(mode='ADB'))
++    assert frame.shape == (1029, 570, 3)
++    assert not any('input' in cmd for cmd in device.commands)
++
++
++def test_panel_backend_selection_and_saved_input_leave_existing_live_settings_intact(monkeypatch, tmp_path):
++    from patrol_live_panel import LivePatrolPanel
++    from patrol_live import LiveSettings, load_live_config
++    import patrol_live_panel
++    panel = object.__new__(LivePatrolPanel)
++    panel.settings = LiveSettings(map_open=(480, 170), inspect_seconds=2.4)
++    panel.input_settings = InputSettings(mode='ADB', serial='127.0.0.1:5575')
++    panel.input_error = None
++    panel.key = SimpleNamespace(get=lambda: 'F9')
++    panel.path = tmp_path / 'settings.json'
++    panel.save_config()
++    saved = json.loads(panel.path.read_text())
++    assert InputSettings.load(saved).serial == '127.0.0.1:5575'
++    assert load_live_config(saved)[0].inspect_seconds == 2.4
++    backend = panel.make_backend(threading.Event())
++    assert isinstance(backend, AdbBackend) and backend.settings == panel.input_settings
++    sentinel = object()
++    monkeypatch.setattr(patrol_live_panel, 'WindowsBackend', lambda cancel: sentinel)
++    panel.input_settings = InputSettings()
++    assert panel.make_backend(threading.Event()) is sentinel
++
++
++def test_malformed_saved_adb_profile_is_preserved_until_repaired(tmp_path):
++    from patrol_live_panel import LivePatrolPanel
++    from patrol_live import LiveSettings
++    panel = object.__new__(LivePatrolPanel)
++    panel.settings = LiveSettings()
++    panel.input_settings = InputSettings()
++    panel.input_error = 'Invalid ADB profile'
++    panel.key = SimpleNamespace(get=lambda: 'F8')
++    panel.path = tmp_path / 'settings.json'
++    panel.path.write_text(json.dumps({'input': {'mode': 'ADB', 'serial': 'bad!'}}))
++    panel.save_config()
++    assert json.loads(panel.path.read_text())['input'] == {'mode': 'ADB', 'serial': 'bad!'}
++
++
++@pytest.mark.parametrize('positive', [False, True])
++def test_route_loop_uses_adb_screenshots_and_device_input_through_gem_stop(monkeypatch, positive):
++    from patrol_live import LiveSettings
++    from test_live_patrol import setup
++    engine, game, events = setup(positive=positive)
++    engine.settings = LiveSettings(approach_gem=True)
++    device = Device(monkeypatch)
++    device.image = lambda: cv2.imencode('.png', game.capture())[1].tobytes()
++    def gesture(args):
++        if args[0] == 'tap': game.click(tuple(map(int, args[1:])))
++        else: game.drag(tuple(map(int, args[1:3])), tuple(map(int, args[3:5])))
++    device.on_input = gesture
++    backend = device.backend
++    backend.cancel = engine.cancel
++    backend.wait = game.wait
++    message = engine.run(backend)
++    assert engine.checked == ({0} if positive else {0, 1})
++    if positive:
++        assert 'Clicked the gem once' in message
++        assert game.inputs[-1][1] == (200, 400)
++        assert len(game.inputs) == 3
++        assert any(e['kind'] == 'capture' for e in events)
++    else:
++        assert not any(e['kind'] == 'found' for e in events)
++        assert [x[2] for x in game.inputs] == [True, True, False, True, True]
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -7,7 +7,7 @@
+ FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+-         'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
++         'patrol_windows.py', 'patrol_adb.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
+          'win_overlay.py', 'sxs_atlas_tracker.py', 'atlas_metadata.json',
+          'loong_haven_default_atlas.png', 'loong_title_template.png',
+          'loong_haven_map_data.json', 'loong_haven_ingredients.json',
+--- /dev/null
++++ b/LoongLens/tools/package_exe_rar.py
+@@ -0,0 +1,54 @@
++"""Package the built EXE in a standards-compatible RAR 4 archive (store method)."""
++from pathlib import Path
++import argparse
++import struct
++import zlib
++
++
++def header(kind, flags, body=b''):
++    data = struct.pack('<BHH', kind, flags, 7 + len(body)) + body
++    return struct.pack('<H', zlib.crc32(data) & 0xffff) + data
++
++
++def package(executable, output):
++    executable, output = Path(executable), Path(output)
++    if output.suffix.lower() != '.rar':
++        raise ValueError('Use a .rar output filename.')
++    if executable.suffix.lower() != '.exe' or not executable.is_file():
++        raise ValueError('Build the Windows EXE before packaging.')
++    size = executable.stat().st_size
++    if size >= 2**32:
++        raise ValueError('This RAR packager supports EXEs smaller than 4 GiB.')
++    name = executable.name.encode('ascii')
++    crc = 0
++    with executable.open('rb') as source:
++        if source.read(2) != b'MZ':
++            raise ValueError('The input does not have a Windows executable signature.')
++        source.seek(0)
++        while chunk := source.read(1024*1024):
++            crc = zlib.crc32(chunk, crc)
++    # RAR 4 file header: packed/unpacked size, Windows host, CRC, DOS date,
++    # minimum unpack version 2.0, store method, filename length and attributes.
++    body = struct.pack('<IIBIIBBHI', size, size, 2, crc, (40 << 25) | (1 << 21) | (1 << 16),
++                       20, 0x30, len(name), 0x20) + name
++    temporary = output.with_suffix(output.suffix + '.tmp')
++    try:
++        with temporary.open('wb') as archive, executable.open('rb') as source:
++            archive.write(b'Rar!\x1a\x07\x00')
++            archive.write(header(0x73, 0, b'\x00'*6))
++            archive.write(header(0x74, 0x8000, body))
++            while chunk := source.read(1024*1024):
++                archive.write(chunk)
++            archive.write(header(0x7b, 0))
++        temporary.replace(output)
++    finally:
++        temporary.unlink(missing_ok=True)
++    print(output)
++
++
++if __name__ == '__main__':
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('executable', type=Path)
++    parser.add_argument('output', type=Path)
++    args = parser.parse_args()
++    package(args.executable, args.output)
+--- /dev/null
++++ b/LoongLens/tools/ui_adb_settings_smoke.py
+@@ -0,0 +1,106 @@
++"""Real Tk ADB settings/calibration smoke test with simulated device screenshots.
++
++Run with DISPLAY pointing at an X server on Linux. Sends no device/desktop input.
++"""
++from pathlib import Path
++import json
++import os
++import sys
++import tempfile
++import time
++from types import SimpleNamespace
++
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT))
++os.environ['XDG_CACHE_HOME'] = tempfile.mkdtemp(prefix='adb-ui-')
++(Path(os.environ['XDG_CACHE_HOME']) / 'LoongLens').mkdir()
++
++import numpy as np
++import tkinter as tk
++from tkinter import ttk
++import patrol_live_panel
++from patrol_adb import AdbBackend, InputSettings
++from resources import ResourceStore
++from ui_theme import apply_theme
++
++
++class Keys:
++    def __init__(self, *args, **kwargs): pass
++    def close(self): pass
++
++
++def widgets(parent):
++    for child in parent.winfo_children():
++        yield child
++        yield from widgets(child)
++
++
++def button(parent, label):
++    return next(w for w in widgets(parent) if isinstance(w, ttk.Button) and w.cget('text') == label)
++
++
++def wait_for(root, predicate):
++    deadline = time.monotonic() + 3
++    while not predicate():
++        assert time.monotonic() < deadline, 'UI action timed out'
++        root.update()
++        time.sleep(.01)
++
++
++def main():
++    patrol_live_panel.GlobalPatrolKeys = Keys
++    frame = np.full((1029, 570, 3), (40, 90, 140), np.uint8)
++    patrol_live_panel.WindowsBackend = SimpleNamespace(peek=lambda: frame.copy())
++    previews = []
++    original_peek = AdbBackend.peek
++    AdbBackend.peek = classmethod(lambda cls, options: previews.append(options) or frame.copy())
++    root = tk.Tk()
++    errors = []
++    root.report_callback_exception = lambda kind, value, tb: errors.append(str(value))
++    root.geometry('700x950')
++    apply_theme(root)
++    host = ttk.Frame(root)
++    host.pack(fill='both', expand=True)
++    watch = SimpleNamespace(flush_sightings=lambda: None)
++    panel = patrol_live_panel.LivePatrolPanel(host, ResourceStore().data, watch)
++    try:
++        assert panel.input_settings.mode == 'Mouse'
++        panel.show_settings()
++        win = next(w for w in root.winfo_children() if isinstance(w, tk.Toplevel))
++        root.update()
++        combos = [w for w in widgets(win) if isinstance(w, ttk.Combobox)]
++        next(w for w in combos if tuple(w.cget('values')) == ('Mouse', 'ADB')).set('ADB')
++        entries = [w for w in widgets(win) if isinstance(w, ttk.Entry) and not isinstance(w, ttk.Combobox)]
++        # Existing map-button and timing fields precede the three ADB fields.
++        entries[-2].delete(0, 'end'); entries[-2].insert(0, '127.0.0.1:5575')
++        button(win, 'Test connection / preview').invoke()
++        wait_for(root, lambda: bool(previews) and any(isinstance(w, tk.Toplevel) for w in win.winfo_children()))
++        assert previews[-1].mode == 'ADB' and previews[-1].serial == '127.0.0.1:5575'
++        preview = next(w for w in win.winfo_children() if isinstance(w, tk.Toplevel))
++        preview.destroy()
++        button(win, 'Pick game area').invoke()
++        picker = next(w for w in win.winfo_children() if isinstance(w, tk.Toplevel))
++        root.update()
++        canvas = next(w for w in picker.winfo_children() if isinstance(w, tk.Canvas))
++        canvas.event_generate('<Button-1>', x=8, y=28)
++        canvas.event_generate('<Button-1>', x=400, y=700)
++        root.update()
++        assert entries[-1].get() != '0,0,570,1029'
++        # Use an exact profile for the persistence checks.
++        entries[-1].delete(0, 'end'); entries[-1].insert(0, '10,40,550,1000')
++        button(win, 'Save settings').invoke()
++        root.update()
++        assert panel.input_settings == InputSettings(mode='ADB', serial='127.0.0.1:5575', content_rect=(10, 40, 550, 1000))
++        saved = json.loads(panel.path.read_text())
++        assert InputSettings.load(saved) == panel.input_settings
++        assert isinstance(panel.make_backend(panel.runner.cancel), AdbBackend)
++        assert not errors, errors
++        print('ADB settings UI passed: selection, async preview, game-area picker, save/reload and backend routing.')
++    finally:
++        panel.close()
++        root.destroy()
++        AdbBackend.peek = original_peek
++
++
++if __name__ == '__main__':
++    main()
