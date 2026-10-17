@@ -23,7 +23,7 @@
 +shown character portrait bubble including its glow, zoom slider and bottom
 +Back/region controls. Regression checks explicitly cover the title and bubble.
 +
-+The v24/v27/v28 full-route comparison includes timing and matching/capture counts for each
++The v24/v26/v27/v28 full-route comparison includes timing and matching/capture counts for each
 +route point. It requires the no additional held movements or map distance compared with v27 while
 +reducing repeated recognition and captures. These are simulated atlas results,
 +not measured live BlueStacks pass times.
@@ -32,7 +32,7 @@
 +routes, settings, history and screenshots remain in %LOCALAPPDATA%\LoongLens.
 +The 7z includes the EXE, source, assets, models, tools, tests and validation.
 +
-+The timing model includes actual processing time and virtual input/loading waits in one clock, so recognition can satisfy the map observation interval. The same Windows runner measures all three versions sequentially. The resulting full-pass and per-view model times remain offline simulations, not live game measurements.
++The timing model includes actual processing time and virtual input/loading waits in one clock, so recognition can satisfy the map observation interval. The same Windows runner measures all four versions sequentially. The resulting full-pass and per-view model times remain offline simulations, not live game measurements.
 --- a/LoongLens/README.md
 +++ b/LoongLens/README.md
 @@ -1,8 +1,9 @@
@@ -86,7 +86,7 @@
  The build workflow runs the full tests, builds the windowed one-file EXE, compares its embedded white badge against the supplied ICO, validates frozen atlas/OCR resources and opens the native GUI. The GUI check verifies the saved-route selector, Default protection, reduced routes, route editing, history controls, correct transparent window icon and clean shutdown. The native input check exercises guarded clicks/drags/hotkeys and capture exclusion on the app's own test window, not BlueStacks. It verifies exactly one press with no release between two held movements and captures, then exactly one normal release. F10 is sent during another held movement and must release the mouse. Passing reports accompany the release downloads.
  
 -The v26/v27 full-route comparison includes movement distance in reference pixels, held-stroke and intermediate-movement counts, screenshot/recognition counts, processing wall time and simulated waits. These are simulated desktop actions, not measured live-game results. Named-route persistence and removal checks from v26 remain included; original route IDs and spawn coverage are retained.
-+The v24/v27/v28 full-route comparison includes movement distance in reference pixels, held-stroke and intermediate-movement counts, screenshot/recognition counts, processing wall time and simulated waits, with a per-view breakdown including Acme Nexus. Packaging requires no additional held movements or map distance, fewer matches and fewer captures. These are simulated desktop actions, not measured live-game results. Named-route persistence and removal checks from v26 remain included; original route IDs and spawn coverage are retained.
++The v24/v26/v27/v28 full-route comparison includes movement distance in reference pixels, held-stroke and intermediate-movement counts, screenshot/recognition counts, processing wall time and simulated waits, with a per-view breakdown including Acme Nexus. Packaging requires no additional held movements or map distance, fewer matches and fewer captures. These are simulated desktop actions, not measured live-game results. Named-route persistence and removal checks from v26 remain included; original route IDs and spawn coverage are retained.
 +
 +v28 reuses a measured held frame as the first observation only after the stationary endpoint pause: its timestamp must be at least 0.15 seconds old and its reference must describe an observed zero-offset pose. A fresh post-release frame confirms it. Changed frames need recognition and a further stable observation; flat terrain cannot use the pixel-comparison shortcut. Tests cover insufficient/future timestamps, predicted movement, changed frames after release, cancellation and periodic absolute refreshes. The pre-click movement check remains. Additional input checks cover the upper-left Loong Haven title and the shown character portrait bubble with a conservative glowing-border radius; targets behind them are revealed in the clear surface first, and mouse holds cannot start there.
  
@@ -99,7 +99,7 @@
 +
 +Map recognition time now counts toward the 0.15-second observation interval. Tests simulate both fast and slow recognition: a new screenshot still follows at least 0.15 seconds later, while recognition that already consumed that interval is not followed by an unnecessary fixed wait. Held cursor movement uses 4-millisecond steps over at most 40 reference pixels, with a 25-millisecond initial button-down delivery pause and the existing stationary 0.18-second endpoint hold. Native Windows checks exercise the resulting actual motion and F10 release.
 +
-+The timing model includes actual processing time and virtual input/loading waits in one clock, so recognition can satisfy the map observation interval. The same Windows runner measures all three versions sequentially. The resulting full-pass and per-view model times remain offline simulations, not live game measurements.
++The timing model includes actual processing time and virtual input/loading waits in one clock, so recognition can satisfy the map observation interval. The same Windows runner measures all four versions sequentially. The resulting full-pass and per-view model times remain offline simulations, not live game measurements.
 --- a/LoongLens/loong_lens.py
 +++ b/LoongLens/loong_lens.py
 @@ -223,7 +223,7 @@
@@ -585,7 +585,7 @@
      reports.append(tests)
      comparisons={}
 -    for version in ('v26','v27'):
-+    for version in ('v24','v27','v28'):
++    for version in ('v24','v26','v27','v28'):
          path=ROOT/'artifacts'/f'benchmark-{version}.json'
          data=json.loads(path.read_text())
          if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
