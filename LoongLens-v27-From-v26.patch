@@ -1,0 +1,765 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v27.md
+@@ -0,0 +1,31 @@
++# v27 — continuous held map panning
++
++Gem Sniping now keeps the mouse button held while moving the map and checking
++fresh screenshots for the next fixed-route location. It stops movement at the
++first confirmed frame where that target is safely clickable, rather than
++continuing toward the map centre.
++
++- Start near the opposite edge to leave room for the intended map movement.
++  Revealing a lower location starts the mouse low and drags the map upward.
++- Measure progress after movements of at most 120 reference pixels, keeping
++  the same button hold across those screenshot/recognition checks.
++- Keep drag starts, cursor paths and target clicks within the user-marked map
++  outline, with padding around the legend, zoom controls, Back and region tabs.
++- Stop the cursor, hold it stationary for 0.18 seconds, then release. Confirm
++  the settled map again before clicking the next location.
++- At the window edge, release safely before re-anchoring for another stroke.
++  Recovery may also use separate strokes; a hold cannot extend past the window.
++- Release on F10, focus loss, resizing, obstruction, capture/recognition errors
++  or an unexpected map closure. Never click an unconfirmed target.
++
++Default and named routes, removals, history, settings, inspection waits and
++gem confirmation are retained from v26. This remains Windows mouse input and
++desktop screenshot capture. Keep BlueStacks visible, uncovered and focused.
++
++The Windows validation exercises actual held input and F10 release on the
++application's own test window. The full-route atlas benchmark uses simulated
++input, loading and empty detection; its results are not live BlueStacks times.
++
++Close the previous app, extract the complete folder and run its LoongLens.exe.
++Personal data stays in %LOCALAPPDATA%\LoongLens. The full 7z includes the EXE,
++source, assets, models, launchers, tests, tools and validation reports.
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,8 +1,9 @@
+ # Loong Lens
+ 
+-**v26 starts from v24:** original Windows mouse control, removable route targets,
+-faster handling of stationary map screenshots, and per-view timing.
+-See [CHANGELOG-v26.md](CHANGELOG-v26.md) for details and upgrade notes.
++**v27 adds continuous held map panning:** start with room to move, keep holding
++between screenshot checks, and stop as soon as the next target is safely visible.
++See [CHANGELOG-v27.md](CHANGELOG-v27.md). Saved routes, removable targets,
++per-view timing and the v24 Windows mouse foundation from v26 are retained.
+ 
+ **Edit route → Run route** switches saved routes. Default stays protected;
+ **Save as…** creates variants such as Busy zones, with their own removed points
+@@ -46,7 +47,7 @@
+ 
+ Default startup is 0.5 seconds, scene loading is 0.5 seconds, and empty-view inspection is 1.2 seconds. A late gem candidate receives up to one extra second for the unchanged three-sighting / 0.8-second confirmation. Custom waits and map-button calibration are preserved. Increase the loading/check waits in **Sniping settings** if the game renders slowly.
+ 
+-Map dragging now shortens mouse motion according to distance while keeping the button held throughout. It retains a stationary 0.18-second endpoint hold before release to limit flinging. Offscreen drags pull farther toward the centre instead of barely revealing an edge. Visually verified dense-map pans can grow to 420 reference pixels, with smaller limits on sparse or overshooting terrain. Each drag is measured from settled screenshots; immutable source landmarks are reused to reduce repeated work. Reopened-map overlap uses the previous selected camera, with periodic absolute atlas refreshes. A bounded recovery attempt retains checked locations; focus loss, coverage, resizing, stalled movement or an unrecoverable map stops input.
++Fixed-route map panning starts near the opposite edge to leave room for movement. To reveal a lower location, the mouse starts low and drags upward; other directions follow the same rule. The button stays held across movement and screenshot checks. Movement stops at the first screenshot where the target is safely inside the user-marked clickable outline, with an 8-reference-pixel margin from its edges and controls. The cursor then stays still for 0.18 seconds before release to limit flinging. A fresh settled alignment and pre-click screenshot are still required. The map is not pulled farther toward the centre after the target is visible. Drag starts and every intermediate cursor step stay within the outlined surface. A stroke checks progress at most every 120 reference pixels. If the cursor reaches the clear surface's edge first, it settles and releases before starting another hold from the opposite edge. Alignment recovery can also require a separate stroke. Reopened-map overlap uses the previous selected camera, with periodic absolute atlas refreshes. Focus loss, obstruction, resizing, stalled movement, map closure or F10 releases the button and stops input.
+ 
+ Other dark locked groups are still skipped from the current screenshot without changing the order of remaining targets. Camera targets avoid the known Loong Haven IV and Crowcry Plain portals; Crowcry clicks farther left. Demonbind Tower is shifted lower and horizontally centred to show more ground above the chat. After a confirmed find, the enabled click action selects the gem once and stops.
+ 
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,4 +1,4 @@
+-# Verification — Loong Lens v24
++# Verification — Loong Lens v27
+ 
+ The app targets Windows 10 (2004+) / Windows 11 and BlueStacks at Loong Haven's default zoom. Linux checks use the pinned Python 3.12 environment and simulated desktop delivery. No live game input is sent by these checks.
+ 
+@@ -18,7 +18,7 @@
+ 
+ Native drag sequence checks require one mouse-down held throughout movement, final movement to the requested endpoint, a stationary 0.18-second hold, and guaranteed mouse-up on cancellation. The motion now uses 4–18 waits of 0.02 seconds instead of 18 waits of 0.03 seconds. Input guard tests cover foreground loss, moved/resized windows, covered points and F10 cancellation.
+ 
+-Fixed-route drags pull offscreen targets toward the centre rather than just exposing an edge. Endpoints are centred around a safe map region. The initial pan is capped at 200 reference pixels until movement is measured; verified dense terrain can use up to 420 pixels, sparse terrain 220, and overshoot reduces later motion. Alignment requires fresh stable screenshots. Existing bounded reverse recovery retains progress and never clicks a target without recognition.
++Fixed-route drags now start near the opposite edge and keep the same button hold across movement and screenshot checks. Intermediate moves are at most 120 reference pixels and are measured against overlapping terrain. Movement stops on the first confirmed frame with the target safely inside the outlined map surface; the target is not pulled toward the centre. All cursor paths are checked against the same outline with an 8-pixel inset. Tests cover all eight start directions, the legend notch, zoom/Back/tab exclusion, multiple observations during one hold, first-visible stopping, stationary release, F10, real focus/resize/coverage guards, map closure, stalled movement and window-edge re-anchoring. Settled alignment and the fresh pre-click movement check remain required after release. Bounded reverse recovery retains progress and never clicks an unconfirmed target.
+ 
+ A reopened map uses its last selected camera to estimate overlap movement rather than assuming the previous map pose persists. Fixed-route absolute refreshes occur after at most six accepted relative alignments; failure to recognise overlap falls back to absolute recognition. A thread-local cache reuses source landmarks only when the exact reference image is immutable and its known pose matches. Destination screenshots are always processed freshly. A regression test checks one source extraction against two independently recognised destination images.
+ 
+@@ -34,7 +34,9 @@
+ 
+ ## Windows release checks
+ 
+-The build workflow runs the full tests, builds the windowed one-file EXE, compares its embedded white badge against the supplied ICO, validates frozen atlas/OCR resources and opens the native GUI. The GUI check requires the exact fixed route, 76-check progress maximum, history editor/date filters, correct transparent window icon and clean shutdown. The native input check exercises guarded clicks/drags/hotkeys and capture exclusion on the app's own test window, not BlueStacks. Passing reports accompany the release downloads.
++The build workflow runs the full tests, builds the windowed one-file EXE, compares its embedded white badge against the supplied ICO, validates frozen atlas/OCR resources and opens the native GUI. The GUI check verifies the saved-route selector, Default protection, reduced routes, route editing, history controls, correct transparent window icon and clean shutdown. The native input check exercises guarded clicks/drags/hotkeys and capture exclusion on the app's own test window, not BlueStacks. It verifies exactly one press with no release between two held movements and captures, then exactly one normal release. F10 is sent during another held movement and must release the mouse. Passing reports accompany the release downloads.
++
++The v26/v27 full-route comparison includes movement distance in reference pixels, held-stroke and intermediate-movement counts, screenshot/recognition counts, processing wall time and simulated waits. These are simulated desktop actions, not measured live-game results. Named-route persistence and removal checks from v26 remain included; original route IDs and spawn coverage are retained.
+ 
+ ## Limits
+ 
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -223,7 +223,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Fixed path and faster drags v20'
++            details['version']='Continuous held map panning v27'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+--- a/LoongLens/patrol_input_check.py
++++ b/LoongLens/patrol_input_check.py
+@@ -4,7 +4,7 @@
+ import tkinter as tk
+ import ctypes
+ from ctypes import wintypes
+-from patrol_windows import WindowsBackend,GlobalPatrolKeys
++from patrol_windows import WindowsBackend,GlobalPatrolKeys,PatrolStopped
+ 
+ 
+ def check_native_input():
+@@ -45,10 +45,27 @@
+                     magenta=(frame[:,:,0]>200)&(frame[:,:,1]<50)&(frame[:,:,2]>200)
+                     assert np.count_nonzero(magenta)<20,'Visible overlay leaked into screenshot'
+                     backend.click((100,300));backend.drag((180,400),(350,500))
++                    backend.wait(.1);before=dict(counts)
++                    with backend.hold_drag((450,850)):
++                        backend.drag_held_to((390,700));backend.capture()
++                        backend.drag_held_to((330,550));backend.capture()
++                        backend.wait(.1)
++                        assert counts['press']==before['press']+1,'Held drag pressed more than once'
++                        assert counts['release']==before['release'],'Held drag released between checks'
++                    backend.wait(.1)
++                    assert counts['release']==before['release']+1,'Held drag did not release once'
+                     backend.api.key(0x77);backend.api.key(0x77,up=True)  # F8
+                     assert advance.wait(2),'Global advance hotkey did not fire'
+-                    backend.api.key(0x79);backend.api.key(0x79,up=True)  # F10
+-                    assert stopped.wait(2),'Global emergency stop did not fire'
++                    try:
++                        with backend.hold_drag((300,700)):
++                            backend.drag_held_to((300,600))
++                            backend.api.key(0x79);backend.api.key(0x79,up=True)  # F10
++                            assert stopped.wait(2),'Global emergency stop did not fire'
++                            backend.wait(.01)
++                    except PatrolStopped:pass
++                    else:raise AssertionError('F10 did not interrupt the held drag')
++                    assert not backend.down,'F10 left the mouse button held'
++                    assert not (backend.api.user.GetAsyncKeyState(0x01)&0x8000),'Windows still reports the mouse button down'
+                 result.put(None)
+             except Exception as exc:result.put(str(exc))
+             finally:
+--- a/LoongLens/patrol_live.py
++++ b/LoongLens/patrol_live.py
+@@ -278,6 +278,63 @@
+             self.navigation['pan_verified']=True
+         self.navigation.pop('pending',None);self.navigation.pop('recovery_exhausted',None)
+         return current,updated
++
++    def pan_held(self,backend,frame,pose,view):
++        """Reveal a fixed target with one hold and measured intermediate moves.
++
++        Intermediate frames need a measured pose, not two settled observations:
++        the button is still down, so the map cannot fling between those moves.
++        A fresh settled alignment is required after release and before clicking.
++        """
++        from patrol_route import route_point_visible,route_reveal_delta,route_drag_start,route_drag_step
++        from vision import track_map_pan
++        before=self.normal(frame);before.setflags(write=False)
++        cursor=route_drag_start(route_reveal_delta(pose.project(view.x,view.y)))
++        start=cursor;current=frame;previous_distance=None;stalled=0
++        reference=(before,pose,(0.,0.))
++        self.navigation['pending']=reference
++        try:
++            with backend.hold_drag(start):
++                for _ in range(32):
++                    self.check();point=pose.project(view.x,view.y)
++                    if route_point_visible(point):break
++                    delta=route_reveal_delta(point)
++                    distance=math.hypot(*delta)
++                    stalled=stalled+1 if previous_distance is not None and distance>=previous_distance-2 else 0
++                    if stalled>=3:raise RuntimeError('Map panning is not moving toward the dot. Patrol stopped.')
++                    previous_distance=distance
++                    end=route_drag_step(cursor,delta)
++                    if end is None:break  # At the window edge: settle, release, then re-anchor.
++                    movement=(end[0]-cursor[0],end[1]-cursor[1])
++                    before=self.normal(current);before.setflags(write=False)
++                    self.navigation['pending']=(before,pose,movement)
++                    self.check();backend.drag_held_to(end);cursor=end
++                    backend.wait(.04);current=backend.capture()
++                    if not self.is_map(current):
++                        raise RuntimeError('The large map changed during the drag. Patrol stopped.')
++                    normal=self.normal(current)
++                    updated=track_map_pan(before,normal,pose,movement)
++                    if updated is None:updated=self.locator.locate(normal)
++                    self.check()
++                    if updated is None:raise MapAlignmentLost('Map alignment was lost during the held drag.')
++                    pose=updated
++                    normal.setflags(write=False);reference=(normal,pose,(0.,0.))
++                    if route_point_visible(pose.project(view.x,view.y)):break
++                else:raise RuntimeError('Could not reveal the route point with a held drag. Patrol stopped.')
++        except MapAlignmentLost:
++            # The context released the button. Re-establish a settled position
++            # before another movement, using only the last trusted reference.
++            backend.wait(.1)
++            try:
++                current,pose=self.align(backend,self.navigation['pending'],timeout=1.5)
++            except MapAlignmentLost:return self.recover_pan(backend)
++        else:
++            backend.wait(.04)
++            try:
++                current,pose=self.align(backend,reference,timeout=3.)
++            except MapAlignmentLost:return self.recover_pan(backend)
++        self.navigation.pop('pending',None);self.navigation.pop('recovery_exhausted',None)
++        return current,pose
+ 
+     def inspect(self,backend):
+         gate=AlertGate(cooldown=0)
+@@ -350,7 +407,8 @@
+             stalled=0;previous=None
+             for attempt in range(257):
+                 self.check();point=pose.project(view.x,view.y)
+-                if clickable(point):break
++                from patrol_route import route_point_visible
++                if (route_point_visible(point) if self.fixed_route else clickable(point)):break
+                 if attempt==256:raise RuntimeError('Could not bring this dot into view. Patrol stopped.')
+                 distance=math.hypot(point[0]-285,point[1]-500)
+                 stalled=stalled+1 if previous is not None and distance>=previous-3 else 0
+@@ -358,17 +416,15 @@
+                 previous=distance
+                 dx,dy=285-point[0],500-point[1]
+                 self.send('status',message='Dragging to reveal the next route check…' if self.fixed_route else 'Panning to reveal the next gem dot…')
++                if self.fixed_route:
++                    frame,pose=self.pan_held(backend,frame,pose,view)
++                    continue
+                 from terrain_alignment import classify_screen
+                 known_ground=classify_screen(self.normal(frame))
+                 sparse=(known_ground[150:850,24:510]!=0).mean()<.35
+-                if self.fixed_route:
+-                    from patrol_route import route_pan_delta
+-                    limit=(220. if sparse else 420.) if self.navigation.get('pan_verified') else 200.
+-                    delta=route_pan_delta(point,limit*self.pan_scale)
+-                else:
+-                    limit=(70. if sparse else 120.)*self.pan_scale
+-                    factor=max(1,math.hypot(dx,dy)/limit)
+-                    delta=(dx/factor,dy/factor)
++                limit=(70. if sparse else 120.)*self.pan_scale
++                factor=max(1,math.hypot(dx,dy)/limit)
++                delta=(dx/factor,dy/factor)
+                 frame,pose=self.pan(backend,frame,pose,delta)
+             if self.fixed_route and not camera_click_clear(view.x,view.y):
+                 raise RuntimeError(f'Route #{view.route_label} overlaps a known portal. Move its camera target in Edit route.')
+@@ -385,7 +441,9 @@
+                 if not auto:return 'Locked gem location skipped. Press the advance hotkey for another.'
+                 continue
+             view=available;point=pose.project(view.x,view.y)
+-            if not clickable(point):raise RuntimeError('The accessible camera target moved outside the clickable map; stopped.')
++            from patrol_route import route_point_visible
++            if not (route_point_visible(point) if self.fixed_route else clickable(point)):
++                raise RuntimeError('The accessible camera target moved outside the clickable map; stopped.')
+             # Recognition came from this fresh screenshot; guard input again.
+             self.check();self.send('status',message=f'Clicking {view.near_zone} ({math.floor(view.x)},{math.floor(view.y)})')
+             fresh=backend.capture()
+--- a/LoongLens/patrol_route.py
++++ b/LoongLens/patrol_route.py
+@@ -71,6 +71,47 @@
+     dx,dy=tx-x,ty-y
+     factor=max(1.,math.hypot(dx,dy)/limit)
+     return dx/factor,dy/factor
++
++
++def route_point_visible(point):
++    """Require a small inset so a revealed target is clear of map controls."""
++    x,y=point
++    return all(map_clickable((x+dx,y+dy)) for dx,dy in
++               ((0,0),(-8,-8),(-8,8),(8,-8),(8,8)))
++
++
++def route_reveal_delta(point):
++    """Move toward the nearest clear map area, rather than toward its centre."""
++    x,y=point
++    rectangles=((24.,112.,400.,910.),(24.,264.,488.,900.),(24.,264.,526.,596.))
++    targets=[(min(right,max(left,x)),min(bottom,max(top,y)))
++             for left,top,right,bottom in rectangles]
++    tx,ty=min(targets,key=lambda p:math.dist(point,p))
++    return tx-x,ty-y
++
++
++DRAG_BOUNDS=(38.,270.,490.,900.)
++
++
++def route_drag_start(delta):
++    """Start opposite the desired map motion, leaving a full clear stroke."""
++    dx,dy=delta;left,top,right,bottom=DRAG_BOUNDS
++    return (left if dx>1 else right if dx < -1 else 285.,
++            top if dy>1 else bottom if dy < -1 else 500.)
++
++
++def route_drag_step(cursor,delta,limit=120.):
++    """Bound a held movement by its next screenshot check and clear surface."""
++    dx,dy=delta;length=math.hypot(dx,dy)
++    if length<.5:return None
++    left,top,right,bottom=DRAG_BOUNDS
++    factor=min(1.,limit/length)
++    for value,change,low,high in ((cursor[0],dx,left,right),(cursor[1],dy,top,bottom)):
++        if change>0:factor=min(factor,(high-value)/change)
++        elif change<0:factor=min(factor,(low-value)/change)
++    if factor<=0 or length*factor<.5:return None
++    return (min(right,max(left,cursor[0]+dx*factor)),
++            min(bottom,max(top,cursor[1]+dy*factor)))
+ 
+ 
+ def apply_camera_adjustments(views,document):
+--- a/LoongLens/patrol_windows.py
++++ b/LoongLens/patrol_windows.py
+@@ -1,6 +1,7 @@
+ """Real Windows mouse input, scoped to the selected foreground BlueStacks window."""
+ from __future__ import annotations
+ import ctypes
++from contextlib import contextmanager
+ from ctypes import wintypes
+ import threading
+ import time
+@@ -129,6 +130,37 @@
+             self.wait(.18)
+         finally:self.release()
+ 
++    @contextmanager
++    def hold_drag(self,start):
++        """Keep one guarded mouse hold across moves and screenshot checks."""
++        from patrol_route import route_point_visible
++        if not route_point_visible(start):raise ValueError('Drag start overlaps map controls.')
++        if self.down:raise RuntimeError('A mouse button is already held.')
++        self.move(start)
++        try:
++            self.guard();self.down=True;self.api.mouse(0x0002)
++            self._drag_position=tuple(start)
++            yield
++            # Do not move the cursor during this pause or after releasing.
++            self.wait(.18)
++            self.guard()
++        finally:
++            self.release();self._drag_position=None
++
++    def drag_held_to(self,end):
++        from patrol_route import route_point_visible
++        if not self.down or getattr(self,'_drag_position',None) is None:
++            raise RuntimeError('Start a held drag before moving it.')
++        start=self._drag_position
++        steps=max(1,math.ceil(math.dist(start,end)/24))
++        points=[(start[0]+(end[0]-start[0])*i/steps,start[1]+(end[1]-start[1])*i/steps)
++                for i in range(1,steps+1)]
++        if not all(route_point_visible(point) for point in points):
++            raise ValueError('Held movement overlaps map controls.')
++        for point in points:
++            self.wait(.02)
++            self.move(point);self._drag_position=point
++
+     def capture(self):
+         self.guard()
+         hwnd,(x,y,w,h)=self.target
+--- a/LoongLens/tests/test_fixed_route.py
++++ b/LoongLens/tests/test_fixed_route.py
+@@ -139,6 +139,21 @@
+             assert math.dist(a,b)<=420.01
+             for x,y in (a,b):assert 75<=x<=495 and 290<=y<=710
+             self.center=(self.center[0]-(b[0]-a[0])/12.45,self.center[1]+(b[1]-a[1])/12.45)
++        @contextlib.contextmanager
++        def hold_drag(self,start):
++            self.cursor=start;self.held=True
++            try:
++                yield
++                self.wait(.18)
++            finally:
++                self.held=False;self.inputs.append(('drag',start,self.cursor))
++        def drag_held_to(self,end):
++            assert self.held
++            for x,y in (self.cursor,end):assert 38<=x<=490 and 270<=y<=900
++            self.wait(.02*max(1,math.ceil(math.dist(self.cursor,end)/24)))
++            self.center=(self.center[0]-(end[0]-self.cursor[0])/12.45,
++                         self.center[1]+(end[1]-self.cursor[1])/12.45)
++            self.cursor=end
+     backend=Backend();events=[]
+     engine=LivePatrol(route,LiveSettings(),threading.Event(),events.append,
+         detector=SimpleNamespace(detect=lambda *a,**kw:[]),
+--- /dev/null
++++ b/LoongLens/tests/test_held_pan.py
+@@ -0,0 +1,217 @@
++"""Held map movement, early stopping, input cleanup and the user's map boundary."""
++from contextlib import contextmanager
++from dataclasses import replace
++from types import SimpleNamespace
++import math
++import threading
++import pytest
++from camera_patrol import Viewpoint
++from patrol_live import LivePatrol,LiveSettings,MapAlignmentLost
++from patrol_windows import WindowsBackend,PatrolStopped
++from patrol_route import (route_point_visible,route_reveal_delta,route_drag_start,
++                          route_drag_step,DRAG_BOUNDS)
++from test_live_patrol import setup
++
++
++@pytest.mark.parametrize('delta,start',[
++    ((0,-100),(285,900)),((0,100),(285,270)),
++    ((-100,0),(490,500)),((100,0),(38,500)),
++    ((-100,-100),(490,900)),((100,100),(38,270)),
++    ((100,-100),(38,900)),((-100,100),(490,270))])
++def test_directional_anchor_leaves_room_and_avoids_controls(delta,start):
++    assert route_drag_start(delta)==start
++    assert route_point_visible(start)
++    end=route_drag_step(start,delta)
++    assert route_point_visible(end)
++    assert math.dist(start,end)<=120.001
++
++
++@pytest.mark.parametrize('point',[(650,500),(-100,500),(450,180),(280,1060),(280,-100)])
++def test_reveal_moves_into_user_outline_without_centering(point):
++    dx,dy=route_reveal_delta(point)
++    target=(point[0]+dx,point[1]+dy)
++    assert route_point_visible(target)
++    assert math.hypot(dx,dy)<math.dist(point,(285,500))
++
++
++@pytest.mark.parametrize('point',[(480,180),(530,800),(64,980),(285,960),(5,500)])
++def test_controls_and_edges_are_not_revealed_targets(point):
++    assert not route_point_visible(point)
++
++
++def native_backend():
++    backend=WindowsBackend.__new__(WindowsBackend)
++    backend.down=False;backend.cancel=threading.Event();actions=[]
++    backend.api=SimpleNamespace(mouse=lambda flag:actions.append(('button',flag)))
++    backend.move=lambda point:actions.append(('move',point))
++    backend.guard=lambda:None
++    backend.wait=lambda seconds:actions.append(('wait',seconds))
++    return backend,actions
++
++
++def test_one_press_across_multiple_moves_and_stationary_release():
++    backend,actions=native_backend()
++    with backend.hold_drag((285,900)):
++        backend.drag_held_to((285,780))
++        backend.drag_held_to((285,660))
++        assert [a for a in actions if a[0]=='button']==[('button',2)]
++    assert [a for a in actions if a[0]=='button']==[('button',2),('button',4)]
++    assert actions[-2:]==[('wait',.18),('button',4)]
++    assert not backend.down
++
++
++@pytest.mark.parametrize('failure',['cancel','covered','focus','resize'])
++def test_held_failures_release_without_an_extra_move(failure):
++    backend=WindowsBackend.__new__(WindowsBackend)
++    backend.down=False;backend.cancel=threading.Event();actions=[]
++    backend.target=(123,(0,0,570,1029));state={'failure':None}
++    def bounds(hwnd,pointer):
++        r=pointer._obj;r.left=0;r.top=0;r.right=571 if state['failure']=='resize' else 570;r.bottom=1029
++        return True
++    user=SimpleNamespace(GetWindowRect=bounds,
++        GetForegroundWindow=lambda:999 if state['failure']=='focus' else 123,
++        GetAncestor=lambda hwnd,kind:hwnd,
++        SetCursorPos=lambda *p:actions.append(('move',p)) or True)
++    backend.api=SimpleNamespace(user=user,mouse=lambda flag:actions.append(('button',flag)))
++    backend.visible_at=lambda *p:state['failure']!='covered'
++    backend.wait=lambda seconds:None
++    with pytest.raises(RuntimeError):
++        with backend.hold_drag((285,900)):
++            backend.drag_held_to((285,780))
++            before=len(actions);state['failure']=failure
++            if failure=='cancel':backend.cancel.set()
++            backend.drag_held_to((285,660))
++    assert actions[before:]==[('button',4)]
++    assert actions[-1]==('button',4)
++    assert not backend.down
++
++
++def test_invalid_held_start_sends_no_input():
++    backend,actions=native_backend()
++    with pytest.raises(ValueError):
++        with backend.hold_drag((480,180)):pass
++    assert actions==[]
++
++
++def test_path_crossing_legend_is_rejected_before_any_movement():
++    backend,actions=native_backend()
++    with pytest.raises(ValueError):
++        with backend.hold_drag((390,120)):
++            before=len(actions)
++            backend.drag_held_to((520,300))
++    assert actions[before:]==[('button',4)]
++
++
++def fixed_engine(x,y):
++    engine,backend,events=setup()
++    view=Viewpoint(x,y,'Target',frozenset({(int(x),int(y))}),1)
++    engine.views=(view,);engine.fixed_route=True
++    return engine,backend,events,view
++
++
++def test_single_hold_spans_multiple_screenshots_and_stops_at_first_visible_frame():
++    engine,backend,events,view=fixed_engine(100,40)
++    moves=[];screens=[];capture=backend.capture;move=backend.drag_held_to
++    def screenshot():
++        frame=capture()
++        if getattr(backend,'held',False):screens.append((len(moves),engine.locator.locate(frame).project(view.x,view.y)))
++        return frame
++    def drag(end):
++        moves.append(end);return move(end)
++    backend.capture=screenshot;backend.drag_held_to=drag
++    engine.run(backend)
++    strokes=[a for a in backend.inputs if a[0]=='drag']
++    assert len(strokes)==1 and len(moves)>=2
++    assert strokes[0][1][1]==900  # Reveal lower map: start low and drag upward.
++    assert route_point_visible(screens[-1][1])
++    assert all(not route_point_visible(point) for _,point in screens[:-1])
++    assert screens[-1][0]==len(moves)  # No movement after the first visible frame.
++    assert not backend.held and engine.checked=={0}
++
++
++def test_first_visible_target_is_not_pulled_to_center():
++    engine,backend,events,view=fixed_engine(125,100)
++    engine.run(backend)
++    strokes=[a for a in backend.inputs if a[0]=='drag']
++    assert len(strokes)==1
++    point=engine.locator.locate(backend.capture()).project(view.x,view.y)
++    assert route_point_visible(point) and point[0]>480
++    assert math.dist(strokes[0][1],strokes[0][2])<100
++
++
++def test_map_loss_during_hold_releases_and_never_clicks():
++    engine,backend,events,view=fixed_engine(100,40)
++    capture=backend.capture
++    def screenshot():
++        frame=capture()
++        if getattr(backend,'held',False):frame[0,0]=0
++        return frame
++    backend.capture=screenshot
++    with pytest.raises(RuntimeError,match='large map changed'):engine.run(backend)
++    assert not backend.held and not engine.checked
++    assert not any(a[0]=='click' for a in backend.inputs)
++
++
++def test_cancel_during_held_recognition_releases_and_never_clicks():
++    engine,backend,events,view=fixed_engine(100,40)
++    locate=engine.locator.locate
++    def locate_and_cancel(frame):
++        if getattr(backend,'held',False):engine.cancel.set()
++        return locate(frame)
++    engine.locator.locate=locate_and_cancel
++    with pytest.raises(PatrolStopped):engine.run(backend)
++    assert not backend.held and not engine.checked
++    assert not any(a[0]=='click' for a in backend.inputs)
++
++
++def test_clamped_map_stops_without_clicking_or_holding_button():
++    engine,backend,events,view=fixed_engine(100,40);backend.stuck=True
++    with pytest.raises(RuntimeError,match='not moving'):engine.run(backend)
++    assert not backend.held and not engine.checked
++    assert not any(a[0]=='click' for a in backend.inputs)
++
++
++def test_window_edge_reanchors_only_after_releasing():
++    engine,backend,events,view=fixed_engine(100,-100)
++    # Exercise the panning stage directly; the artificial target is outside
++    # the game's grid solely to force a stroke longer than the window height.
++    frame=backend.capture();pose=engine.locator.locate(frame)
++    first,pose=engine.pan_held(backend,frame,pose,view)
++    assert not backend.held
++    assert len([a for a in backend.inputs if a[0]=='drag'])==1
++    assert not route_point_visible(pose.project(view.x,view.y))
++    second,pose=engine.pan_held(backend,first,pose,view)
++    assert not backend.held
++    assert len([a for a in backend.inputs if a[0]=='drag'])==2
++
++
++def test_release_movement_is_measured_again_before_the_target_click():
++    engine,backend,events,view=fixed_engine(125,100)
++    original_hold=backend.hold_drag;original_click=backend.click;shifted=[];clicked=[]
++    @contextmanager
++    def hold(start):
++        with original_hold(start):yield
++        if not shifted:
++            backend.center=(backend.center[0]+30/12.45,backend.center[1]);shifted.append(True)
++    def click(point):
++        if backend.open and point!=engine.settings.map_close:
++            expected=engine.locator.locate(backend.capture()).project(view.x,view.y)
++            assert point==pytest.approx(expected)
++            clicked.append(point)
++        original_click(point)
++    backend.hold_drag=hold;backend.click=click
++    engine.run(backend)
++    assert shifted and len(clicked)==1 and clicked[0][0]==pytest.approx(496)
++
++
++def test_lost_intermediate_recognition_releases_before_realigning_and_continuing():
++    engine,backend,events,view=fixed_engine(100,40)
++    locate=engine.locator.locate;failed=[]
++    def locate_once_missing(frame):
++        if getattr(backend,'held',False) and not failed:
++            failed.append(True);return None
++        return locate(frame)
++    engine.locator.locate=locate_once_missing
++    engine.run(backend)
++    assert failed and engine.checked=={0} and not backend.held
++    assert len([a for a in backend.inputs if a[0]=='drag'])==2
+--- a/LoongLens/tests/test_live_patrol.py
++++ b/LoongLens/tests/test_live_patrol.py
+@@ -1,4 +1,6 @@
+ import threading
++from contextlib import contextmanager
++import math
+ from types import SimpleNamespace
+ import numpy as np
+ import pytest
+@@ -38,6 +40,23 @@
+         self.wait(.36);self.inputs.append(('drag',a,b))
+         if not self.stuck:self.center=(self.center[0]-(b[0]-a[0])/12.45,self.center[1]+(b[1]-a[1])/12.45)
+ 
++    @contextmanager
++    def hold_drag(self,start):
++        self.held=True;self.cursor=start
++        try:
++            yield
++            self.wait(.18)
++        finally:
++            self.held=False;self.inputs.append(('drag',start,self.cursor))
++
++    def drag_held_to(self,end):
++        assert self.held
++        self.wait(.02*max(1,math.ceil(math.dist(self.cursor,end)/24)))
++        if not self.stuck:
++            self.center=(self.center[0]-(end[0]-self.cursor[0])/12.45,
++                         self.center[1]+(end[1]-self.cursor[1])/12.45)
++        self.cursor=end
++
+ 
+ class Locator:
+     def __init__(self,backend):self.backend=backend
+--- a/LoongLens/tests/test_map_click_area.py
++++ b/LoongLens/tests/test_map_click_area.py
+@@ -20,7 +20,8 @@
+     assert not map_clickable(point)
+ 
+ 
+-@pytest.mark.parametrize('point',SAFE_POINTS)
++@pytest.mark.parametrize('point',((20,110),(400,110),(20,500),(530,300),(530,590),
++                                  (480,850),(20,920),(400,910),(490,900)))
+ def test_visible_edge_dot_is_selected_directly_without_any_map_drag(point):
+     engine,backend,events=setup()
+     # Independently place the target at the requested reference pixel using
+@@ -35,7 +36,7 @@
+     assert backend.inputs[0][0]=='click' and backend.inputs[0][1]==pytest.approx(point)
+ 
+ 
+-@pytest.mark.parametrize('point',[(450,150),(530,700),(450,960)])
++@pytest.mark.parametrize('point',[(450,150),(530,700),(450,960),(400,920),(495,910)])
+ def test_target_over_a_control_is_dragged_to_map_surface_before_selection(point):
+     engine,backend,events=setup()
+     x=100+(point[0]-285)/12.45;y=100+(500-point[1])/12.45
+--- a/LoongLens/tools/benchmark_sniping.py
++++ b/LoongLens/tools/benchmark_sniping.py
+@@ -5,7 +5,9 @@
+ Use --app-root to compare an extracted older release in a separate process.
+ """
+ import argparse
++from contextlib import contextmanager
+ import json
++import math
+ from pathlib import Path
+ import sys
+ import time
+@@ -26,7 +28,8 @@
+     from resources import ResourceStore
+     from test_fixed_route import test_complete_fixed_route_uses_recentered_atlas_screenshots_and_no_transit_camera_clicks
+     result=dict(scope='Full 76-view atlas route; simulated input, loading and detector. Not live Windows/BlueStacks speed.',
+-                captures=0,relative_matches=0,absolute_matches=0)
++                captures=0,relative_matches=0,absolute_matches=0,
++                held_strokes=0,held_moves=0,pan_reference_pixels=0.)
+     original_run=LivePatrol.run
+     original_track=vision.track_map_pan
+     def track(*a,**kw):
+@@ -35,6 +38,25 @@
+     vision.track_map_pan=track
+     def run(engine,backend,*a,**kw):
+         capture=backend.capture;locate=engine.locator.locate
++        drag=backend.drag
++        def legacy_drag(start,end):
++            result['pan_reference_pixels']+=math.dist(start,end)
++            return drag(start,end)
++        backend.drag=legacy_drag
++        if hasattr(backend,'hold_drag'):
++            hold=backend.hold_drag;move=backend.drag_held_to;cursor=[None]
++            @contextmanager
++            def held(start):
++                with hold(start):
++                    result['held_strokes']+=1;cursor[0]=start
++                    try:yield
++                    finally:cursor[0]=None
++            def held_move(end):
++                result['held_moves']+=1
++                result['pan_reference_pixels']+=math.dist(cursor[0],end)
++                value=move(end);cursor[0]=end
++                return value
++            backend.hold_drag=held;backend.drag_held_to=held_move
+         def screenshot():result['captures']+=1;return capture()
+         def absolute(frame):result['absolute_matches']+=1;return locate(frame)
+         backend.capture=screenshot;engine.locator.locate=absolute
+@@ -44,6 +66,7 @@
+                       simulated_elapsed_seconds=round(backend.now,3),
+                       views_checked=len(engine.checked),
+                       drags=sum(event[0]=='drag' for event in backend.inputs))
++        result['pan_reference_pixels']=round(result['pan_reference_pixels'],1)
+         return value
+     LivePatrol.run=run
+     route=load_fixed_route(ResourceStore().data)
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,7 +4,7 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+          'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v26 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v27 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -37,15 +37,16 @@
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v24','v26'):
++    for version in ('v26','v27'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         comparisons[version]=data;reports.append(path)
+-    if comparisons['v26']['relative_matches']>=comparisons['v24']['relative_matches']:
+-        raise SystemExit('Stationary-map benchmark did not reduce matching work.')
++    latest=comparisons['v27']
++    if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
++        raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v26-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v27-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+@@ -55,15 +56,20 @@
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=26,baseline=24,commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=27,baseline=26,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                   speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v26.txt').write_text(
+-            'Loong Lens v26 - v24 baseline, named routes, removable points and speed improvements\n\n'
++        (app/'START-HERE-v27.txt').write_text(
++            'Loong Lens v27 - continuous held map panning\n\n'
+             'Exit the old app completely. Extract this whole folder and run LoongLens.exe here.\n'
+             'This build uses v24 Windows mouse control; keep BlueStacks visible and focused.\n\n'
++            'Map panning keeps the button held between movement and screenshot checks.\n'
++            'It starts with room to drag, stops when the next target is safely visible,\n'
++            'holds the cursor still briefly, releases and verifies the position before clicking.\n'
++            'Drag starts, cursor paths and targets stay inside the marked map surface.\n'
++            'A window-edge re-anchor or alignment recovery can require another hold.\n\n'
+             'Open Edit route. Run route chooses the saved route that will be used for sniping.\n'
+             'Default is protected. Save as creates variants such as Busy zones.\n'
+             'Remove selected works on originals and extras. Use Undo remove or Restore originals.\n'
