@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/LoongLens/CHANGELOG-v28.md
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,32 @@
 +# v28 — reduce repeated map recognition
 +
 +v27's narrower safe surface makes Acme Nexus (#46), for example, require a
@@ -23,7 +23,7 @@
 +shown character portrait bubble including its glow, zoom slider and bottom
 +Back/region controls. Regression checks explicitly cover the title and bubble.
 +
-+The full-route comparison includes timing and matching/capture counts for each
++The v24/v27/v28 full-route comparison includes timing and matching/capture counts for each
 +route point. It requires the no additional held movements or map distance compared with v27 while
 +reducing repeated recognition and captures. These are simulated atlas results,
 +not measured live BlueStacks pass times.
@@ -31,6 +31,8 @@
 +Close the old app, extract the full folder and launch its LoongLens.exe. Saved
 +routes, settings, history and screenshots remain in %LOCALAPPDATA%\LoongLens.
 +The 7z includes the EXE, source, assets, models, tools, tests and validation.
++
++The timing model includes actual processing time and virtual input/loading waits in one clock, so recognition can satisfy the map observation interval. The same Windows runner measures all three versions sequentially. The resulting full-pass and per-view model times remain offline simulations, not live game measurements.
 --- a/LoongLens/README.md
 +++ b/LoongLens/README.md
 @@ -1,8 +1,9 @@
@@ -84,18 +86,20 @@
  The build workflow runs the full tests, builds the windowed one-file EXE, compares its embedded white badge against the supplied ICO, validates frozen atlas/OCR resources and opens the native GUI. The GUI check verifies the saved-route selector, Default protection, reduced routes, route editing, history controls, correct transparent window icon and clean shutdown. The native input check exercises guarded clicks/drags/hotkeys and capture exclusion on the app's own test window, not BlueStacks. It verifies exactly one press with no release between two held movements and captures, then exactly one normal release. F10 is sent during another held movement and must release the mouse. Passing reports accompany the release downloads.
  
 -The v26/v27 full-route comparison includes movement distance in reference pixels, held-stroke and intermediate-movement counts, screenshot/recognition counts, processing wall time and simulated waits. These are simulated desktop actions, not measured live-game results. Named-route persistence and removal checks from v26 remain included; original route IDs and spawn coverage are retained.
-+The v27/v28 full-route comparison includes movement distance in reference pixels, held-stroke and intermediate-movement counts, screenshot/recognition counts, processing wall time and simulated waits, with a per-view breakdown including Acme Nexus. Packaging requires no additional held movements or map distance, fewer matches and fewer captures. These are simulated desktop actions, not measured live-game results. Named-route persistence and removal checks from v26 remain included; original route IDs and spawn coverage are retained.
++The v24/v27/v28 full-route comparison includes movement distance in reference pixels, held-stroke and intermediate-movement counts, screenshot/recognition counts, processing wall time and simulated waits, with a per-view breakdown including Acme Nexus. Packaging requires no additional held movements or map distance, fewer matches and fewer captures. These are simulated desktop actions, not measured live-game results. Named-route persistence and removal checks from v26 remain included; original route IDs and spawn coverage are retained.
 +
 +v28 reuses a measured held frame as the first observation only after the stationary endpoint pause: its timestamp must be at least 0.15 seconds old and its reference must describe an observed zero-offset pose. A fresh post-release frame confirms it. Changed frames need recognition and a further stable observation; flat terrain cannot use the pixel-comparison shortcut. Tests cover insufficient/future timestamps, predicted movement, changed frames after release, cancellation and periodic absolute refreshes. The pre-click movement check remains. Additional input checks cover the upper-left Loong Haven title and the shown character portrait bubble with a conservative glowing-border radius; targets behind them are revealed in the clear surface first, and mouse holds cannot start there.
  
  ## Limits
  
-@@ -45,3 +47,5 @@
+@@ -45,3 +47,7 @@
  ## Direct gem click
  
  The saved approach_gem boolean is retained for settings compatibility and now enables one click on the gem centre. A fresh detection selects the closest matching gem immediately before input; its current centre is converted from capture pixels to the 570×1029 input reference. No left/right or vertical offset is applied. Screenshot pixels are copied before clicking. Tests cover multiple capture scales, the exact click coordinate, small target motion, UI overlap, changed scenes and F10 cancellation. The real-detector UI simulation asserts that the single final input matches an actual detected centre in the supplied gameplay image. No subsequent collection or dialog action is sent.
 +
 +Map recognition time now counts toward the 0.15-second observation interval. Tests simulate both fast and slow recognition: a new screenshot still follows at least 0.15 seconds later, while recognition that already consumed that interval is not followed by an unnecessary fixed wait. Held cursor movement uses 4-millisecond steps over at most 40 reference pixels, with a 25-millisecond initial button-down delivery pause and the existing stationary 0.18-second endpoint hold. Native Windows checks exercise the resulting actual motion and F10 release.
++
++The timing model includes actual processing time and virtual input/loading waits in one clock, so recognition can satisfy the map observation interval. The same Windows runner measures all three versions sequentially. The resulting full-pass and per-view model times remain offline simulations, not live game measurements.
 --- a/LoongLens/loong_lens.py
 +++ b/LoongLens/loong_lens.py
 @@ -223,7 +223,7 @@
@@ -483,7 +487,17 @@
 +    assert backend.clock.now==pytest.approx(expected)
 --- a/LoongLens/tools/benchmark_sniping.py
 +++ b/LoongLens/tools/benchmark_sniping.py
-@@ -29,7 +29,7 @@
+@@ -1,7 +1,8 @@
+ """Profile the full fixed route using real atlas pixels and simulated desktop input.
+ 
+ The existing independent route test verifies every selected camera coordinate.
+-This measures recognition work and simulated waits, not live BlueStacks speed.
++The model clock includes actual processing plus virtual waits, so recognition
++time can satisfy observation intervals. This is not live BlueStacks speed.
+ Use --app-root to compare an extracted older release in a separate process.
+ """
+ import argparse
+@@ -29,7 +30,7 @@
      from test_fixed_route import test_complete_fixed_route_uses_recentered_atlas_screenshots_and_no_transit_camera_clicks
      result=dict(scope='Full 76-view atlas route; simulated input, loading and detector. Not live Windows/BlueStacks speed.',
                  captures=0,relative_matches=0,absolute_matches=0,
@@ -492,29 +506,53 @@
      original_run=LivePatrol.run
      original_track=vision.track_map_pan
      def track(*a,**kw):
-@@ -38,6 +38,21 @@
+@@ -38,6 +39,30 @@
      vision.track_map_pan=track
      def run(engine,backend,*a,**kw):
          capture=backend.capture;locate=engine.locator.locate
-+        emit=engine.emit;last=[time.perf_counter()]
++        emit=engine.emit;open_map=engine.open_map;inspect=engine.inspect
++        state={}
 +        counters=('captures','relative_matches','absolute_matches','held_strokes','held_moves')
-+        previous={key:result[key] for key in counters}
++        def open_view(*args,**kwargs):
++            state.update(cpu=time.perf_counter(),clock=engine.clock(),inspect=None,
++                         counters={key:result[key] for key in counters})
++            return open_map(*args,**kwargs)
++        def inspect_view(*args,**kwargs):
++            state['inspect']=engine.clock()
++            return inspect(*args,**kwargs)
++        engine.open_map=open_view;engine.inspect=inspect_view
 +        def report(event):
-+            if event['kind']=='view_timing':
-+                now=time.perf_counter()
-+                row=dict(point=event['view'].route_label,zone=event['view'].near_zone,
-+                         cpu_wall_seconds=round(now-last[0],4),
-+                         simulated_map_seconds=round(event['map_seconds'],4),
-+                         simulated_inspect_seconds=round(event['inspect_seconds'],4))
++            if event['kind']=='checked':
++                now=time.perf_counter();view=engine.views[event['index']]
++                inspection=state['inspect'] if state['inspect'] is not None else engine.clock()
++                row=dict(point=view.route_label,zone=view.near_zone,
++                         cpu_wall_seconds=round(now-state['cpu'],4),
++                         simulated_map_seconds=round(inspection-state['clock'],4),
++                         simulated_inspect_seconds=round(engine.clock()-inspection,4))
 +                for key in counters:
-+                    row[key]=result[key]-previous[key];previous[key]=result[key]
-+                result['per_view'].append(row);last[0]=now
++                    row[key]=result[key]-state['counters'][key]
++                result['per_view'].append(row)
 +            emit(event)
 +        engine.emit=report
          drag=backend.drag
          def legacy_drag(start,end):
              result['pan_reference_pixels']+=math.dist(start,end)
-@@ -73,7 +88,7 @@
+@@ -61,9 +86,13 @@
+         def absolute(frame):result['absolute_matches']+=1;return locate(frame)
+         backend.capture=screenshot;engine.locator.locate=absolute
+         started=time.perf_counter()
++        initial_wait=backend.now
++        engine.clock=lambda:backend.now-initial_wait+time.perf_counter()-started
+         value=original_run(engine,backend,*a,**kw)
++        processing=time.perf_counter()-started
+         result.update(cpu_wall_seconds=round(time.perf_counter()-started,3),
+-                      simulated_elapsed_seconds=round(backend.now,3),
++                      scripted_wait_seconds=round(backend.now-initial_wait,3),
++                      simulated_elapsed_seconds=round(backend.now-initial_wait+processing,3),
+                       views_checked=len(engine.checked),
+                       drags=sum(event[0]=='drag' for event in backend.inputs))
+         result['pan_reference_pixels']=round(result['pan_reference_pixels'],1)
+@@ -73,7 +102,7 @@
      test_complete_fixed_route_uses_recentered_atlas_screenshots_and_no_transit_camera_clicks(route)
      args.output.parent.mkdir(parents=True,exist_ok=True)
      args.output.write_text(json.dumps(result,indent=2)+'\n')
@@ -542,15 +580,16 @@
  import argparse
  import hashlib
  import json
-@@ -37,16 +37,21 @@
+@@ -37,16 +37,22 @@
      passed,skipped=result[-1]
      reports.append(tests)
      comparisons={}
 -    for version in ('v26','v27'):
-+    for version in ('v27','v28'):
++    for version in ('v24','v27','v28'):
          path=ROOT/'artifacts'/f'benchmark-{version}.json'
          data=json.loads(path.read_text())
          if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
++        if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
          comparisons[version]=data;reports.append(path)
 -    latest=comparisons['v27']
 +    baseline=comparisons['v27'];latest=comparisons['v28']
@@ -567,7 +606,7 @@
          folder=Path(temporary);source_zip=folder/'source.zip'
          subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
          with zipfile.ZipFile(source_zip) as archive:
-@@ -56,13 +61,13 @@
+@@ -56,13 +62,13 @@
          shutil.copy2(binary,app/'LoongLens.exe')
          validation=app/'validation';validation.mkdir()
          for report in reports:shutil.copy2(report,validation/report.name)
@@ -584,7 +623,7 @@
              'Exit the old app completely. Extract this whole folder and run LoongLens.exe here.\n'
              'This build uses v24 Windows mouse control; keep BlueStacks visible and focused.\n\n'
              'Map panning keeps the button held between movement and screenshot checks.\n'
-@@ -70,6 +75,11 @@
+@@ -70,6 +76,11 @@
              'holds the cursor still briefly, releases and verifies the position before clicking.\n'
              'Drag starts, cursor paths and targets stay inside the marked map surface.\n'
              'A window-edge re-anchor or alignment recovery can require another hold.\n\n'

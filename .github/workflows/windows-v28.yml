@@ -20,11 +20,12 @@ jobs:
         with:
           python-version: '3.12'
           architecture: x64
-      - name: Extract v28 and its v27 benchmark baseline
+      - name: Extract v28 and its v24 and v27 benchmark baselines
         shell: pwsh
         run: |
           Expand-Archive LoongLens-WindowsBuild-v28.zip -DestinationPath source
           Expand-Archive LoongLens-WindowsBuild-v27.zip -DestinationPath baseline
+          Expand-Archive LoongLens-WindowsBuild-v24.zip -DestinationPath baseline-v24
       - name: Install pinned dependencies and build tools
         working-directory: source/LoongLens
         run: python -m pip install -r requirements.txt pytest==8.4.2 pyinstaller==6.16.0 pefile==2023.2.7 py7zr==1.0.0
@@ -42,9 +43,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python tools/ui_route_profiles_smoke.py
           exit $LASTEXITCODE
-      - name: Compare full-route map movement against v27
+      - name: Compare v24, v27 and v28 on the full route
         shell: pwsh
         run: |
+          python source/LoongLens/tools/benchmark_sniping.py --app-root baseline-v24/LoongLens --output source/LoongLens/artifacts/benchmark-v24.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python source/LoongLens/tools/benchmark_sniping.py --app-root baseline/LoongLens --output source/LoongLens/artifacts/benchmark-v27.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python source/LoongLens/tools/benchmark_sniping.py --output source/LoongLens/artifacts/benchmark-v28.json
@@ -96,6 +99,7 @@ jobs:
             source/LoongLens/self-check.json
             source/LoongLens/gui-check.json
             source/LoongLens/input-check.json
+            source/LoongLens/artifacts/benchmark-v24.json
             source/LoongLens/artifacts/benchmark-v27.json
             source/LoongLens/artifacts/benchmark-v28.json
             source/LoongLens/build/LoongLens/warn-LoongLens.txt
