@@ -7,12 +7,19 @@ on:
       - 'LoongLens-WindowsBuild-v25.zip'
       - '.github/workflows/windows-exe.yml'
   workflow_dispatch:
+    inputs:
+      deliver_only:
+        description: Upload the already verified v25 ADB Windows build
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: write
 
 jobs:
   windows:
+    if: ${{ !inputs.deliver_only }}
     runs-on: windows-latest
     timeout-minutes: 25
     steps:
@@ -118,3 +125,26 @@ jobs:
             git commit -m "Windows build diagnostics $env:GITHUB_RUN_ID"
             git push origin "HEAD:refs/heads/build-report-$env:GITHUB_RUN_ID"
           }
+
+  deliver:
+    if: ${{ inputs.deliver_only }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    timeout-minutes: 10
+    steps:
+      - name: Download verified Windows binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 39059794211 --repo matglow2-pixel/test --name LoongLens-ADB-Windows --dir dist
+      - name: Verify exact build contents
+        working-directory: dist
+        run: |
+          echo '0aa1cbbe123be3c59f4db2d68c5471aef382e0e618ce258766b0c0b574910675  LoongLens.exe' > SHA256.txt
+          echo '5cf6f753f531991513dc990727729e7aa02002f64905d5563b71a443346fc6c2  LoongLens-ADB.rar' >> SHA256.txt
+          sha256sum --check SHA256.txt
+      - name: Upload direct downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload windows-exe-v25-adb dist/LoongLens.exe dist/LoongLens-ADB.rar --repo matglow2-pixel/test --clobber
