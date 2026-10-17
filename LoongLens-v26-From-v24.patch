@@ -1,0 +1,1496 @@
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,4 +1,12 @@
+ # Loong Lens
++
++**v26 starts from v24:** original Windows mouse control, removable route targets,
++faster handling of stationary map screenshots, and per-view timing.
++See [CHANGELOG-v26.md](CHANGELOG-v26.md) for details and upgrade notes.
++
++**Edit route → Run route** switches saved routes. Default stays protected;
++**Save as…** creates variants such as Busy zones, with their own removed points
++and camera adjustments. Existing saved edits are imported as My route.
+ 
+ A Windows 10 (2004+) / Windows 11 companion for Sword x Staff in BlueStacks. Use Loong Haven's default map zoom.
+ 
+@@ -28,13 +36,13 @@
+ 
+ 1. Open Loong Haven's map at default zoom. The fixed route always begins at **Emerald Corner (#1)**, so start there to minimise setup movement. Keep BlueStacks uncovered and move Loong Lens aside.
+ 2. Press **Snipe** or **F8** to check the remaining route once. **Loop Sniping** repeats complete passes until a gem is found or **F10** stops it. Live controls are ready at launch; opening the app alone sends no input. Choose another Snipe key if a hotkey is already in use.
+-3. The saved path keeps the original diagram's order and numbers, with **#26 Forsaken Lotus Pond, #51 Jadetoad Isle and #72 Frosted Plain removed**. They are never inspected or included in completion totals. There are now **76 camera checks / 83 spawn spots**. The original IDs keep their gaps. Wide vertical groups #40 and #64 are split into a/b checks so a spawn near the rectangle edge is not counted as clearly inspected.
++3. The saved path keeps the original diagram's order and numbers, with **#26 Forsaken Lotus Pond, #51 Jadetoad Isle and #72 Frosted Plain removed**. They are never inspected or included in completion totals. The default route has **76 camera checks / 83 spawn spots**. The original IDs keep their gaps. Wide vertical groups #40 and #64 are split into a/b checks so a spawn near the rectangle edge is not counted as clearly inspected.
+ 4. Each check selects the next fixed camera destination, closes the map and inspects gameplay. Reopening normally recentres on the selected camera. The next destination is clicked directly when visible. The clickable surface follows the user-marked map outline: it reaches near the left edge, below the title and down to the lower map edge, with cutouts for the upper-right legend and lower-right zoom controls. Visible targets anywhere inside that surface are selected directly. If it is outside that surface, a held-button drag reveals it; the earlier B/R intermediate camera selections are not used. The fixed order is not replaced by nearest-dot selection.
+ 5. Every click targets the saved map coordinate using fresh screenshot alignment. The actual mouse pixels and corrective drag length depend on the current map position, recentering, edge clamping and emulator size. Unconfirmed alignment stops input. Resuming keeps the first unfinished check; Reset checks returns to #1. Each completed loop returns to the same start and order.
+ 
+-The full package includes **GemSniping-Fixed-Route.png**, a zoomable SVG and a CSV listing all 76 checks. The data used by the app is **gem_sniping_route.json**. Pink spawn locations on the normal map overlay remain the original 86-location dataset; these exclusions apply to Gem Sniping. Existing history entries are kept.
++The default-route documentation includes **GemSniping-Fixed-Route.png**, a zoomable SVG and a CSV listing all 76 checks. The data used by the app is **gem_sniping_route.json**. Pink spawn locations on the normal map overlay remain the original 86-location dataset; these exclusions apply to Gem Sniping. Existing history entries are kept.
+ 
+-**Edit route** opens the full Loong Haven map and stops sniping input. Select a numbered camera target to see its white camera rectangle and dashed suggested clear area, then drag it or enter X/Y. Pink dots remain the original spawn locations. Use the wheel or +/− to zoom, drag empty map to pan, and use Zoom to selected for fine changes; arrow keys nudge by 0.25 tile. Reset point restores a selected original point to its default position; for an extra it restores the position at which you opened or added it. Reset route to defaults removes extras and restores the bundled camera positions. **Add view after selected** inserts a separate camera target one tile beside the chosen point and selects it for adjustment. It runs immediately after that point, including when you add after another extra. Extra labels such as #12+1 keep the original map numbers intact. Drag the extra to cover the ground you want; **Remove extra** deletes only an added view. Added views do not add spawn coordinates or change the excluded locations. **Save & reset checks** stores your camera positions and extra views locally, clears pass progress/timing and uses those positions on future launches and repeated passes. Closing without saving keeps the current route. The original route order, removed points and spawn coordinates stay unchanged; extras keep their saved order between the originals. Existing v21 camera adjustments load automatically. Warnings identify known portal overlap or recorded centres outside the suggested clear area; manual adjustments can intentionally show ground beside the listed dots. Sniping stops before selecting a target that overlaps a known portal, so move that target before running. One camera view cannot guarantee coverage of every possible 10-tile spawn offset.
++**Edit route** opens the full Loong Haven map and stops sniping input. Select a numbered camera target to see its white camera rectangle and dashed suggested clear area, then drag it or enter X/Y. Pink dots remain the original spawn locations. Use the wheel or +/− to zoom, drag empty map to pan, and use Zoom to selected for fine changes; arrow keys nudge by 0.25 tile. Reset point restores a selected original point to its default position; for an extra it restores the position at which you opened or added it. Reset route to defaults removes extras and restores the bundled camera positions. **Add view after selected** inserts a separate camera target one tile beside the chosen point and selects it for adjustment. It runs immediately after that point, including when you add after another extra. Extra labels such as #12+1 keep the original map numbers intact. Drag the extra to cover the ground you want; **Remove selected** deletes an original point or an extra view from your personal route. Undo remove restores a removal before closing the editor; Restore originals brings back omitted originals at defaults while retaining surviving edits and extras. At least one view must remain. Removing an original leaves its extra views in place; remove those separately if you want to skip them too. Added views do not add spawn coordinates or change the excluded locations. **Save & reset checks** stores your camera positions and extra views locally, clears pass progress/timing and uses those positions on future launches and repeated passes. Closing without saving keeps the current route. Remaining route points keep their original order and labels; omitted targets are skipped. The editor shows omitted spawn totals, while the original spawn database stays unchanged. Extras keep their saved order within their original groups. Existing v21 camera adjustments load automatically. Warnings identify known portal overlap or recorded centres outside the suggested clear area; manual adjustments can intentionally show ground beside the listed dots. Sniping stops before selecting a target that overlaps a known portal, so move that target before running. One camera view cannot guarantee coverage of every possible 10-tile spawn offset.
+ 
+ Default startup is 0.5 seconds, scene loading is 0.5 seconds, and empty-view inspection is 1.2 seconds. A late gem candidate receives up to one extra second for the unchanged three-sighting / 0.8-second confirmation. Custom waits and map-button calibration are preserved. Increase the loading/check waits in **Sniping settings** if the game renders slowly.
+ 
+--- a/LoongLens/CHANGELOG-v26.md
++++ b/LoongLens/CHANGELOG-v26.md
+@@ -0,0 +1,78 @@
++# v26 — v24 baseline, shorter personal routes and faster map handling
++
++This release starts from v24. It uses the original Windows mouse input and
++desktop screenshot capture; the v25 ADB backend is not included. Keep
++BlueStacks visible and focused during Gem Sniping.
++
++## Saved routes
++
++**Edit route → Run route** selects the route that Gem Sniping will run. The
++built-in **Default** is protected. Use **Save as…** to name a variant such as
++**Busy zones**, edit/remove its targets and save. Unsaved changes are protected
++when switching the editor dropdown. A route selector and Save copy button are
++also available on the main Gem Sniping tab.
++
++Each named route retains its own camera positions, extra views and removals.
++The selected route persists across app restarts. Changing routes stops any
++active sniping, waits for input to be released, and resets pass progress, timing
++and find counters. Existing saved v24 edits are imported as **My route** without
++changing the original `camera-route-adjustments.json`. History is shared and kept.
++
++## Remove camera points
++
++In Edit route, select a target and use **Remove selected**. This works for
++original targets and added extra views. Removed targets are skipped in both
++single and repeating passes, with the order and original IDs of the remaining
++points preserved. At least one target must remain.
++
++**Undo remove** restores a removal while the editor is open. **Restore
++originals** reinstates omitted original targets at their default coordinates,
++retaining surviving target adjustments and extra views. **Reset route to
++defaults** restores the complete default route and removes all extras.
++The default exclusions (#26, #51 and #72) remain excluded.
++
++Removing an original target keeps its extra views. Those extras still run and
++can have more extra views added after them. Remove them separately if you want
++to skip their inspections too. Spawn coordinates in the original map/history
++database are not deleted. The editor and Sniping panel show how many listed
++spawn spots are omitted from the personal route. A shorter route may inspect
++fewer locations; it is not equivalent to covering all default spawn spots.
++
++Use **Save & reset checks** to apply the route and clear old pass progress and
++timing. Existing v24 adjustments and extras load automatically as My route.
++Named profiles live under `%LOCALAPPDATA%\LoongLens\routes`; the selection/list
++is in `route-profiles.json`. Profiles with removed originals use format version
++3. The first such save preserves an existing v1/v2 named profile as a
++`.pre-v26.json` sibling. That backup is not overwritten. Routes without removed
++originals continue using version 2, and the original v24 route file is retained.
++
++## Speed changes
++
++- Reuse the just-opened map screenshot for the first alignment observation.
++- Confirm an already recognized map pose against a fresh, nearly unchanged
++  textured frame, avoiding repeated feature extraction. Moving or flat frames
++  still use full recognition. Two observations remain required, and a fresh
++  pre-click screenshot still checks for movement.
++- Avoid an immediate duplicate closed-map screenshot when selection closes
++  the map automatically.
++- Cap the final inspection polling wait at the configured deadline instead
++  of adding an unnecessary full polling interval.
++- Show **Last view**, **Map/load** and **Inspect** times for comparison on your PC.
++
++The default 0.5-second loading wait, 1.2-second empty-view inspection window,
++three-sighting/0.8-second gem confirmation and late-candidate extension are
++unchanged. Focus, obstruction, alignment, portal and F10 guards remain. This
++release does not claim measured live-game speed or detector accuracy on your PC.
++
++`tools/benchmark_sniping.py` verifies all 76 default camera selections against
++independent atlas geometry and reports screenshot/matching counts and timing.
++It uses real atlas pixels with simulated input, loading and empty detection.
++The complete download includes the Windows comparison under `validation/`;
++those numbers are not a live BlueStacks pass.
++
++## Install
++
++Exit the old app completely, extract the complete folder and launch its new
++`LoongLens.exe`. Settings, screenshots and history stay in
++`%LOCALAPPDATA%\LoongLens`; do not delete that directory. The complete 7z contains
++the EXE, source, assets, OCR models, launchers, tests, tools and validation reports.
+--- a/LoongLens/desktop_entry.py
++++ b/LoongLens/desktop_entry.py
+@@ -13,6 +13,9 @@
+ def gui_check():
+     import tkinter as tk
+     from tkinter import ttk
++    import tempfile
++    from route_profiles import RouteProfiles
++    profile_folder=tempfile.TemporaryDirectory(prefix='loonglens-gui-routes-')
+     checked = []
+     failures = []
+     original = tk.Tk
+@@ -89,9 +92,10 @@
+             assert len(patrols)==1 and patrols[0].keys is not None
+             notebook.select(notebook.tabs()[2])
+             panel=patrols[0]
+-            assert len(panel.base_views)==76 and len(panel.runner.views)>=76
+-            assert len(set().union(*(view.cells for view in panel.runner.views)))==83
+-            assert [v.route_number for v in panel.runner.views if not v.route_parent]==[n for n in range(1,78) if n not in (26,51,72) for _ in range(2 if n in (40,64) else 1)]
++            assert len(panel.base_views)==76 and len(panel.runner.views)>=1
++            assert set().union(*(view.cells for view in panel.runner.views))<=set().union(*(v.cells for v in panel.base_views))
++            retained={v.route_label for v in panel.runner.views if not v.route_parent}
++            assert [v.route_label for v in panel.runner.views if not v.route_parent]==[v.route_label for v in panel.base_views if v.route_label in retained]
+             assert not panel.snipe.instate(['disabled']) and not panel.repeat.instate(['disabled'])
+             assert 'Check one' not in buttons and 'Start loop' not in buttons
+             assert 'Snipe' in buttons and 'Loop Sniping' in buttons
+@@ -113,18 +117,30 @@
+                         assert item.winfo_rootx()+item.winfo_width() <= self.winfo_rootx()+self.winfo_width(), item.cget('text')
+                         assert item.winfo_rooty()+item.winfo_height() <= self.winfo_rooty()+self.winfo_height(), item.cget('text')
+             assert 'Edit route' in buttons
++            panel.routes=RouteProfiles(panel.base_views,profile_folder.name)
++            panel.routes.save_copy('GUI route',panel.runner.views);panel.refresh_routes()
+             panel.show_route_editor()
+             self.update_idletasks()
+             assert panel.editor is not None and panel.editing
+             editor=panel.editor
+             assert len(editor.views)==len(panel.runner.views) and editor.canvas.find_all()
+-            index=next(i for i,v in enumerate(editor.views) if v.route_label=='12')
++            assert 'Default' in editor.route_box.cget('values') and editor.route_choice.get()=='GUI route'
++            editor.route_choice.set('Default');editor.change_route()
++            assert panel.route_name.get()=='Default' and tuple(panel.runner.views)==panel.base_views
++            editor.route_choice.set('GUI route');editor.change_route()
++            assert panel.route_name.get()=='GUI route'
++            index=next((i for i,v in enumerate(editor.views) if v.route_label=='12'),0)
++            parent=editor.views[index].route_parent or editor.views[index].route_label
+             editor.select(index);editor.nudge(0,-.25)
+             assert editor.views[index].y==panel.runner.views[index].y-.25
+             count=len(editor.views);editor.add_view()
+-            assert len(editor.views)==count+1 and editor.views[index+1].route_parent=='12'
++            assert len(editor.views)==count+1 and editor.views[index+1].route_parent==parent
+             assert editor.remove_button.instate(['!disabled'])
+             editor.remove_extra();assert len(editor.views)==count
++            if len(editor.views)>1:
++                before=tuple(editor.views);editor.remove_selected()
++                assert len(editor.views)==count-1
++                editor.undo_remove();assert tuple(editor.views)==before
+             # Discard the diagnostic edit; never change real user settings.
+             editor.dirty=False;editor.close()
+             assert not panel.editing and panel.editor is None
+@@ -137,6 +153,7 @@
+     finally:
+         tk.Tk = original
+         patrol_live_panel.LivePatrolPanel.__init__ = original_patrol_init
++        profile_folder.cleanup()
+     if not checked or failures:
+         raise RuntimeError(f'Native GUI check failed: {failures}')
+ 
+--- a/LoongLens/patrol_route.py
++++ b/LoongLens/patrol_route.py
+@@ -74,8 +74,8 @@
+ 
+ 
+ def apply_camera_adjustments(views,document):
+-    """Preserve original identities/order while inserting optional extra views."""
+-    if not isinstance(document,dict) or document.get('version') not in (1,2) or not isinstance(document.get('targets'),dict):
++    """Preserve identities/order, insert extra views and omit removed originals."""
++    if not isinstance(document,dict) or document.get('version') not in (1,2,3) or not isinstance(document.get('targets'),dict):
+         raise ValueError('Camera adjustments have an unsupported format.')
+     targets=document['targets'];known={v.route_label for v in views}
+     if not targets.keys()<=known:raise ValueError('Camera adjustments refer to an unknown route point.')
+@@ -85,7 +85,11 @@
+         point=targets[view.route_label]
+         validate_camera_position(point)
+         result.append(replace(view,x=float(point[0]),y=float(point[1])))
+-    extras=document.get('extras',[]) if document['version']==2 else []
++    removed=document.get('removed',[]) if document['version']==3 else []
++    if (not isinstance(removed,list) or any(not isinstance(label,str) or label not in known for label in removed)
++            or len(set(removed))!=len(removed)):
++        raise ValueError('Removed camera points must be unique original route IDs.')
++    extras=document.get('extras',[]) if document['version']>=2 else []
+     if not isinstance(extras,list):raise ValueError('Extra camera views must be a list.')
+     originals={v.route_label:v for v in views}
+     for extra in extras:
+@@ -103,7 +107,9 @@
+         original=originals[parent]
+         view=replace(original,x=float(point[0]),y=float(point[1]),route_part=original.route_part+label[len(parent):],route_parent=parent)
+         result.insert(indexes[after]+1,view)
+-    return tuple(result)
++    result=tuple(view for view in result if view.route_parent or view.route_label not in removed)
++    if not result:raise ValueError('Keep at least one camera view in the route.')
++    return result
+ 
+ 
+ def validate_camera_position(point):
+@@ -111,11 +117,14 @@
+         raise ValueError('Camera positions must be finite coordinates from 0 to 279.99.')
+ 
+ 
+-def add_camera_view(views,index):
++def add_camera_view(views,index,reserved_labels=()):
+     """Insert a nearby independently movable view directly after selection."""
+     selected=views[index];parent=selected.route_parent or selected.route_label
+-    original=next(v for v in views if not v.route_parent and v.route_label==parent)
+-    existing={v.route_label for v in views};number=1
++    original=next((v for v in views if not v.route_parent and v.route_label==parent),None)
++    if original is None:
++        # Extra views can remain after their original camera point is removed.
++        original=replace(selected,route_parent='',route_part=selected.route_part.split('+')[0])
++    existing={v.route_label for v in views}|set(reserved_labels);number=1
+     while f'{parent}+{number}' in existing:number+=1
+     x,y=selected.x,selected.y
+     # Begin one tile away so the added view is easy to select and nearby.
+@@ -126,6 +135,20 @@
+     return tuple(views[:index+1])+(extra,)+tuple(views[index+1:])
+ 
+ 
++def remove_camera_view(views,index):
++    if len(views)<=1:raise ValueError('Keep at least one camera view in the route.')
++    result=list(views);del result[index]
++    return tuple(result)
++
++
++def restore_camera_originals(base,views):
++    """Restore omitted originals at defaults while retaining surviving edits/extras."""
++    originals={v.route_label:v for v in views if not v.route_parent}
++    return tuple(view for original in base
++                 for view in (originals.get(original.route_label,original),
++                              *(v for v in views if v.route_parent==original.route_label)))
++
++
+ def load_camera_adjustments(views,path):
+     path=Path(path)
+     if not path.exists():return tuple(views)
+@@ -133,18 +156,31 @@
+ 
+ 
+ def save_camera_adjustments(base,views,path):
++    if not views:raise ValueError('Keep at least one camera view in the route.')
+     originals=[v for v in views if not v.route_parent]
+-    if [(v.route_label,v.cells,v.near_zone) for v in base]!=[(v.route_label,v.cells,v.near_zone) for v in originals]:
++    active={v.route_label for v in originals}
++    retained=[v for v in base if v.route_label in active]
++    if [(v.route_label,v.cells,v.near_zone) for v in retained]!=[(v.route_label,v.cells,v.near_zone) for v in originals]:
+         raise ValueError('Editing camera positions must preserve route order and spawn locations.')
+-    extras=[]
++    extras=[];last_by_parent={}
+     for i,v in enumerate(views):
+         if v.route_parent:
+-            if i==0:raise ValueError('An extra view must follow its original group.')
+-            extras.append(dict(id=v.route_label,parent=v.route_parent,after=views[i-1].route_label,x=v.x,y=v.y))
+-    document={'version':2,'targets':{v.route_label:[v.x,v.y] for original,v in zip(base,originals) if (original.x,original.y)!=(v.x,v.y)},'extras':extras}
++            extras.append(dict(id=v.route_label,parent=v.route_parent,after=last_by_parent.get(v.route_parent,v.route_parent),x=v.x,y=v.y))
++            last_by_parent[v.route_parent]=v.route_label
++    defaults={v.route_label:v for v in base}
++    removed=[v.route_label for v in base if v.route_label not in active]
++    document={'version':3 if removed else 2,'targets':{v.route_label:[v.x,v.y] for v in originals if (defaults[v.route_label].x,defaults[v.route_label].y)!=(v.x,v.y)},
++              'extras':extras}
++    if removed:document['removed']=removed
+     if apply_camera_adjustments(base,document)!=tuple(views):
+         raise ValueError('Extra camera views must retain their parent group and original spawn locations.')
+     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
++    backup=path.with_suffix('.pre-v26.json')
++    if removed and path.exists() and not backup.exists():
++        old=path.read_bytes()
++        try:previous=json.loads(old)
++        except (ValueError,UnicodeError):previous=None
++        if isinstance(previous,dict) and previous.get('version') in (1,2):backup.write_bytes(old)
+     temporary=path.with_suffix(path.suffix+'.tmp')
+     temporary.write_text(json.dumps(document,indent=2)+'\n','utf-8');temporary.replace(path)
+ 
+--- a/LoongLens/route_editor.py
++++ b/LoongLens/route_editor.py
+@@ -6,14 +6,17 @@
+ from PIL import Image,ImageTk
+ from resources import ROOT
+ from camera_patrol import PatrolSettings
+-from patrol_route import camera_warnings,clear_view_bounds,add_camera_view
++from patrol_route import camera_warnings,clear_view_bounds,add_camera_view,remove_camera_view,restore_camera_originals
+ from ui_theme import BG,CARD,TEXT,ACCENT,MUTED
+ 
+ 
+ class RouteEditor:
+-    def __init__(self,parent,base,views,on_save,on_close=lambda:None):
++    def __init__(self,parent,base,views,on_save,on_close=lambda:None,*,route_choices=None,active_route='',on_route_change=None,on_save_copy=None):
+         self.base=tuple(base);self.views=list(views);self.on_save=on_save;self.on_close=on_close
+         self.defaults={v.route_label:v for v in views}
++        self.undo_removed=[]
++        self.route_choices=route_choices;self.on_route_change=on_route_change;self.on_save_copy=on_save_copy
++        self.active_route=active_route
+         self.selected=0;self.dragging=False;self.dirty=False;self.scale=.18
+         self.window=tk.Toplevel(parent);self.window.title('Loong Lens · Edit camera route')
+         width=min(1100,self.window.winfo_screenwidth()-60);height=min(820,self.window.winfo_screenheight()-80)
+@@ -23,11 +26,19 @@
+         bar=ttk.Frame(self.window,padding=10);bar.pack(fill='x')
+         ttk.Label(bar,text='Drag camera targets · pink dots are the original spawn locations',font=('Segoe UI',11,'bold')).pack(side='left')
+         ttk.Button(bar,text='Save & reset checks',style='Primary.TButton',command=self.save).pack(side='right')
++        if route_choices is not None:
++            profiles=ttk.Frame(self.window,padding=(10,0,10,8));profiles.pack(fill='x')
++            ttk.Label(profiles,text='Run route').pack(side='left')
++            self.route_choice=tk.StringVar(value=active_route)
++            self.route_box=ttk.Combobox(profiles,textvariable=self.route_choice,values=route_choices(),state='readonly',width=32)
++            self.route_box.pack(side='left',fill='x',expand=True,padx=10)
++            self.route_box.bind('<<ComboboxSelected>>',self.change_route)
++            ttk.Button(profiles,text='Save as…',command=self.save_route_copy).pack(side='right')
+         body=ttk.Frame(self.window,padding=(10,0,10,10));body.pack(fill='both',expand=True)
+         sidebar=ttk.Frame(body,width=270);sidebar.pack(side='right',fill='y',padx=(12,0));sidebar.pack_propagate(False)
+         self.total=tk.StringVar();ttk.Label(sidebar,textvariable=self.total).pack(anchor='w')
+         listing=ttk.Frame(sidebar);listing.pack(fill='both',expand=True,pady=6)
+-        self.listbox=tk.Listbox(listing,bg=CARD,fg=TEXT,selectbackground='#35516b',exportselection=False,highlightthickness=0)
++        self.listbox=tk.Listbox(listing,bg=CARD,fg=TEXT,selectbackground='#35516b',exportselection=False,highlightthickness=0,height=5)
+         scroll=ttk.Scrollbar(listing,command=self.listbox.yview);scroll.pack(side='right',fill='y')
+         self.listbox.configure(yscrollcommand=scroll.set);self.listbox.pack(fill='both',expand=True)
+         self.refresh_list()
+@@ -41,11 +52,16 @@
+         ttk.Button(sidebar,text='Zoom to selected',command=self.zoom_selected).pack(fill='x')
+         reset=ttk.Frame(sidebar);reset.pack(fill='x',pady=6)
+         ttk.Button(reset,text='Reset point',command=self.reset_selected,padding=(8,7)).pack(side='left',expand=True,fill='x')
+-        self.remove_button=ttk.Button(reset,text='Remove extra',command=self.remove_extra,padding=(8,7))
++        self.remove_button=ttk.Button(reset,text='Remove selected',command=self.remove_selected,padding=(8,7))
+         self.remove_button.pack(side='left',expand=True,fill='x',padx=(6,0))
++        restore=ttk.Frame(sidebar);restore.pack(fill='x',pady=(0,6))
++        self.undo_button=ttk.Button(restore,text='Undo remove',command=self.undo_remove,padding=(6,7))
++        self.undo_button.pack(side='left',expand=True,fill='x')
++        self.restore_button=ttk.Button(restore,text='Restore originals',command=self.restore_originals,padding=(6,7))
++        self.restore_button.pack(side='left',expand=True,fill='x',padx=(6,0))
+         ttk.Button(sidebar,text='Reset route to defaults',command=self.reset_all).pack(fill='x')
+         self.info=tk.StringVar();ttk.Label(sidebar,textvariable=self.info,wraplength=258,style='Muted.TLabel').pack(fill='x',pady=10)
+-        ttk.Label(sidebar,text='Solid box: camera view\nDashed box: suggested clear area\nWheel / + −: zoom · drag empty map: pan\nArrow keys: nudge selected camera\nExtra views run after the selected point.\nPink spawn dots stay unchanged.',wraplength=258,style='Muted.TLabel').pack(fill='x')
++        ttk.Label(sidebar,text='Solid box: camera view\nDashed box: suggested clear area\nWheel / + −: zoom · drag empty map: pan\nArrow keys: nudge selected camera\nRemoved targets are skipped in sniping.\nPink spawn dots stay unchanged.',wraplength=258,style='Muted.TLabel').pack(fill='x')
+         area=ttk.Frame(body);area.pack(fill='both',expand=True)
+         zoom=ttk.Frame(area);zoom.pack(fill='x',pady=(0,5))
+         ttk.Button(zoom,text='Whole map',command=self.fit).pack(side='left')
+@@ -64,6 +80,30 @@
+     def point(self,x,y):return x*12.45*self.scale,(279-y)*12.45*self.scale
+     def world(self,x,y):return x/(12.45*self.scale),279-y/(12.45*self.scale)
+ 
++    def load_profile(self,name,views):
++        self.views=list(views);self.defaults={v.route_label:v for v in views}
++        self.selected=0;self.undo_removed=[];self.dirty=False;self.active_route=name
++        self.route_box.configure(values=self.route_choices());self.route_choice.set(name)
++        self.refresh_list();self.select(0)
++
++    def change_route(self,event=None):
++        name=self.route_choice.get()
++        if name==self.active_route:return
++        if self.dirty and not messagebox.askyesno('Unsaved route edits',f'Switch to {name} and discard unsaved changes?',parent=self.window):
++            self.route_choice.set(self.active_route);return
++        try:
++            views=self.on_route_change(name)
++            self.load_profile(name,views)
++        except (OSError,ValueError,TypeError) as exc:
++            self.route_choice.set(self.active_route)
++            messagebox.showerror('Could not change route',str(exc),parent=self.window)
++
++    def save_route_copy(self):
++        try:result=self.on_save_copy(tuple(self.views))
++        except (OSError,ValueError,TypeError) as exc:
++            messagebox.showerror('Could not save route',str(exc),parent=self.window);return
++        if result is not None:self.load_profile(*result)
++
+     def draw(self):
+         c=self.canvas;c.delete('all')
+         size=round(3486*self.scale)
+@@ -71,8 +111,8 @@
+             self.photo=ImageTk.PhotoImage(self.source.resize((size,size),Image.Resampling.LANCZOS));self.image_size=size
+         c.create_image(0,0,image=self.photo,anchor='nw');c.configure(scrollregion=(0,0,size,size))
+         path=[coord for v in self.views for coord in self.point(v.x,v.y)]
+-        c.create_line(*path,fill=ACCENT,width=2,arrow='last')
+-        for v in self.views:
++        if len(path)>=4:c.create_line(*path,fill=ACCENT,width=2,arrow='last')
++        for v in self.base:
+             for x,y in v.cells:
+                 px,py=self.point(x+.5,y+.5);c.create_oval(px-3,py-3,px+3,py+3,fill='#ff79dc',outline='#311b37')
+         view=self.views[self.selected]
+@@ -105,7 +145,10 @@
+         self.selected=index;self.listbox.selection_clear(0,'end');self.listbox.selection_set(index);self.listbox.see(index)
+         v=self.views[index];self.x.set(f'{v.x:.2f}');self.y.set(f'{v.y:.2f}')
+         warnings=camera_warnings(v)
+-        self.remove_button.configure(state='normal' if v.route_parent else 'disabled')
++        self.remove_button.configure(state='normal' if len(self.views)>1 else 'disabled')
++        self.undo_button.configure(state='normal' if self.undo_removed else 'disabled')
++        originals={view.route_label for view in self.views if not view.route_parent}
++        self.restore_button.configure(state='normal' if len(originals)<len(self.base) else 'disabled')
+         extra=f'Extra view for #{v.route_parent}\n' if v.route_parent else ''
+         self.info.set(f'#{v.route_label} · {v.near_zone}\n{extra}Camera ({v.x:.2f}, {v.y:.2f})\n'+('\n'.join(warnings) if warnings else 'Recorded centres fit the suggested clear area.'))
+         self.draw()
+@@ -146,26 +189,52 @@
+     def refresh_list(self):
+         self.listbox.delete(0,'end')
+         for v in self.views:self.listbox.insert('end',f'#{v.route_label} · {v.near_zone}')
+-        self.total.set(f'CAMERA TARGETS · {len(self.views)} views')
++        covered=set().union(*(v.cells for v in self.views));all_cells=set().union(*(v.cells for v in self.base))
++        self.total.set(f'CAMERA TARGETS · {len(self.views)} views\nListed spots: {len(covered)} / {len(all_cells)} · {len(all_cells-covered)} omitted')
+ 
+     def add_view(self):
+-        self.views=list(add_camera_view(self.views,self.selected));self.selected+=1
++        self.views=list(add_camera_view(self.views,self.selected,reserved_labels=[v.route_label for v,*_ in self.undo_removed]));self.selected+=1
+         extra=self.views[self.selected];self.defaults[extra.route_label]=extra
+         self.dirty=True;self.refresh_list();self.select(self.selected)
+ 
+     def remove_extra(self):
+         if not self.views[self.selected].route_parent:return
+-        del self.views[self.selected];self.selected-=1
++        self.remove_selected()
++
++    def remove_selected(self):
++        if len(self.views)<=1:return
++        i=self.selected
++        self.undo_removed.append((self.views[i],self.views[i-1].route_label if i else None,
++                                  self.views[i+1].route_label if i+1<len(self.views) else None,i))
++        self.views=list(remove_camera_view(self.views,i));self.selected=min(i,len(self.views)-1)
++        self.dirty=True;self.refresh_list();self.select(self.selected)
++
++    def undo_remove(self):
++        if not self.undo_removed:return
++        view,before,after,index=self.undo_removed.pop()
++        labels=[v.route_label for v in self.views]
++        if after in labels:index=labels.index(after)
++        elif before in labels:index=labels.index(before)+1
++        else:index=min(index,len(self.views))
++        self.views.insert(index,view);self.selected=index
++        self.dirty=True;self.refresh_list();self.select(index)
++
++    def restore_originals(self):
++        label=self.views[self.selected].route_label
++        self.views=list(restore_camera_originals(self.base,self.views));self.undo_removed=[]
++        self.selected=next(i for i,v in enumerate(self.views) if v.route_label==label)
+         self.dirty=True;self.refresh_list();self.select(self.selected)
+ 
+     def reset_all(self):
+         view=self.views[self.selected];label=view.route_parent or view.route_label
+         self.views=list(self.base);self.selected=next(i for i,v in enumerate(self.base) if v.route_label==label)
++        self.undo_removed=[]
+         self.dirty=True;self.refresh_list();self.select(self.selected)
+ 
+     def save(self):
+-        try:self.on_save(tuple(self.views))
++        try:result=self.on_save(tuple(self.views))
+         except (OSError,ValueError) as exc:messagebox.showerror('Could not save',str(exc),parent=self.window);return
++        if result is False:return
+         self.dirty=False;self.close()
+ 
+     def close(self):
+--- a/LoongLens/route_profiles.py
++++ b/LoongLens/route_profiles.py
+@@ -0,0 +1,94 @@
++"""Named personal routes, with an immutable bundled Default and safe migration."""
++import json
++from pathlib import Path
++import re
++import uuid
++
++from patrol_route import load_camera_adjustments,save_camera_adjustments
++
++
++class RouteProfiles:
++    DEFAULT='default'
++
++    def __init__(self,base,folder):
++        self.base=tuple(base);self.folder=Path(folder)
++        self.index=self.folder/'route-profiles.json'
++        self.directory=self.folder/'routes'
++        self.profiles=[];self.active=self.DEFAULT
++        if self.index.exists():
++            document=json.loads(self.index.read_text('utf-8'))
++            if not isinstance(document,dict) or document.get('version')!=1 or not isinstance(document.get('profiles'),list):
++                raise ValueError('Saved route list has an unsupported format.')
++            names={'default'};ids=set()
++            for profile in document['profiles']:
++                if not isinstance(profile,dict):raise ValueError('Invalid saved route entry.')
++                ident,name=profile.get('id'),profile.get('name')
++                if not isinstance(ident,str) or not re.fullmatch('[0-9a-f]{32}',ident) or ident in ids:
++                    raise ValueError('Saved route IDs must be unique internal IDs.')
++                cleaned=self.validate_name(name,names)
++                if cleaned!=name:raise ValueError('Invalid saved route name.')
++                names.add(name.casefold());ids.add(ident)
++                self.profiles.append(dict(id=ident,name=name))
++            active=document.get('active')
++            if not isinstance(active,str) or (active!=self.DEFAULT and active not in ids):raise ValueError('Selected route is missing from the route list.')
++            self.active=active
++            self.load(active)  # A broken named route must not silently become Default.
++        else:
++            legacy=self.folder/'camera-route-adjustments.json'
++            if legacy.exists():
++                views=load_camera_adjustments(self.base,legacy)
++                if views!=self.base:self.save_copy('My route',views)
++
++    @staticmethod
++    def validate_name(name,existing):
++        if not isinstance(name,str):raise ValueError('Enter a route name.')
++        name=name.strip()
++        if not name or len(name)>48 or any(ord(c)<32 or ord(c)==127 for c in name):
++            raise ValueError('Use a route name with 1–48 visible characters.')
++        if name.casefold() in existing:raise ValueError('That route name already exists. Default is reserved.')
++        return name
++
++    def items(self):return [(self.DEFAULT,'Default')]+[(p['id'],p['name']) for p in self.profiles]
++
++    def name(self,ident):
++        if ident==self.DEFAULT:return 'Default'
++        return next(p['name'] for p in self.profiles if p['id']==ident)
++
++    def path(self,ident):
++        if ident==self.DEFAULT:raise ValueError('Default is built in and cannot be overwritten. Save a copy.')
++        if ident not in {p['id'] for p in self.profiles}:raise ValueError('Unknown saved route.')
++        return self.directory/(ident+'.json')
++
++    def load(self,ident):
++        if ident==self.DEFAULT:return self.base
++        path=self.path(ident)
++        if not path.is_file():raise ValueError('This saved route file is missing.')
++        return load_camera_adjustments(self.base,path)
++
++    def _write_index(self,profiles,active):
++        self.folder.mkdir(parents=True,exist_ok=True)
++        temporary=self.index.with_suffix('.json.tmp')
++        temporary.write_text(json.dumps(dict(version=1,active=active,profiles=profiles),indent=2)+'\n','utf-8')
++        temporary.replace(self.index)
++
++    def save_copy(self,name,views):
++        name=self.validate_name(name,{label.casefold() for _,label in self.items()})
++        self.directory.mkdir(parents=True,exist_ok=True)
++        ident=uuid.uuid4().hex;path=self.directory/(ident+'.json')
++        while path.exists():ident=uuid.uuid4().hex;path=self.directory/(ident+'.json')
++        save_camera_adjustments(self.base,views,path)
++        profiles=self.profiles+[dict(id=ident,name=name)]
++        try:self._write_index(profiles,ident)
++        except OSError:
++            path.unlink();raise
++        self.profiles=profiles;self.active=ident
++        return ident
++
++    def save(self,ident,views):
++        save_camera_adjustments(self.base,views,self.path(ident))
++
++    def activate(self,ident):
++        views=self.load(ident)
++        self._write_index(self.profiles,ident)
++        self.active=ident
++        return views
+--- a/LoongLens/patrol_live.py
++++ b/LoongLens/patrol_live.py
+@@ -146,6 +146,21 @@
+ 
+     def is_map(self,frame):return self.title.score(self.normal(frame))>=.64
+ 
++    @staticmethod
++    def stationary_map(before,after):
++        """A fresh textured map frame can confirm the preceding recognition.
++
++        This is intentionally stricter than the final pre-click movement guard.
++        Changed/flat frames always take the full recognition path.
++        """
++        import numpy as np
++        from vision import patrol_map_mask
++        mask=patrol_map_mask(after.shape)!=0
++        gray=cv2.cvtColor(before,cv2.COLOR_BGR2GRAY)
++        if float(gray[mask].std())<8:return False
++        difference=cv2.absdiff(before,after).max(axis=2)
++        return float(np.mean(difference[mask]>8))<=.002
++
+     def map_frame(self,backend):
+         deadline=self.clock()+6
+         while self.clock()<deadline:
+@@ -168,16 +183,24 @@
+         # the actual map title appears; alignment follows on fresh screenshots.
+         return self.map_frame(backend)
+ 
+-    def align(self,backend,reference=None,timeout=7.,recovery=False):
++    def align(self,backend,reference=None,timeout=7.,recovery=False,initial_frame=None):
+         deadline=self.clock()+timeout
+-        previous=None
++        previous=None;previous_frame=None;previous_absolute=False
+         reference=reference or self.map_reference
+         refresh=not self.fixed_route or self.navigation.get('relative_updates',0)>=5
+         while self.clock()<deadline:
+-            self.check();frame=self.map_frame(backend)
++            self.check()
++            if initial_frame is not None:
++                frame=initial_frame;initial_frame=None
++                if not self.is_map(frame):frame=self.map_frame(backend)
++            else:frame=self.map_frame(backend)
+             normal=self.normal(frame)
+             pose=None
+-            if reference is not None:
++            absolute_used=False
++            stationary=previous is not None and previous_frame is not None and self.stationary_map(previous_frame,normal)
++            if stationary:
++                pose=previous;absolute_used=previous_absolute
++            elif reference is not None:
+                 from vision import track_map_pan
+                 before,known,delta=reference
+                 pose=track_map_pan(before,normal,known,delta,recovery=recovery)
+@@ -185,8 +208,7 @@
+                     # Map edges can clamp recentering, and some reopenings
+                     # retain the old view. Verify that unchanged terrain too.
+                     pose=track_map_pan(before,normal,known,(0.,0.))
+-            absolute_used=False
+-            if pose is not None and refresh and reference is not None and math.hypot(*reference[2])>1 and hasattr(self.locator,'index'):
++            if not stationary and pose is not None and refresh and reference is not None and math.hypot(*reference[2])>1 and hasattr(self.locator,'index'):
+                 # Refresh against absolute atlas landmarks when available so
+                 # many relative pans do not accumulate small registration errors.
+                 absolute=self.locator.index.locate(normal)
+@@ -203,7 +225,7 @@
+                 self.navigation['reference']=self.map_reference
+                 self.navigation['relative_updates']=0 if absolute_used else self.navigation.get('relative_updates',0)+1
+                 return frame,pose
+-            previous=pose
++            previous=pose;previous_frame=normal;previous_absolute=absolute_used
+             backend.wait(.15)
+         raise MapAlignmentLost('Could not align Loong Haven. Use default zoom and keep map terrain visible.')
+ 
+@@ -275,7 +297,8 @@
+                 deadline=max(deadline,min(started+self.settings.inspect_seconds+1.,self.clock()+.85))
+             if self.clock()>=deadline and scans>=3:break
+             if self.clock()-started>8:raise RuntimeError('Screenshot detection is too slow to complete this view.')
+-            backend.wait(.2)
++            remaining=deadline-self.clock()
++            backend.wait(min(.2,remaining) if remaining>0 else .2)
+         return None,None
+ 
+     def run(self,backend,auto=True):
+@@ -292,10 +315,10 @@
+         self.send('status',message='Starting… F10 stops at any time.')
+         backend.wait(.5);backend.focus()
+         while len(self.checked)<len(self.views):
+-            self.check();self.open_map(backend)
++            self.check();view_started=self.clock();opened=self.open_map(backend)
+             pending=self.navigation.get('pending')
+             try:
+-                frame,pose=self.align(backend,pending or self.reopen_reference,timeout=3. if pending else 7.)
++                frame,pose=self.align(backend,pending or self.reopen_reference,timeout=3. if pending else 7.,initial_frame=opened)
+                 self.reopen_reference=None
+                 self.navigation.pop('pending',None);self.navigation.pop('recovery_exhausted',None)
+             except MapAlignmentLost:
+@@ -354,6 +377,8 @@
+             else:
+                 available=accessible_view(view,self.normal(frame),pose)
+             if available is None:
++                elapsed=self.clock()-view_started
++                self.send('view_timing',view=view,total_seconds=elapsed,map_seconds=elapsed,inspect_seconds=0.,skipped=True)
+                 self.checked.add(index);self.skipped.add(index)
+                 self.send('checked',index=index,count=len(self.checked),skipped=len(self.skipped))
+                 self.send('status',message=f'Skipped locked area: {view.near_zone}')
+@@ -374,14 +399,19 @@
+                     raise RuntimeError('The map moved before the fixed route click. Stopped; resume when the map has settled.')
+             backend.click(point);backend.wait(.2)
+             self.navigation['selected_camera']=(view.x,view.y)
+-            if self.is_map(backend.capture()):backend.click(self.settings.map_close)
++            scene=backend.capture()
++            if self.is_map(scene):
++                backend.click(self.settings.map_close);scene=backend.capture()
+             deadline=self.clock()+5
+-            while self.is_map(backend.capture()):
++            while self.is_map(scene):
+                 if self.clock()>deadline:raise RuntimeError('The map did not close. Calibrate its Back button.')
+-                backend.wait(.2)
++                backend.wait(.2);scene=backend.capture()
+             backend.wait(self.settings.settle_seconds)
+             self.send('status',message='Inspecting the visible scene…')
++            inspect_started=self.clock()
+             found,frame=self.inspect(backend)
++            self.send('view_timing',view=view,total_seconds=self.clock()-view_started,
++                      map_seconds=inspect_started-view_started,inspect_seconds=self.clock()-inspect_started,skipped=False)
+             self.checked.add(index);self.send('checked',index=index,count=len(self.checked))
+             if found is not None:
+                 now=self.clock();event=None
+--- a/LoongLens/patrol_live_panel.py
++++ b/LoongLens/patrol_live_panel.py
+@@ -4,13 +4,14 @@
+ import json
+ import queue
+ import tkinter as tk
+-from tkinter import ttk,messagebox
++from tkinter import ttk,messagebox,simpledialog
+ from pathlib import Path
+ import cv2
+ from PIL import Image,ImageDraw,ImageTk
+-from patrol_route import load_fixed_route,load_camera_adjustments,save_camera_adjustments
++from patrol_route import load_fixed_route
+ from patrol_live import LiveSettings,LiveRunner,load_live_config,LIVE_SETTINGS_VERSION
+ from patrol_windows import WindowsBackend,GlobalPatrolKeys
++from route_profiles import RouteProfiles
+ from sighting_capture import SightingCapture
+ from resources import user_dir
+ 
+@@ -23,9 +24,10 @@
+         self.location=tk.StringVar(value='Fixed path starts at Emerald Corner. Route #26, #51 and #72 are excluded.')
+         self.count=tk.StringVar(value='Preparing grouped camera checks…')
+         self.pass_text=tk.StringVar(value='')
++        self.performance=tk.StringVar(value='')
+         self.stats_text=tk.StringVar(value='Time spent: 0:00\nGems found: 0')
+         self.events=queue.Queue();self.keys=None;self.closed=False;self.busy=False
+-        self.job=None;self.photo=None;self.futures=[];self.editing=False;self.editor=None
++        self.job=None;self.photo=None;self.futures=[];self.editing=False;self.editor=None;self.switching=False
+         self.path=user_dir()/'patrol-live-settings.json'
+         try:
+             config=json.loads(self.path.read_text('utf-8'))
+@@ -34,10 +36,15 @@
+             if migrated:self.status.set('Updated Open map to the top-right minimap.')
+         except (OSError,ValueError,KeyError,TypeError):self.settings=LiveSettings()
+         self.base_views=load_fixed_route(data);self.route_path=user_dir()/'camera-route-adjustments.json'
++        self.routes=None;self.route_name=tk.StringVar(value='Default')
+         warning=None
+-        try:views=load_camera_adjustments(self.base_views,self.route_path)
++        try:
++            self.routes=RouteProfiles(self.base_views,user_dir())
++            views=self.routes.load(self.routes.active)
++            self.route_name.set(self.routes.name(self.routes.active))
++            if self.routes.active!=RouteProfiles.DEFAULT:self.route_path=self.routes.path(self.routes.active)
+         except (OSError,ValueError,TypeError) as exc:
+-            views=self.base_views;warning=f'Using default camera targets: {exc}'
++            self.routes=None;views=self.base_views;warning=f'Using Default; saved route list needs attention: {exc}'
+         self.runner=LiveRunner(views,WindowsBackend,self.events.put)
+         self.update_count()
+         # Patrol captures already have their map location and bypass player OCR.
+@@ -62,6 +69,13 @@
+         ttk.Button(line,text='Sniping settings',command=self.show_settings,padding=(10,7)).pack(side='right')
+         self.history_button=ttk.Button(line,text='History',command=self.show_history,padding=(10,7))
+         self.history_button.pack(side='right',padx=(0,6))
++        line=row(controls)
++        ttk.Label(line,text='Route',style='CardMuted.TLabel').pack(side='left')
++        self.route_box=ttk.Combobox(line,textvariable=self.route_name,state='readonly',width=28)
++        self.route_box.pack(side='left',fill='x',expand=True,padx=8)
++        self.route_box.bind('<<ComboboxSelected>>',self.change_route)
++        self.copy_route_button=ttk.Button(line,text='Save copy…',command=self.copy_route,padding=(10,5))
++        self.copy_route_button.pack(side='right');self.refresh_routes()
+         status=card(body)
+         ttk.Label(status,textvariable=self.status,style='Status.TLabel',wraplength=450).pack(anchor='w')
+         ttk.Label(status,textvariable=self.location,style='CardMuted.TLabel',wraplength=450).pack(anchor='w',pady=(5,7))
+@@ -69,6 +83,7 @@
+         ttk.Separator(status).pack(fill='x',pady=9)
+         ttk.Label(status,textvariable=self.stats_text,style='Stats.TLabel').pack(anchor='w')
+         ttk.Label(status,textvariable=self.pass_text,style='CardMuted.TLabel',wraplength=450).pack(anchor='w')
++        ttk.Label(status,textvariable=self.performance,style='CardMuted.TLabel',wraplength=450).pack(anchor='w')
+         self.progress=ttk.Progressbar(status,maximum=len(self.runner.views))
+         self.progress.pack(fill='x',pady=(9,0))
+         actions=ttk.Frame(body);actions.pack(fill='x',pady=(0,10))
+@@ -91,9 +106,52 @@
+         self.watch.flush_sightings()
+         self.watch.sighting_controls.show()
+ 
++    def refresh_routes(self):
++        items=self.routes.items() if self.routes is not None else [('default','Default')]
++        self.profile_ids={name:ident for ident,name in items}
++        self.route_box.configure(values=[name for _,name in items])
++        if self.routes is not None:self.route_name.set(self.routes.name(self.routes.active))
++
++    def apply_route(self,views):
++        self.runner.views=tuple(views);self.runner.navigation.clear();self.reset()
++        if self.routes is not None:
++            self.refresh_routes()
++            self.route_path=(self.routes.path(self.routes.active) if self.routes.active!=RouteProfiles.DEFAULT
++                             else user_dir()/'camera-route-adjustments.json')
++        self.status.set(f'Route: {self.route_name.get()}. Checks reset.')
++
++    def change_route(self,event=None):
++        ident=self.profile_ids.get(self.route_name.get())
++        if self.routes is None or ident is None or self.editing or self.switching:return
++        if ident==self.routes.active:return
++        self.switching=True;self.runner.stop();self.buttons()
++        self.status.set('Stopping sniping before changing routes…')
++        def finish():
++            if self.closed:return
++            if self.runner.running:self.root.after(50,finish);return
++            self.drain()
++            try:self.apply_route(self.routes.activate(ident))
++            except (OSError,ValueError,TypeError) as exc:
++                self.refresh_routes();self.status.set(f'Could not change route: {exc}')
++            finally:self.switching=False;self.buttons()
++        finish()
++
++    def ask_route_name(self,parent=None):
++        return simpledialog.askstring('Save route copy','Name this route (Default stays unchanged):',
++                                     parent=parent or self.root,initialvalue='My route' if self.routes and len(self.routes.items())==1 else '')
++
++    def copy_route(self):
++        if self.routes is None or self.busy or self.editing or self.switching:return
++        name=self.ask_route_name()
++        if name is None:return
++        try:
++            self.routes.save_copy(name,self.runner.views)
++            self.apply_route(self.runner.views)
++        except (OSError,ValueError,TypeError) as exc:messagebox.showerror('Could not save route',str(exc),parent=self.root)
++
+     def show_route_editor(self):
+         if self.editor is not None:self.editor.window.lift();return
+-        if self.editing:return
++        if self.editing or self.switching:return
+         self.editing=True;self.runner.stop();self.buttons()
+         def open_when_stopped():
+             if self.closed:return
+@@ -103,15 +161,36 @@
+             def close():
+                 self.editor=None;self.editing=False;self.buttons()
+             def save(views):
+-                save_camera_adjustments(self.base_views,views,self.route_path)
+-                self.runner.views=views;self.runner.navigation.clear();self.reset()
++                if self.routes is None:raise ValueError('Repair the saved route list before saving a route.')
++                if self.routes.active==RouteProfiles.DEFAULT:
++                    name=self.ask_route_name(self.editor.window)
++                    if name is None:return False
++                    self.routes.save_copy(name,views)
++                else:self.routes.save(self.routes.active,views)
++                self.apply_route(views)
+                 self.status.set('Camera targets saved. Checks reset; the next pass uses your adjusted route.')
+-            self.editor=RouteEditor(self.root,self.base_views,self.runner.views,save,close)
++            def select_profile(name):
++                if self.routes is None:raise ValueError('Saved routes are unavailable.')
++                ident=next((ident for ident,label in self.routes.items() if label==name),None)
++                if ident is None:raise ValueError('Unknown saved route.')
++                views=self.routes.activate(ident);self.apply_route(views)
++                return views
++            def save_copy(views):
++                if self.routes is None:raise ValueError('Saved routes are unavailable.')
++                name=self.ask_route_name(self.editor.window)
++                if name is None:return None
++                self.routes.save_copy(name,views);self.apply_route(views)
++                return self.routes.name(self.routes.active),views
++            self.editor=RouteEditor(self.root,self.base_views,self.runner.views,save,close,
++                route_choices=lambda:[name for _,name in self.routes.items()] if self.routes else ['Default'],
++                active_route=self.route_name.get(),on_route_change=select_profile,on_save_copy=save_copy)
+         open_when_stopped()
+ 
+     def buttons(self):
+-        ready=self.keys is not None and not self.busy and not self.editing
++        ready=self.keys is not None and not self.busy and not self.editing and not self.switching
+         for button in (self.snipe,self.repeat):button.configure(state='normal' if ready else 'disabled')
++        self.route_box.configure(state='readonly' if self.routes is not None and not self.editing and not self.switching else 'disabled')
++        self.copy_route_button.configure(state='normal' if self.routes is not None and not self.busy and not self.editing and not self.switching else 'disabled')
+ 
+     def bind_keys(self):
+         self.stop(silent=True)
+@@ -133,7 +212,7 @@
+         self.events.put(dict(kind='panic'))
+ 
+     def start(self,repeat=False):
+-        if self.keys is None or self.busy or self.editing:return
++        if self.keys is None or self.busy or self.editing or self.switching:return
+         if not repeat and len(self.runner.checked)>=len(self.runner.views):
+             self.status.set('Pass complete. Use Reset checks to start a new timed pass.');return
+         with self.watch.worker.lock:
+@@ -156,7 +235,7 @@
+             self.status.set('Stop patrol before resetting its checked locations.');return
+         if not self.runner.reset_checks():
+             self.status.set('Wait for sniping to stop before resetting checks.');return
+-        self.pass_text.set('');self.stats_text.set(self.runner.stats.text());self.update_count()
++        self.pass_text.set('');self.performance.set('');self.stats_text.set(self.runner.stats.text());self.update_count()
+         self.status.set('Checks reset.')
+ 
+     def update_count(self):
+@@ -165,7 +244,8 @@
+         covered=set().union(*(views[i].cells for i in checked)) if checked else set()
+         total=set().union(*(view.cells for view in views))
+         if hasattr(self,'progress'):self.progress.configure(value=len(checked),maximum=len(views))
+-        self.count.set(f'Processed: {len(self.runner.checked)} / {len(views)} views · Locked skips: {len(self.runner.skipped)}\nSpawn spots processed: {len(covered)} / {len(total)}')
++        all_spots=set().union(*(view.cells for view in self.base_views))
++        self.count.set(f'Processed: {len(self.runner.checked)} / {len(views)} views · Locked skips: {len(self.runner.skipped)}\nSpawn spots processed: {len(covered)} / {len(total)} · Omitted: {len(all_spots-total)}')
+ 
+     def show_frame(self,frame,boxes=()):
+         image=Image.fromarray(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB));pen=ImageDraw.Draw(image)
+@@ -187,6 +267,9 @@
+                 self.location.set(f'{"Route #"+view.route_label+" · " if view.route_number else ""}{view.near_zone} ({int(view.x)},{int(view.y)}) • {len(view.cells)} spawn spot(s) in this view')
+             elif kind=='frame':self.show_frame(event['frame'],event['detections'])
+             elif kind=='checked':self.update_count()
++            elif kind=='view_timing':
++                suffix=' · locked skip' if event['skipped'] else ''
++                self.performance.set(f"Last view: {event['total_seconds']:.1f}s · Map/load {event['map_seconds']:.1f}s · Inspect {event['inspect_seconds']:.1f}s{suffix}")
+             elif kind=='pass_complete':
+                 times=[]
+                 for run in event['recent_passes']:
+--- a/LoongLens/tests/test_route_profiles.py
++++ b/LoongLens/tests/test_route_profiles.py
+@@ -0,0 +1,93 @@
++"""Named variants keep Default and legacy edits intact and switch only after stop."""
++import json
++from types import SimpleNamespace
++
++import pytest
++
++from resources import ResourceStore
++from patrol_route import load_fixed_route,add_camera_view,save_camera_adjustments
++from route_profiles import RouteProfiles
++
++
++@pytest.fixture
++def route():return load_fixed_route(ResourceStore().data)
++
++
++def test_default_is_immutable_and_named_variants_survive_restart(route,tmp_path):
++    profiles=RouteProfiles(route,tmp_path)
++    busy=profiles.save_copy('Busy zones',route[1:])
++    full=profiles.save_copy('Full plus extra',add_camera_view(route,0))
++    assert profiles.load('default')==route
++    assert len(profiles.activate(busy))==75
++    restored=RouteProfiles(route,tmp_path)
++    assert restored.active==busy and restored.load(busy)==route[1:]
++    assert len(restored.load(full))==77
++    with pytest.raises(ValueError,match='cannot be overwritten'):restored.save('default',route[1:])
++    assert restored.load('default')==route
++
++
++def test_existing_v24_route_is_imported_without_changing_legacy_file(route,tmp_path):
++    legacy=tmp_path/'camera-route-adjustments.json'
++    edited=add_camera_view(route,11)
++    save_camera_adjustments(route,edited,legacy)
++    before=legacy.read_bytes()
++    profiles=RouteProfiles(route,tmp_path)
++    assert profiles.name(profiles.active)=='My route'
++    assert profiles.load(profiles.active)==edited
++    profiles.save(profiles.active,edited[1:])
++    assert legacy.read_bytes()==before
++    assert profiles.load('default')==route
++
++
++@pytest.mark.parametrize('name',['Default',' default ','BUSY ZONES','', '\n', 'x'*49])
++def test_reserved_duplicate_or_invalid_names_do_not_overwrite_profiles(route,tmp_path,name):
++    profiles=RouteProfiles(route,tmp_path)
++    ident=profiles.save_copy('Busy zones',route[1:])
++    original=profiles.index.read_bytes();data=profiles.path(ident).read_bytes()
++    with pytest.raises(ValueError):profiles.save_copy(name,route)
++    assert profiles.index.read_bytes()==original and profiles.path(ident).read_bytes()==data
++
++
++def test_route_names_never_become_filesystem_paths(route,tmp_path):
++    profiles=RouteProfiles(route,tmp_path)
++    ident=profiles.save_copy('../outside',route)
++    assert profiles.path(ident).resolve().is_relative_to((tmp_path/'routes').resolve())
++    assert not (tmp_path.parent/'outside').exists()
++
++
++def test_bad_saved_route_or_index_is_not_replaced_with_default(route,tmp_path):
++    profiles=RouteProfiles(route,tmp_path)
++    ident=profiles.save_copy('Busy zones',route[1:])
++    profiles.activate('default');index=profiles.index.read_bytes()
++    profiles.path(ident).write_text('{broken')
++    with pytest.raises(ValueError):profiles.activate(ident)
++    assert profiles.active=='default' and profiles.index.read_bytes()==index
++    profiles.index.write_text('{broken-index')
++    with pytest.raises(ValueError):RouteProfiles(route,tmp_path)
++    assert profiles.index.read_text()=='{broken-index'
++
++
++def test_missing_named_route_cannot_silently_become_default(route,tmp_path):
++    profiles=RouteProfiles(route,tmp_path)
++    ident=profiles.save_copy('Busy zones',route[1:])
++    profiles.path(ident).unlink()
++    with pytest.raises(ValueError,match='missing'):RouteProfiles(route,tmp_path)
++
++
++def test_switch_requests_stop_and_waits_before_replacing_route(route,tmp_path):
++    from patrol_live_panel import LivePatrolPanel
++    profiles=RouteProfiles(route,tmp_path)
++    busy=profiles.save_copy('Busy zones',route[1:]);profiles.activate('default')
++    pending=[];stops=[];applied=[]
++    runner=SimpleNamespace(running=True,stop=lambda:stops.append(True))
++    panel=object.__new__(LivePatrolPanel)
++    panel.routes=profiles;panel.route_name=SimpleNamespace(get=lambda:'Busy zones')
++    panel.profile_ids={'Busy zones':busy};panel.editing=False;panel.switching=False;panel.closed=False
++    panel.runner=runner;panel.buttons=lambda:None;panel.drain=lambda:None
++    panel.status=SimpleNamespace(set=lambda value:None)
++    panel.root=SimpleNamespace(after=lambda delay,callback:pending.append(callback))
++    panel.apply_route=lambda views:applied.append(views)
++    panel.change_route()
++    assert stops and not applied and profiles.active=='default' and panel.switching
++    runner.running=False;pending.pop()()
++    assert applied==[route[1:]] and profiles.active==busy and not panel.switching
+--- a/LoongLens/tests/test_route_removal.py
++++ b/LoongLens/tests/test_route_removal.py
+@@ -0,0 +1,101 @@
++"""Removed targets stay omitted across saves and passes; spawn data stays intact."""
++from dataclasses import replace
++import json
++import pytest
++
++from resources import ResourceStore
++from patrol_route import (load_fixed_route,add_camera_view,remove_camera_view,
++                          restore_camera_originals,save_camera_adjustments,
++                          load_camera_adjustments,apply_camera_adjustments)
++
++
++@pytest.fixture
++def route():return load_fixed_route(ResourceStore().data)
++
++
++def test_remove_original_persists_order_and_reduced_coverage(route,tmp_path):
++    index=next(i for i,v in enumerate(route) if v.route_label=='12')
++    edited=remove_camera_view(route,index)
++    path=tmp_path/'route.json';save_camera_adjustments(route,edited,path)
++    assert load_camera_adjustments(route,path)==edited
++    document=json.loads(path.read_text())
++    assert document['version']==3 and document['removed']==['12']
++    assert len(edited)==75 and len(set().union(*(v.cells for v in edited)))==79
++    assert len(ResourceStore().data['gems'])==86
++    assert [v.route_label for v in edited]==[v.route_label for v in route if v.route_label!='12']
++
++
++def test_remove_original_keeps_its_extras_and_allows_more_extras(route,tmp_path):
++    index=next(i for i,v in enumerate(route) if v.route_label=='40b')
++    edited=add_camera_view(route,index)
++    edited=remove_camera_view(edited,index)
++    edited=add_camera_view(edited,index)
++    assert [v.route_label for v in edited[index:index+3]]==['40b+1','40b+2','41']
++    path=tmp_path/'route.json';save_camera_adjustments(route,edited,path)
++    assert load_camera_adjustments(route,path)==edited
++    assert edited[index].cells==route[index].cells
++
++
++def test_one_extra_can_remain_after_every_original_is_removed(route,tmp_path):
++    expanded=add_camera_view(route,0)
++    edited=(expanded[1],)
++    path=tmp_path/'route.json';save_camera_adjustments(route,edited,path)
++    assert load_camera_adjustments(route,path)==edited
++    restored=restore_camera_originals(route,edited)
++    assert restored[:2]==(route[0],edited[0]) and len(restored)==77
++
++
++def test_restore_originals_preserves_other_camera_edits_and_extras(route):
++    edited=add_camera_view(route,0)
++    edited=list(remove_camera_view(edited,0))
++    edited[-1]=replace(edited[-1],y=edited[-1].y+.25)
++    restored=restore_camera_originals(route,edited)
++    assert restored[0]==route[0]
++    assert restored[1]==edited[0] and restored[-1]==edited[-1]
++    assert [v.route_label for v in restored if not v.route_parent]==[v.route_label for v in route]
++
++
++def test_last_point_cannot_be_removed_or_empty_profile_saved(route,tmp_path):
++    path=tmp_path/'route.json'
++    for action in (lambda:remove_camera_view((route[0],),0),
++                   lambda:save_camera_adjustments(route,(),path),
++                   lambda:apply_camera_adjustments(route,dict(version=3,targets={},removed=[v.route_label for v in route]))):
++        with pytest.raises(ValueError,match='at least one'):action()
++    assert not path.exists()
++
++
++@pytest.mark.parametrize('removed',[['26'],['12','12'],[None],['12+1'],'12'])
++def test_invalid_removed_ids_are_rejected(route,removed):
++    with pytest.raises(ValueError):apply_camera_adjustments(route,dict(version=3,targets={},removed=removed))
++
++
++def test_removal_does_not_allow_reordering_or_changed_spawn_identity(route,tmp_path):
++    edited=remove_camera_view(route,0)
++    for invalid in (tuple(reversed(edited)),(replace(edited[0],cells=frozenset({(0,0)})),)+edited[1:]):
++        with pytest.raises(ValueError):save_camera_adjustments(route,invalid,tmp_path/'route.json')
++
++
++def test_first_removal_backs_up_old_profile_without_overwriting_it(route,tmp_path):
++    path=tmp_path/'camera-route-adjustments.json'
++    save_camera_adjustments(route,route,path)
++    old=path.read_bytes()
++    save_camera_adjustments(route,route[1:],path)
++    backup=path.with_suffix('.pre-v26.json')
++    assert backup.read_bytes()==old
++    save_camera_adjustments(route,route[2:],path)
++    assert backup.read_bytes()==old
++    save_camera_adjustments(route,restore_camera_originals(route,route[2:]),path)
++    assert json.loads(path.read_text())['version']==2
++
++
++def test_removed_first_point_is_not_inspected_and_remaining_extra_still_runs():
++    from patrol_live import LivePatrol
++    from test_live_patrol import setup
++    engine,backend,events=setup()
++    base=tuple(replace(v,route_number=i+1) for i,v in enumerate(engine.views))
++    views=remove_camera_view(add_camera_view(base,0),0)
++    patrol=LivePatrol(views,engine.settings,engine.cancel,events.append,detector=engine.detector,
++                      locator=engine.locator,title=engine.title,clock=engine.clock)
++    patrol.run(backend)
++    assert [e['view'].route_label for e in events if e['kind']=='view']==['1+1','2']
++    assert patrol.checked=={0,1}
+--- a/LoongLens/tests/test_sniping_speed.py
++++ b/LoongLens/tests/test_sniping_speed.py
+@@ -0,0 +1,84 @@
++"""Optimize stable screenshots and wait overshoot without shortening inspection."""
++from types import SimpleNamespace
++import cv2
++import numpy as np
++import pytest
++
++from resources import ROOT
++from patrol_live import LivePatrol
++from patrol_windows import PatrolStopped
++from pose import Match
++from test_live_patrol import setup
++
++
++def atlas_frame():
++    return cv2.imread(str(ROOT/'loong_haven_default_atlas.png'))[1300:2329,900:1470].copy()
++
++
++def test_still_map_uses_one_recognition_but_two_observed_frames():
++    engine,backend,_=setup();frame=atlas_frame();captures=[];recognitions=[]
++    backend.capture=lambda:(captures.append(True) or frame.copy())
++    engine.title=SimpleNamespace(score=lambda f:1.)
++    pose=Match(12.45,-900.,279*12.45-1300,20,0,[])
++    engine.locator=SimpleNamespace(locate=lambda f:(recognitions.append(True) or pose))
++    opened=backend.capture()
++    _,found=engine.align(backend,initial_frame=opened)
++    assert found==pose and len(captures)==2 and len(recognitions)==1
++    assert backend.clock.now>=.15
++
++
++def test_moving_map_is_recognized_again_before_clicks_can_use_it():
++    engine,backend,_=setup();before=atlas_frame();after=np.roll(before,30,axis=1)
++    frames=iter([before,after,after]);recognitions=[]
++    backend.capture=lambda:next(frames).copy()
++    engine.title=SimpleNamespace(score=lambda f:1.)
++    def locate(frame):
++        tx=-870. if np.array_equal(frame,after) else -900.
++        recognitions.append(tx);return Match(12.45,tx,2173.55,20,0,[])
++    engine.locator=SimpleNamespace(locate=locate)
++    _,found=engine.align(backend)
++    assert found.tx==-870. and recognitions==[-900.,-870.]
++    assert backend.clock.now>=.3
++
++
++def test_flat_or_changed_terrain_never_takes_stationary_shortcut():
++    flat=np.zeros((1029,570,3),np.uint8)
++    assert not LivePatrol.stationary_map(flat,flat)
++    image=atlas_frame()
++    assert not LivePatrol.stationary_map(image,np.roll(image,10,axis=0))
++    hud=image.copy();hud[:20]=255
++    assert LivePatrol.stationary_map(image,hud)
++
++
++def test_f10_between_stability_frames_stops_alignment():
++    engine,backend,_=setup();frame=atlas_frame()
++    backend.capture=lambda:frame.copy()
++    engine.title=SimpleNamespace(score=lambda f:1.)
++    backend.wait=lambda t:engine.cancel.set()
++    with pytest.raises(PatrolStopped):engine.align(backend)
++    assert not backend.inputs
++
++
++def test_inspection_keeps_full_window_without_extra_polling_overshoot():
++    engine,backend,_=setup();backend.open=False;scans=[]
++    def detect(frame,**kwargs):
++        scans.append(backend.clock.now);backend.clock.now+=.06;return []
++    engine.detector=SimpleNamespace(detect=detect)
++    assert engine.inspect(backend)==(None,None)
++    assert len(scans)>=3 and scans[-1]>=1.2
++    assert 1.2<=backend.clock.now<=1.27
++
++
++def test_auto_closed_map_does_not_capture_closed_state_twice_before_inspection():
++    engine,backend,events=setup();trace=[]
++    original_capture=backend.capture;original_click=backend.click
++    def capture():trace.append(('capture',backend.open));return original_capture()
++    def click(point):original_click(point);backend.open=False
++    backend.capture=capture;backend.click=click
++    engine.detector=SimpleNamespace(detect=lambda *a,**kw:(trace.append(('detect',False)) or []))
++    engine.run(backend,auto=False)
++    first=next(i for i,t in enumerate(trace) if t[0]=='detect')
++    assert trace[:first].count(('capture',False))==2
++    timing=next(e for e in events if e['kind']=='view_timing')
++    assert timing['inspect_seconds']==pytest.approx(1.2)
++    assert timing['total_seconds']==pytest.approx(timing['map_seconds']+timing['inspect_seconds'])
+--- a/LoongLens/tools/benchmark_sniping.py
++++ b/LoongLens/tools/benchmark_sniping.py
+@@ -0,0 +1,56 @@
++"""Profile the full fixed route using real atlas pixels and simulated desktop input.
++
++The existing independent route test verifies every selected camera coordinate.
++This measures recognition work and simulated waits, not live BlueStacks speed.
++Use --app-root to compare an extracted older release in a separate process.
++"""
++import argparse
++import json
++from pathlib import Path
++import sys
++import time
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--app-root',type=Path,default=Path(__file__).resolve().parents[1])
++    parser.add_argument('--output',type=Path,required=True)
++    args=parser.parse_args()
++    root=args.app_root.resolve()
++    sys.path[:0]=[str(root),str(root/'tests')]
++    import cv2
++    cv2.setNumThreads(2)
++    import vision
++    from patrol_live import LivePatrol
++    from patrol_route import load_fixed_route
++    from resources import ResourceStore
++    from test_fixed_route import test_complete_fixed_route_uses_recentered_atlas_screenshots_and_no_transit_camera_clicks
++    result=dict(scope='Full 76-view atlas route; simulated input, loading and detector. Not live Windows/BlueStacks speed.',
++                captures=0,relative_matches=0,absolute_matches=0)
++    original_run=LivePatrol.run
++    original_track=vision.track_map_pan
++    def track(*a,**kw):
++        result['relative_matches']+=1
++        return original_track(*a,**kw)
++    vision.track_map_pan=track
++    def run(engine,backend,*a,**kw):
++        capture=backend.capture;locate=engine.locator.locate
++        def screenshot():result['captures']+=1;return capture()
++        def absolute(frame):result['absolute_matches']+=1;return locate(frame)
++        backend.capture=screenshot;engine.locator.locate=absolute
++        started=time.perf_counter()
++        value=original_run(engine,backend,*a,**kw)
++        result.update(cpu_wall_seconds=round(time.perf_counter()-started,3),
++                      simulated_elapsed_seconds=round(backend.now,3),
++                      views_checked=len(engine.checked),
++                      drags=sum(event[0]=='drag' for event in backend.inputs))
++        return value
++    LivePatrol.run=run
++    route=load_fixed_route(ResourceStore().data)
++    test_complete_fixed_route_uses_recentered_atlas_screenshots_and_no_transit_camera_clicks(route)
++    args.output.parent.mkdir(parents=True,exist_ok=True)
++    args.output.write_text(json.dumps(result,indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++
++if __name__=='__main__':main()
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,9 +4,9 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py',
+-         'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
++         'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+          'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
+          'win_overlay.py', 'sxs_atlas_tracker.py', 'atlas_metadata.json',
+          'loong_haven_default_atlas.png', 'loong_title_template.png',
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -0,0 +1,92 @@
++"""Build and round-trip verify the complete v26 Windows folder as one 7z."""
++import argparse
++import hashlib
++import json
++import os
++from pathlib import Path
++import re
++import shutil
++import subprocess
++import sys
++import tempfile
++import zipfile
++
++import py7zr
++
++ROOT=Path(__file__).resolve().parents[1]
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--exe',type=Path,required=True)
++    parser.add_argument('--output',type=Path,required=True)
++    args=parser.parse_args()
++    if sys.platform!='win32':raise SystemExit('Assemble this package after the Windows build and native checks.')
++    binary=args.exe.resolve();out=args.output.resolve()
++    with binary.open('rb') as stream:
++        if stream.read(2)!=b'MZ':raise SystemExit('Expected the newly built Windows EXE.')
++    reports=[]
++    for mode in ('self-check','gui-check','input-check'):
++        report=ROOT/(mode+'.json')
++        if json.loads(report.read_text('utf-8-sig')).get('passed') is not True:
++            raise SystemExit(f'{mode} did not pass')
++        reports.append(report)
++    tests=ROOT/'tests-result.txt'
++    result=re.findall(r'(\d+) passed(?:, (\d+) skipped)?',tests.read_text('utf-8-sig'))
++    if not result:raise SystemExit('No successful test count found for this build.')
++    passed,skipped=result[-1]
++    reports.append(tests)
++    comparisons={}
++    for version in ('v24','v26'):
++        path=ROOT/'artifacts'/f'benchmark-{version}.json'
++        data=json.loads(path.read_text())
++        if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
++        comparisons[version]=data;reports.append(path)
++    if comparisons['v26']['relative_matches']>=comparisons['v24']['relative_matches']:
++        raise SystemExit('Stationary-map benchmark did not reduce matching work.')
++    out.parent.mkdir(parents=True,exist_ok=True)
++    with tempfile.TemporaryDirectory(prefix='loonglens-v26-full-') as temporary:
++        folder=Path(temporary);source_zip=folder/'source.zip'
++        subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
++        with zipfile.ZipFile(source_zip) as archive:
++            archive.extractall(folder)
++        app=folder/'LoongLens'
++        if (app/'patrol_adb.py').exists():raise SystemExit('Unexpected ADB backend in the v24-based package.')
++        shutil.copy2(binary,app/'LoongLens.exe')
++        validation=app/'validation';validation.mkdir()
++        for report in reports:shutil.copy2(report,validation/report.name)
++        info=dict(version=26,baseline=24,commit=os.environ.get('GITHUB_SHA','local build'),
++                  windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
++                  exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
++                  speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
++        (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
++        (app/'START-HERE-v26.txt').write_text(
++            'Loong Lens v26 - v24 baseline, named routes, removable points and speed improvements\n\n'
++            'Exit the old app completely. Extract this whole folder and run LoongLens.exe here.\n'
++            'This build uses v24 Windows mouse control; keep BlueStacks visible and focused.\n\n'
++            'Open Edit route. Run route chooses the saved route that will be used for sniping.\n'
++            'Default is protected. Save as creates variants such as Busy zones.\n'
++            'Remove selected works on originals and extras. Use Undo remove or Restore originals.\n'
++            'Save & reset checks applies edits. Switching routes resets pass progress and timing.\n'
++            'Existing v24 edits are imported as My route; the old route file is retained.\n'
++            'Removing points can omit spawn spots; totals are shown in the editor and panel.\n\n'
++            'Default loading/inspection waits and gem confirmation are unchanged.\n'
++            'Last view / Map-load / Inspect show timing on your PC. Offline Windows comparison\n'
++            'and validation reports are included under validation; live game speed is not measured.\n'
++            'Do not delete %LOCALAPPDATA%\\LoongLens; settings, screenshots and history stay there.\n',
++            'utf-8')
++        manifest={p.relative_to(app).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
++                  for p in sorted(app.rglob('*')) if p.is_file()}
++        (app/'PACKAGE-SHA256.json').write_text(json.dumps(manifest,indent=2)+'\n','utf-8')
++        with py7zr.SevenZipFile(out,'w',filters=[{'id':py7zr.FILTER_LZMA2,'preset':6}]) as archive:
++            archive.writeall(app,'LoongLens')
++        with py7zr.SevenZipFile(out) as archive:archive.extractall(folder/'verified')
++        for name,digest in manifest.items():
++            if hashlib.sha256((folder/'verified/LoongLens'/name).read_bytes()).hexdigest()!=digest:
++                raise RuntimeError(f'Archive verification failed: {name}')
++    checksum=hashlib.sha256(out.read_bytes()).hexdigest()
++    out.with_suffix('.7z.sha256').write_text(f'{checksum}  {out.name}\n','ascii')
++    print(f'Verified complete Windows package: {out.name}, {out.stat().st_size:,} bytes, {len(manifest)+1} files')
++
++
++if __name__=='__main__':main()
+--- a/LoongLens/tools/ui_layout_smoke.py
++++ b/LoongLens/tools/ui_layout_smoke.py
+@@ -17,6 +17,7 @@
+ install()
+ sys.modules['winsound']=types.SimpleNamespace(Beep=lambda *a:None,MessageBeep=lambda *a:None,MB_ICONEXCLAMATION=48)
+ sys.modules['mss']=types.SimpleNamespace(mss=lambda:contextlib.nullcontext(None))
++(ROOT/'artifacts').mkdir(exist_ok=True)
+ folder=Path(tempfile.mkdtemp(prefix='layout-ui-',dir=ROOT/'artifacts'))
+ os.environ['XDG_CACHE_HOME']=str(folder)
+ import gem_watch_panel,patrol_live_panel,loong_lens
+@@ -46,6 +47,8 @@
+         assert not panels['live'].runner.running
+         assert not any(isinstance(w,ttk.Checkbutton) and w.cget('text')=='Enable live clicking' for w in descendants(root))
+         panel=panels['live']
++        panel.events.put(dict(kind='view_timing',total_seconds=12.4,map_seconds=11.2,inspect_seconds=1.2,skipped=False));panel.drain()
++        assert 'Inspect 1.2s' in panel.performance.get()
+         recent=tuple(dict(number=n,elapsed=seconds,gems=0) for n,seconds in ((4,461),(3,456),(2,451)))
+         panel.events.put(dict(kind='pass_complete',passes=4,stats=recent[0],recent_passes=recent));panel.drain()
+         assert panel.pass_text.get()=='Passes completed: 4\nLast 3 runs: #4 7:41 · #3 7:36 · #2 7:31'
+@@ -76,6 +79,8 @@
+         panels['live'].show_settings()
+         settings=next(w for w in root.winfo_children() if isinstance(w,tk.Toplevel) and w.title()=='Gem Sniping settings')
+         settings.destroy()
++        panel=panels['live']
++        panel.routes.save_copy('UI route',panel.runner.views);panel.refresh_routes()
+         panel=panels['live'];panel.show_route_editor();root.update()
+         assert panel.editing and panel.editor is not None
+         panel.start();assert not panel.runner.running
+--- a/LoongLens/tools/ui_route_editor_smoke.py
++++ b/LoongLens/tools/ui_route_editor_smoke.py
+@@ -13,7 +13,7 @@
+ def main():
+     root=tk.Tk();root.withdraw();apply_theme(root)
+     route=load_fixed_route(ResourceStore().data)
+-    with tempfile.TemporaryDirectory(prefix='route-editor-',dir='/tmp') as directory:
++    with tempfile.TemporaryDirectory(prefix='route-editor-') as directory:
+         path=Path(directory)/'camera-route-adjustments.json';saved=[];closed=[]
+         def save(views):save_camera_adjustments(route,views,path);saved.append(views)
+         editor=RouteEditor(root,route,route,save,lambda:closed.append(True));root.update()
+@@ -34,11 +34,11 @@
+         assert [v.route_label for v in editor.views[index:index+4]]==['12','12+1','12+2','13']
+         assert editor.remove_button.instate(['!disabled'])
+         editor.remove_extra();assert len(editor.views)==77
+-        editor.select(index);assert editor.remove_button.instate(['disabled'])
++        editor.select(index);assert editor.remove_button.instate(['!disabled'])
+         editor.select(index+1);editor.add_view();root.update()
+         extras=tuple(editor.views[index+1:index+3])
+         editor.window.geometry('1100x820+0+0');root.update()
+-        ImageGrab.grab().save('/tmp/loong-route-editor-v22.png')
++        ImageGrab.grab().save(Path(tempfile.gettempdir())/'loong-route-editor-v26.png')
+         editor.save();root.update();assert saved and closed and path.exists()
+         loaded=load_camera_adjustments(route,path);assert loaded[index]==adjusted
+         assert loaded[index+1:index+3]==extras
+@@ -49,7 +49,28 @@
+         third=RouteEditor(root,route,route,save);root.update()
+         third.nudge(.25,0);third.dirty=False;third.close();root.update()
+         assert load_camera_adjustments(route,path)==route
+-    root.destroy();print('Map editor: drag, extra insertion/removal, save/reload, reset and unsaved changes passed.')
++        fourth=RouteEditor(root,route,route,save);root.update();fourth.select(index)
++        fourth.window.geometry('820x620');root.update()
++        for button in (fourth.remove_button,fourth.undo_button,fourth.restore_button):
++            assert button.winfo_height()>=button.winfo_reqheight()
++            assert button.winfo_rooty()+button.winfo_height()<=fourth.window.winfo_rooty()+fourth.window.winfo_height()
++        fourth.remove_selected();root.update()
++        assert len(fourth.views)==75 and not any(v.route_label=='12' for v in fourth.views)
++        assert '4 omitted' in fourth.total.get()
++        fourth.undo_remove();assert tuple(fourth.views)==route
++        fourth.remove_selected();fourth.save();root.update()
++        reduced=load_camera_adjustments(route,path)
++        assert len(reduced)==75 and not any(v.route_label=='12' for v in reduced)
++        fifth=RouteEditor(root,route,reduced,save);root.update()
++        fifth.restore_originals();fifth.save();root.update()
++        assert load_camera_adjustments(route,path)==route
++        last=RouteEditor(root,route,(route[0],),save);root.update()
++        assert last.remove_button.instate(['disabled'])
++        last.remove_selected();assert len(last.views)==1
++        last.add_view();assert len(last.views)==2
++        last.remove_selected();last.undo_remove();assert len(last.views)==2
++        last.dirty=False;last.close();root.update()
++    root.destroy();print('Map editor: add, remove originals/extras, undo, reduced-route save/reload, restore, one-point route and minimum-size controls passed.')
+ 
+ 
+ if __name__=='__main__':main()
+--- a/LoongLens/tools/ui_route_profiles_smoke.py
++++ b/LoongLens/tools/ui_route_profiles_smoke.py
+@@ -0,0 +1,61 @@
++"""Exercise route dropdowns and Save as in real Tk without gameplay input."""
++from pathlib import Path
++import sys
++import tempfile
++
++ROOT=Path(__file__).resolve().parents[1]
++sys.path.insert(0,str(ROOT))
++import tkinter as tk
++from tkinter import messagebox
++from resources import ResourceStore
++from patrol_route import load_fixed_route
++from route_profiles import RouteProfiles
++from route_editor import RouteEditor
++from ui_theme import apply_theme
++
++
++def main():
++    root=tk.Tk();root.withdraw();apply_theme(root)
++    base=load_fixed_route(ResourceStore().data)
++    with tempfile.TemporaryDirectory(prefix='loonglens-routes-') as folder:
++        profiles=RouteProfiles(base,folder)
++        busy=profiles.save_copy('Busy zones',base[1:]);profiles.activate('default')
++        selected=[];saved=[]
++        def choose(name):
++            ident=next(ident for ident,label in profiles.items() if label==name)
++            views=profiles.activate(ident);selected.append((name,views));return views
++        def copy(views):
++            profiles.save_copy('Busy copy',views);saved.append(views)
++            return 'Busy copy',views
++        editor=RouteEditor(root,base,base,lambda views:profiles.save(profiles.active,views),
++            route_choices=lambda:[name for _,name in profiles.items()],active_route='Default',
++            on_route_change=choose,on_save_copy=copy)
++        editor.window.geometry('820x620');root.update()
++        assert tuple(editor.route_box.cget('values'))==('Default','Busy zones')
++        editor.route_choice.set('Busy zones');editor.change_route();root.update()
++        assert len(editor.views)==75 and profiles.active==busy and selected[-1][0]=='Busy zones'
++        editor.nudge(.25,0)
++        original=messagebox.askyesno
++        try:
++            messagebox.askyesno=lambda *a,**kw:False
++            editor.route_choice.set('Default');editor.change_route()
++            assert editor.route_choice.get()=='Busy zones' and editor.dirty
++            messagebox.askyesno=lambda *a,**kw:True
++            editor.route_choice.set('Default');editor.change_route()
++            assert tuple(editor.views)==base and not editor.dirty
++        finally:messagebox.askyesno=original
++        editor.remove_selected();editor.save_route_copy();root.update()
++        assert editor.route_choice.get()=='Busy copy' and not editor.dirty
++        assert len(editor.views)==75 and profiles.load('default')==base
++        assert 'Busy copy' in editor.route_box.cget('values')
++        for button in (editor.remove_button,editor.undo_button,editor.restore_button):
++            assert button.winfo_height()>=button.winfo_reqheight()
++            assert button.winfo_rooty()+button.winfo_height()<=editor.window.winfo_rooty()+editor.window.winfo_height()
++        editor.close();root.update()
++        restarted=RouteProfiles(base,folder)
++        assert restarted.name(restarted.active)=='Busy copy' and restarted.load(restarted.active)==saved[-1]
++    root.destroy()
++    print('Editor Run route dropdown, Save as, unsaved-edit protection, Default preservation and restart persistence passed.')
++
++
++if __name__=='__main__':main()
