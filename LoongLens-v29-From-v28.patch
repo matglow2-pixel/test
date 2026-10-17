@@ -1,0 +1,479 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v29.md
+@@ -0,0 +1,25 @@
++# v29 — four exact control exclusions, no padding
++
++Map panning and location selection now exclude only the four user-marked boxes:
++the Loong Haven title, legend, zoom/portrait area and bottom controls. The rest
++of the map content is available, including the right-side terrain between the
++legend and zoom slider. The old broad polygon and right strip are removed.
++There is no added padding around the boxes.
++
++Movement stops when the target's input pixel is available. Drag starts and
++intermediate cursor positions use the same four-box geometry. Reveal movements
++choose the nearest available pixel, rather than aiming at the old inner region.
++Window chrome and areas outside the captured game surface are not map content.
++
++A controlled Frontier Vault regression reproduces v28's reported stop on the
++second visit: a two-pixel viewport shift sends the target into the old right
++strip and provokes an ineffective tiny drag. v29 selects both visits directly.
++A two-pass atlas test also repeats the complete default route while preserving
++navigation between passes. These checks do not establish the exact state of
++the user's live game when the original stop occurred.
++
++Fast held movement, stationary release, fresh-frame checks, F10, saved routes,
++point removal, gem detection and inspection settings are retained.
++
++Close the old app, extract the full folder and run its LoongLens.exe. Settings,
++routes, screenshots and history remain in %LOCALAPPDATA%\LoongLens.
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,10 +1,6 @@
+ # Loong Lens
+ 
+-**v28 speeds up map opening, recognition and held cursor movement.** A fresh frame
+-after release can confirm the position already measured during the hold.
+-See [CHANGELOG-v28.md](CHANGELOG-v28.md). Continuous panning, the marked input
+-boundary, saved routes, removable targets,
+-per-view timing and the v24 Windows mouse foundation from v26 are retained.
++**v29 uses only the four marked control exclusions, with no padding:** Loong Haven title, legend, zoom/portrait area and bottom controls. Other map terrain is available, including the former blocked right strip. See [CHANGELOG-v29.md](CHANGELOG-v29.md). Fast held motion, quicker map opening, saved routes and point removal are retained.
+ 
+ **Edit route → Run route** switches saved routes. Default stays protected;
+ **Save as…** creates variants such as Busy zones, with their own removed points
+@@ -39,7 +35,7 @@
+ 1. Open Loong Haven's map at default zoom. The fixed route always begins at **Emerald Corner (#1)**, so start there to minimise setup movement. Keep BlueStacks uncovered and move Loong Lens aside.
+ 2. Press **Snipe** or **F8** to check the remaining route once. **Loop Sniping** repeats complete passes until a gem is found or **F10** stops it. Live controls are ready at launch; opening the app alone sends no input. Choose another Snipe key if a hotkey is already in use.
+ 3. The saved path keeps the original diagram's order and numbers, with **#26 Forsaken Lotus Pond, #51 Jadetoad Isle and #72 Frosted Plain removed**. They are never inspected or included in completion totals. The default route has **76 camera checks / 83 spawn spots**. The original IDs keep their gaps. Wide vertical groups #40 and #64 are split into a/b checks so a spawn near the rectangle edge is not counted as clearly inspected.
+-4. Each check selects the next fixed camera destination, closes the map and inspects gameplay. Reopening normally recentres on the selected camera. The next destination is clicked directly when visible. The clickable surface follows the user-marked map outline: it reaches near the left edge, below the title and down to the lower map edge, with cutouts for the upper-right legend and lower-right zoom controls. Visible targets anywhere inside that surface are selected directly. If it is outside that surface, a held-button drag reveals it; the earlier B/R intermediate camera selections are not used. The fixed order is not replaced by nearest-dot selection.
++4. Each check selects the next fixed camera destination, closes the map and inspects gameplay. Reopening normally recentres on the selected camera. The next destination is clicked directly when visible. The clickable surface is the game content except the four marked title, legend, zoom/portrait and bottom-control boxes; there is no added padding or broad right strip. Visible targets anywhere inside that surface are selected directly. If it is outside that surface, a held-button drag reveals it; the earlier B/R intermediate camera selections are not used. The fixed order is not replaced by nearest-dot selection.
+ 5. Every click targets the saved map coordinate using fresh screenshot alignment. The actual mouse pixels and corrective drag length depend on the current map position, recentering, edge clamping and emulator size. Unconfirmed alignment stops input. Resuming keeps the first unfinished check; Reset checks returns to #1. Each completed loop returns to the same start and order.
+ 
+ The default-route documentation includes **GemSniping-Fixed-Route.png**, a zoomable SVG and a CSV listing all 76 checks. The data used by the app is **gem_sniping_route.json**. Pink spawn locations on the normal map overlay remain the original 86-location dataset; these exclusions apply to Gem Sniping. Existing history entries are kept.
+@@ -48,7 +44,7 @@
+ 
+ Default startup is 0.5 seconds, scene loading is 0.5 seconds, and empty-view inspection is 1.2 seconds. A late gem candidate receives up to one extra second for the unchanged three-sighting / 0.8-second confirmation. Custom waits and map-button calibration are preserved. Increase the loading/check waits in **Sniping settings** if the game renders slowly.
+ 
+-Fixed-route map panning starts near the opposite edge to leave room for movement. To reveal a lower location, the mouse starts low and drags upward; other directions follow the same rule. The button stays held across movement and screenshot checks. Movement stops at the first screenshot where the target is safely inside the user-marked clickable outline, using the actual input pixel with no added padding inside that outline. The cursor then stays still for 0.18 seconds before release to limit flinging. A fresh settled alignment and pre-click screenshot are still required. The map is not pulled farther toward the centre after the target is visible. Drag starts and every intermediate cursor step stay within the outlined surface. A stroke checks progress at most every 240 reference pixels. If the cursor reaches the clear surface's edge first, it settles and releases before starting another hold from the opposite edge. Alignment recovery can also require a separate stroke. Reopened-map overlap uses the previous selected camera, with periodic absolute atlas refreshes. Focus loss, obstruction, resizing, stalled movement, map closure or F10 releases the button and stops input.
++Fixed-route map panning starts near the opposite edge to leave room for movement. To reveal a lower location, the mouse starts low and drags upward; other directions follow the same rule. The button stays held across movement and screenshot checks. Movement stops at the first screenshot where the target is safely inside the map content outside the four marked control boxes, using the actual input pixel with no added padding around those boxes. The cursor then stays still for 0.18 seconds before release to limit flinging. A fresh settled alignment and pre-click screenshot are still required. The map is not pulled farther toward the centre after the target is visible. Drag starts and every intermediate cursor step stay within the outlined surface. A stroke checks progress at most every 240 reference pixels. If the cursor reaches the clear surface's edge first, it settles and releases before starting another hold from the opposite edge. Alignment recovery can also require a separate stroke. Reopened-map overlap uses the previous selected camera, with periodic absolute atlas refreshes. Focus loss, obstruction, resizing, stalled movement, map closure or F10 releases the button and stops input.
+ 
+ Other dark locked groups are still skipped from the current screenshot without changing the order of remaining targets. Camera targets avoid the known Loong Haven IV and Crowcry Plain portals; Crowcry clicks farther left. Demonbind Tower is shifted lower and horizontally centred to show more ground above the chat. After a confirmed find, the enabled click action selects the gem once and stops.
+ 
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,4 +1,4 @@
+-# Verification — Loong Lens v28
++# Verification — Loong Lens v29
+ 
+ The app targets Windows 10 (2004+) / Windows 11 and BlueStacks at Loong Haven's default zoom. Linux checks use the pinned Python 3.12 environment and simulated desktop delivery. No live game input is sent by these checks.
+ 
+@@ -12,7 +12,7 @@
+ 
+ ## Visible map click area
+ 
+-A shared six-vertex polygon in 570×1029 reference coordinates follows the latest red exclusion markings: X 10–412 below Y 100, extending to X 480 only below Y 250, and ending at Y 918. The top/title, legend, entire right-hand strip and bottom Back/region controls are excluded from panning and location selection. Fixed targets and held cursor paths use the input pixel with no additional padding inside that outline. The patrol engine and route-map drag predictions use this geometry. Parameterized checks place targets at independent screen pixels: clear targets are selected directly; targets behind the legend, right strip or bottom controls are revealed inside the safe surface first. Nonfinite points are rejected. The full atlas route simulation verifies all 76 camera selections using the updated surface.
++Map input excludes four exact rectangles in the 570×1029 reference: title (28,54)–(191,98), legend (422,58)–(554,231), zoom/portrait (490,641)–(569,923), and bottom controls (3,929)–(551,1028). The surrounding game content is available; window chrome and the outer frame are outside game content. No padding or broad right strip is added. Tests independently check pixels on each box edge, pixels immediately outside each edge, formerly blocked right-side terrain, title/legend/portrait/bottom avoidance, and direct target selection in newly available areas. Reveal geometry partitions the exact rectangle complement into input-pixel areas.
+ 
+ ## Faster mouse dragging and alignment
+ 
+@@ -36,7 +36,7 @@
+ 
+ The build workflow runs the full tests, builds the windowed one-file EXE, compares its embedded white badge against the supplied ICO, validates frozen atlas/OCR resources and opens the native GUI. The GUI check verifies the saved-route selector, Default protection, reduced routes, route editing, history controls, correct transparent window icon and clean shutdown. The native input check exercises guarded clicks/drags/hotkeys and capture exclusion on the app's own test window, not BlueStacks. It verifies exactly one press with no release between two held movements and captures, then exactly one normal release. F10 is sent during another held movement and must release the mouse. Passing reports accompany the release downloads.
+ 
+-The v24/v26/v27/v28 full-route comparison includes movement distance in reference pixels, held-stroke and intermediate-movement counts, screenshot/recognition counts, processing wall time and simulated waits, with a per-view breakdown including Acme Nexus. Packaging requires no additional held movements or map distance, fewer matches and fewer captures. These are simulated desktop actions, not measured live-game results. Named-route persistence and removal checks from v26 remain included; original route IDs and spawn coverage are retained.
++The v28/v29 full-route comparison reports processing, modeled waits, matching/capture counts and per-view timing. Packaging verifies all 76 selections, complete per-view reports and no additional pan movements. A dedicated regression reproduces the second-visit Frontier Vault failure with the old right strip and a tiny ineffective drag; v29 completes both visits directly. An additional atlas test runs two complete passes using persistent navigation, checking all 152 camera selections against independent viewport coordinates.
+ 
+ v28 reuses a measured held frame as the first observation only after the stationary endpoint pause: its timestamp must be at least 0.15 seconds old and its reference must describe an observed zero-offset pose. A fresh post-release frame confirms it. Changed frames need recognition and a further stable observation; flat terrain cannot use the pixel-comparison shortcut. Tests cover insufficient/future timestamps, predicted movement, changed frames after release, cancellation and periodic absolute refreshes. The pre-click movement check remains. Additional input checks cover the upper-left Loong Haven title and the shown character portrait bubble with a conservative glowing-border radius; targets behind them are revealed in the clear surface first, and mouse holds cannot start there.
+ 
+@@ -50,4 +50,4 @@
+ 
+ Map recognition time now counts toward the 0.15-second observation interval. Tests simulate both fast and slow recognition: a new screenshot still follows at least 0.15 seconds later, while recognition that already consumed that interval is not followed by an unnecessary fixed wait. Held cursor movement uses 4-millisecond steps over at most 40 reference pixels, with a 25-millisecond initial button-down delivery pause and the existing stationary 0.18-second endpoint hold. Native Windows checks exercise the resulting actual motion and F10 release.
+ 
+-The timing model includes actual processing time and virtual input/loading waits in one clock, so recognition can satisfy the map observation interval. The same Windows runner measures all four versions sequentially. The resulting full-pass and per-view model times remain offline simulations, not live game measurements.
++The timing model includes actual processing time and virtual input/loading waits in one clock, so recognition can satisfy the map observation interval. The same Windows runner measures both versions sequentially. The resulting full-pass and per-view model times remain offline simulations, not live game measurements.
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -223,7 +223,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Reuse measured map observations v28'
++            details['version']='Four exact map control exclusions v29'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+--- a/LoongLens/patrol_route.py
++++ b/LoongLens/patrol_route.py
+@@ -7,21 +7,35 @@
+ from camera_patrol import Viewpoint, PatrolSettings, camera_click_clear
+ 
+ 
+-# Latest user-marked surface, inset in the 570 x 1029 reference capture.
+-# Exclude the top chrome/title, legend, entire right strip and bottom tabs.
+-MAP_CLICK_POLYGON=((10.,100.),(412.,100.),(412.,250.),(480.,250.),
+-                   (480.,918.),(10.,918.))
++# User's four red boxes, in the 570 x 1029 input reference. No padding.
++# The remaining Android map surface is available, including the right-hand
++# terrain between the legend and zoom controls. Window chrome is not map.
++MAP_CONTENT_BOUNDS=(4,34,565,1028)
++MAP_BLOCKED_RECTS=((28,54,191,98),       # Loong Haven title
++                   (422,58,554,231),    # Legend
++                   (490,641,569,923),   # Zoom slider and portrait
++                   (3,929,551,1028))    # Bottom controls
+ 
+ 
+ def map_clickable(point):
+     x,y=point
+     if not (math.isfinite(x) and math.isfinite(y)):return False
+-    inside=False
+-    for (ax,ay),(bx,by) in zip(MAP_CLICK_POLYGON,MAP_CLICK_POLYGON[1:]+MAP_CLICK_POLYGON[:1]):
+-        cross=(x-ax)*(by-ay)-(y-ay)*(bx-ax)
+-        if abs(cross)<1e-7 and min(ax,bx)<=x<=max(ax,bx) and min(ay,by)<=y<=max(ay,by):return True
+-        if (ay>y)!=(by>y) and x<(bx-ax)*(y-ay)/(by-ay)+ax:inside=not inside
+-    return inside
++    left,top,right,bottom=MAP_CONTENT_BOUNDS
++    return (left<=x<=right and top<=y<=bottom
++            and not any(a<=x<=c and b<=y<=d for a,b,c,d in MAP_BLOCKED_RECTS))
++
++
++def _allowed_map_rectangles():
++    """Partition the exact box complement into closed input-pixel rectangles."""
++    left,top,right,bottom=MAP_CONTENT_BOUNDS
++    xs=sorted({left,right+1}|{x for r in MAP_BLOCKED_RECTS for x in (r[0],r[2]+1)})
++    ys=sorted({top,bottom+1}|{y for r in MAP_BLOCKED_RECTS for y in (r[1],r[3]+1)})
++    return tuple((a,b,c-1,d-1) for a,c in zip(xs,xs[1:]) for b,d in zip(ys,ys[1:])
++                 if left<=a<c<=right+1 and top<=b<d<=bottom+1
++                 and map_clickable(((a+c-1)/2,(b+d-1)/2)))
++
++
++MAP_ALLOWED_RECTS=_allowed_map_rectangles()
+ 
+ 
+ def clear_view_bounds(view,settings=None):
+@@ -82,14 +96,13 @@
+ def route_reveal_delta(point):
+     """Move toward the nearest clear map area, rather than toward its centre."""
+     x,y=point
+-    rectangles=((10.,100.,412.,918.),(10.,250.,480.,918.))
+-    targets=[(min(right,max(left,x)),min(bottom,max(top,y)))
+-             for left,top,right,bottom in rectangles]
++    targets=[(min(right,max(left,round(x))),min(bottom,max(top,round(y))))
++             for left,top,right,bottom in MAP_ALLOWED_RECTS]
+     tx,ty=min(targets,key=lambda p:math.dist(point,p))
+     return tx-x,ty-y
+ 
+ 
+-DRAG_BOUNDS=(38.,270.,464.,900.)
++DRAG_BOUNDS=(12.,240.,489.,928.)
+ 
+ 
+ def route_drag_start(delta):
+--- a/LoongLens/tests/test_fixed_route.py
++++ b/LoongLens/tests/test_fixed_route.py
+@@ -105,7 +105,7 @@
+     assert [e['view'].route_number for e in events if e['kind']=='view']==[1,2,1,2]
+ 
+ 
+-def test_complete_fixed_route_uses_recentered_atlas_screenshots_and_no_transit_camera_clicks(route):
++def test_complete_fixed_route_uses_recentered_atlas_screenshots_and_no_transit_camera_clicks(route,repeat_passes=1):
+     cv2.setNumThreads(2)
+     atlas=cv2.imread(str(ROOT/'loong_haven_default_atlas.png'))
+     class Backend:
+@@ -129,7 +129,7 @@
+             if not self.open:
+                 assert p==(480.,170.);self.open=True;self.center=self.camera;return
+             if p==(64.,980.):self.open=False;return
+-            expected=route[len(self.visits)]
++            expected=route[len(self.visits)%len(route)]
+             known=self.pose();world=((p[0]-known.tx)/known.scale,(known.ty-p[1])/known.scale)
+             assert math.dist(world,(expected.x,expected.y))<.4,(expected.route_number,world)
+             assert map_clickable(p)
+@@ -150,24 +150,30 @@
+                 self.held=False;self.inputs.append(('drag',start,self.cursor))
+         def drag_held_to(self,end):
+             assert self.held
+-            for x,y in (self.cursor,end):assert 38<=x<=464 and 270<=y<=900
++            for x,y in (self.cursor,end):assert 12<=x<=489 and 240<=y<=928
+             self.wait(.004*max(1,math.ceil(math.dist(self.cursor,end)/40)))
+             self.center=(self.center[0]-(end[0]-self.cursor[0])/12.45,
+                          self.center[1]+(end[1]-self.cursor[1])/12.45)
+             self.cursor=end
+     backend=Backend();events=[]
+-    engine=LivePatrol(route,LiveSettings(),threading.Event(),events.append,
+-        detector=SimpleNamespace(detect=lambda *a,**kw:[]),
+-        locator=SimpleNamespace(locate=lambda f:backend.pose()),
+-        title=SimpleNamespace(score=lambda f:float(f[0,0,0]>0)),clock=lambda:backend.now)
+-    engine.run(backend)
+-    assert backend.visits==[v.route_number for v in route]
++    navigation={}
++    for _ in range(repeat_passes):
++        engine=LivePatrol(route,LiveSettings(),threading.Event(),events.append,
++            detector=SimpleNamespace(detect=lambda *a,**kw:[]),
++            locator=SimpleNamespace(locate=lambda f:backend.pose()),
++            title=SimpleNamespace(score=lambda f:float(f[0,0,0]>0)),clock=lambda:backend.now,navigation=navigation)
++        engine.run(backend)
++    assert backend.visits==[v.route_number for v in route]*repeat_passes
+     assert len(engine.checked)==76
+     # Exactly one camera selection per check; no B/R/removed-dot selections.
+-    assert sum(i[0]=='click' for i in backend.inputs)==76*3-1
+-    assert 0<sum(i[0]=='drag' for i in backend.inputs)<30
++    assert sum(i[0]=='click' for i in backend.inputs)==76*repeat_passes*3-1
++    assert 0<sum(i[0]=='drag' for i in backend.inputs)<30*repeat_passes
+     assert engine.navigation.get('relative_updates',0)>0
+     assert not any(e['kind']=='found' for e in events)
++
++
++def test_second_full_pass_revisits_frontier_vault_with_persistent_navigation(route):
++    test_complete_fixed_route_uses_recentered_atlas_screenshots_and_no_transit_camera_clicks(route,repeat_passes=2)
+ 
+ 
+ def test_pass_totals_finish_at_76_and_timer_stays_frozen(route):
+--- /dev/null
++++ b/LoongLens/tests/test_frontier_repeat.py
+@@ -0,0 +1,32 @@
++"""A tiny second-visit shift must not trigger a pan through open right terrain."""
++from contextlib import contextmanager
++import math
++from camera_patrol import Viewpoint
++from test_live_patrol import setup
++
++
++def test_frontier_vault_second_visit_does_not_pan_at_the_removed_strip():
++    engine,backend,events=setup()
++    view=Viewpoint(52.5,209.5,'Frontier Vault',frozenset({(52,209)}),43)
++    engine.views=(view,);engine.fixed_route=True
++    original=backend.hold_drag;state={}
++    @contextmanager
++    def hold(start):
++        state.update(start=start,actual=(0.,0.))
++        with original(start):yield
++    backend.hold_drag=hold
++    def move(end):
++        start=state['start'];delta=(end[0]-start[0],end[1]-start[1])
++        # Model the game's gesture threshold: tiny movement is still a tap.
++        actual=delta if math.hypot(*delta)>=8 else (0.,0.)
++        change=(actual[0]-state['actual'][0],actual[1]-state['actual'][1])
++        backend.center=(backend.center[0]-change[0]/12.45,backend.center[1]+change[1]/12.45)
++        backend.cursor=end;state['actual']=actual
++    backend.drag_held_to=move
++    for px in (479.,481.):
++        engine.checked.clear();backend.open=True
++        backend.center=(view.x-(px-285)/12.45,view.y)
++        engine.run(backend)
++        assert engine.checked=={0}
++    assert not any(action[0]=='drag' for action in backend.inputs)
++    assert [event['view'].route_number for event in events if event['kind']=='view']==[43,43]
+--- a/LoongLens/tests/test_held_pan.py
++++ b/LoongLens/tests/test_held_pan.py
+@@ -14,10 +14,10 @@
+ 
+ 
+ @pytest.mark.parametrize('delta,start',[
+-    ((0,-100),(285,900)),((0,100),(285,270)),
+-    ((-100,0),(464,500)),((100,0),(38,500)),
+-    ((-100,-100),(464,900)),((100,100),(38,270)),
+-    ((100,-100),(38,900)),((-100,100),(464,270))])
++    ((0,-100),(285,928)),((0,100),(285,240)),
++    ((-100,0),(489,500)),((100,0),(12,500)),
++    ((-100,-100),(489,928)),((100,100),(12,240)),
++    ((100,-100),(12,928)),((-100,100),(489,240))])
+ def test_directional_anchor_leaves_room_and_avoids_controls(delta,start):
+     assert route_drag_start(delta)==start
+     assert route_point_visible(start)
+@@ -34,7 +34,7 @@
+     assert math.hypot(dx,dy)<math.dist(point,(285,500))
+ 
+ 
+-@pytest.mark.parametrize('point',[(480,180),(530,800),(64,980),(285,960),(5,500)])
++@pytest.mark.parametrize('point',[(480,180),(530,800),(64,980),(285,960),(5,20)])
+ def test_controls_and_edges_are_not_revealed_targets(point):
+     assert not route_point_visible(point)
+ 
+@@ -128,7 +128,7 @@
+     engine.run(backend)
+     strokes=[a for a in backend.inputs if a[0]=='drag']
+     assert len(strokes)==1 and len(moves)>=2
+-    assert strokes[0][1][1]==900  # Reveal lower map: start low and drag upward.
++    assert strokes[0][1][1]==928  # Reveal lower map: start low and drag upward.
+     assert route_point_visible(screens[-1][1])
+     assert all(not route_point_visible(point) for _,point in screens[:-1])
+     assert screens[-1][0]==len(moves)  # No movement after the first visible frame.
+@@ -136,7 +136,7 @@
+ 
+ 
+ def test_first_visible_target_is_not_pulled_to_center():
+-    engine,backend,events,view=fixed_engine(120,100)
++    engine,backend,events,view=fixed_engine(126,100)
+     engine.run(backend)
+     strokes=[a for a in backend.inputs if a[0]=='drag']
+     assert len(strokes)==1
+@@ -192,7 +192,7 @@
+ 
+ 
+ def test_release_movement_is_measured_again_before_the_target_click():
+-    engine,backend,events,view=fixed_engine(120,100)
++    engine,backend,events,view=fixed_engine(126,100)
+     original_hold=backend.hold_drag;original_click=backend.click;shifted=[];clicked=[]
+     @contextmanager
+     def hold(start):
+@@ -207,7 +207,7 @@
+         original_click(point)
+     backend.hold_drag=hold;backend.click=click
+     engine.run(backend)
+-    assert shifted and len(clicked)==1 and clicked[0][0]==pytest.approx(450)
++    assert shifted and len(clicked)==1 and clicked[0][0]==pytest.approx(535)
+ 
+ 
+ def test_lost_intermediate_recognition_releases_before_realigning_and_continuing():
+--- a/LoongLens/tests/test_map_click_area.py
++++ b/LoongLens/tests/test_map_click_area.py
+@@ -7,7 +7,8 @@
+ from test_live_patrol import setup
+ 
+ 
+-SAFE_POINTS=((20,110),(400,110),(20,500),(470,300),(470,590),(470,850),(20,910),(400,910),(470,900))
++SAFE_POINTS=((20,110),(400,110),(20,500),(470,300),(470,590),(470,850),(20,910),(400,910),(470,900),
++             (530,300),(530,590),(490,300),(490,590),(20,920),(400,920),(20,60),(210,95),(5,500),(555,150))
+ 
+ 
+ @pytest.mark.parametrize('point',SAFE_POINTS)
+@@ -15,8 +16,7 @@
+     assert map_clickable(point)
+ 
+ 
+-@pytest.mark.parametrize('point',[(450,150),(540,220),(530,700),(515,910),(450,960),(15,50),(-5,300),(570,500),(20,940),
+-                                  (490,300),(490,590),(495,910),(20,920),(400,920),(530,300),
++@pytest.mark.parametrize('point',[(450,150),(540,220),(530,700),(515,910),(450,960),(100,75),(-5,300),(570,500),(20,940),(15,20),
+                                   (float('nan'),500),(300,float('inf'))])
+ def test_legend_zoom_tabs_chrome_and_outside_are_excluded(point):
+     assert not map_clickable(point)
+@@ -37,7 +37,7 @@
+     assert backend.inputs[0][0]=='click' and backend.inputs[0][1]==pytest.approx(point)
+ 
+ 
+-@pytest.mark.parametrize('point',[(450,150),(530,700),(450,960),(400,920),(495,910),(530,300),(490,590),(100,75),(190,90)])
++@pytest.mark.parametrize('point',[(450,150),(530,700),(450,960),(495,910),(100,75),(190,90)])
+ def test_target_over_a_control_is_dragged_to_map_surface_before_selection(point):
+     engine,backend,events=setup()
+     x=100+(point[0]-285)/12.45;y=100+(500-point[1])/12.45
+@@ -52,24 +52,39 @@
+ 
+ @pytest.mark.parametrize('angle',range(0,360,30))
+ def test_character_portrait_bubble_and_glowing_border_are_excluded(angle):
+-    # Picture 2: the right-side portrait is near (526,730) at reference size.
+-    # Include a conservative 38-pixel radius around its glowing border.
+-    point=(526+38*math.cos(math.radians(angle)),730+38*math.sin(math.radians(angle)))
++    # The shown portrait/glow lies inside the marked zoom/portrait box.
++    point=(526+34*math.cos(math.radians(angle)),759+34*math.sin(math.radians(angle)))
+     assert not map_clickable(point)
+ 
+ 
+-@pytest.mark.parametrize('point',[(20,60),(100,70),(185,90),(210,95)])
++@pytest.mark.parametrize('point',[(28,60),(100,70),(185,90),(190,95)])
+ def test_upper_left_loong_haven_title_is_excluded(point):
+     assert not map_clickable(point)
+ 
+ 
+ def test_target_behind_portrait_bubble_is_revealed_before_clicking():
+-    engine,backend,events=setup();bubble=(526,730)
++    engine,backend,events=setup();bubble=(526,759)
+     x=100+(bubble[0]-285)/12.45;y=100+(500-bubble[1])/12.45
+     view=Viewpoint(x,y,'Behind portrait',frozenset({(math.floor(x),math.floor(y))}),1)
+     patrol=LivePatrol((view,),engine.settings,engine.cancel,events.append,
+         detector=engine.detector,locator=engine.locator,title=engine.title,clock=engine.clock)
+     patrol.run(backend)
+     first=next(action[1] for action in backend.inputs if action[0]=='click')
+-    assert map_clickable(first) and math.dist(first,bubble)>38
++    assert map_clickable(first) and math.dist(first,bubble)>34
+     assert backend.inputs[0][0]=='drag'
++
++
++@pytest.mark.parametrize('point',[(27,75),(192,75),(100,53),(100,99),
++                                  (421,150),(555,150),(500,57),(500,232),
++                                  (489,800),(530,640),(530,924),
++                                  (552,960),(300,928)])
++def test_pixel_immediately_outside_a_red_box_is_available_without_padding(point):
++    assert map_clickable(point)
++
++
++@pytest.mark.parametrize('point',[(28,75),(191,75),(100,54),(100,98),
++                                  (422,150),(554,150),(500,58),(500,231),
++                                  (490,800),(530,641),(530,923),
++                                  (3,960),(551,960),(300,929)])
++def test_pixels_on_red_boxes_are_excluded(point):
++    assert not map_clickable(point)
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,7 +4,7 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+          'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v28 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v29 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -37,22 +37,20 @@
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v24','v26','v27','v28'):
++    for version in ('v28','v29'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
+         comparisons[version]=data;reports.append(path)
+-    baseline=comparisons['v27'];latest=comparisons['v28']
++    baseline=comparisons['v28'];latest=comparisons['v29']
+     if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
+         raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+-    if latest['relative_matches']>=baseline['relative_matches'] or latest['captures']>=baseline['captures']:
+-        raise SystemExit('Observed-frame reuse did not reduce repeated recognition/captures.')
+     if (latest['held_strokes']>baseline['held_strokes'] or latest['held_moves']>baseline['held_moves']
+             or latest['pan_reference_pixels']>baseline['pan_reference_pixels']+1):
+         raise SystemExit('The faster panning comparison added map movement.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v28-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v29-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+@@ -62,24 +60,25 @@
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=28,baseline=27,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=29,baseline=28,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                   speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v28.txt').write_text(
+-            'Loong Lens v28 - reduce repeated map recognition after held movement\n\n'
++        (app/'START-HERE-v29.txt').write_text(
++            'Loong Lens v29 - four marked control exclusions, no padding\n\n'
+             'Exit the old app completely. Extract this whole folder and run LoongLens.exe here.\n'
+             'This build uses v24 Windows mouse control; keep BlueStacks visible and focused.\n\n'
+             'Map panning keeps the button held between movement and screenshot checks.\n'
+             'It starts with room to drag, stops when the next target is safely visible,\n'
+             'holds the cursor still briefly, releases and verifies the position before clicking.\n'
+-            'Drag starts, cursor paths and targets stay inside the marked map surface.\n'
++            'Map input excludes only the four marked control boxes within the game surface.\n'
++            'No padding or broad right-hand exclusion strip is added.\n'
+             'A window-edge re-anchor or alignment recovery can require another hold.\n\n'
+             'This update reuses the last measured held frame as the first alignment observation.\n'
+             'A fresh post-release frame confirms it after the stationary pause. Changed frames\n'
+             'still require recognition and another stable observation before the location click.\n'
+-            'The Loong Haven title, portrait bubble, legend, right strip and bottom controls\n'
++            'The Loong Haven title, legend, zoom/portrait box and bottom controls\n'
+             'remain excluded from map panning and location selection.\n\n'
+             'Open Edit route. Run route chooses the saved route that will be used for sniping.\n'
+             'Default is protected. Save as creates variants such as Busy zones.\n'
