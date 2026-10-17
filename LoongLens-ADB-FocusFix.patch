@@ -1,0 +1,154 @@
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -25,6 +25,14 @@
+ ## Gem Sniping
+ 
+ ### ADB input (v25, live BlueStacks validation pending)
++
++**ADB focus compatibility fix:** reads the complete Android WindowManager dump
++instead of the window-list-only view, which can omit current focus on Android
++11. When the focus field is absent, it checks ActivityTaskManager's top-resumed
++activity. Null, unreadable or conflicting focus still stops input; permission
++dialogs are not accepted as the game. If the connection preview still cannot
++identify the app, confirm that the configured ADB port belongs to the exact
++BlueStacks instance running the game. No desktop-mouse fallback is used.
+ 
+ **Sniping settings → Input method → ADB** sends screenshots, taps and swipes through the selected Android device. It does not move the PC cursor, send Windows keys or bring BlueStacks to the foreground. Mouse mode remains the default for existing settings. Only Gem Sniping uses ADB; the Map overlay and ordinary Gem Watch continue using the visible Windows desktop.
+ 
+--- a/LoongLens/patrol_adb.py
++++ b/LoongLens/patrol_adb.py
+@@ -124,13 +124,38 @@
+                 process.kill()
+             process.communicate()
+ 
++    @staticmethod
++    def active_package(state, fields):
++        """Read only explicitly focused/resumed records, never the window list.
++
++        A present but null/unreadable record is a stop condition, not a reason
++        to select a potentially stale activity from elsewhere in the dump.
++        """
++        for field in fields:
++            records = re.findall(r'^\s*' + re.escape(field) + r'\s*[:=]\s*([^\r\n]*)', state, re.MULTILINE)
++            if not records:
++                continue
++            packages = []
++            for record in records:
++                match = re.search(r'\s([A-Za-z0-9_.]+)/[^\s}]+', record)
++                if not match:
++                    return True, None
++                packages.append(match.group(1))
++            return True, packages[0] if len(set(packages)) == 1 else None
++        return False, None
++
+     def foreground_package(self):
+-        state = self.command('shell', 'dumpsys', 'window', 'windows').decode('utf-8', errors='replace')
+-        # Android 7/9/11 used by BlueStacks expose the foreground window here.
+-        match = re.search(r'mCurrentFocus=Window\{[^\n}]*\s([A-Za-z0-9_.]+)/[^\s}]+', state)
+-        if not match:
+-            raise RuntimeError('ADB cannot identify the active Android app. Open the game, dismiss dialogs, and retry.')
+-        return match.group(1)
++        # `dumpsys window windows` omits global focus on some Android 11 builds.
++        # The complete dump includes the current-focus summary on those builds.
++        state = self.command('shell', 'dumpsys', 'window').decode('utf-8', errors='replace')
++        present, package = self.active_package(state, ('mCurrentFocus', 'mFocusedWindow'))
++        if not present:
++            # Some emulator builds expose only the ActivityTaskManager record.
++            activity = self.command('shell', 'dumpsys', 'activity', 'activities').decode('utf-8', errors='replace')
++            _, package = self.active_package(activity, ('topResumedActivity', 'mResumedActivity'))
++        if not package:
++            raise RuntimeError('ADB cannot identify the active Android app. Check that this ADB port belongs to the BlueStacks instance running the game, dismiss Android dialogs, and retry.')
++        return package
+ 
+     def focus(self):
+         """Connect the selected instance without bringing its desktop window forward."""
+@@ -144,7 +169,9 @@
+         package = self.foreground_package()
+         if self.package is not None and package != self.package:
+             raise RuntimeError('The active Android app changed; ADB sniping stopped.')
+-        if any(word in package.lower() for word in ('launcher', 'systemui')) or package == 'com.android.settings':
++        if any(word in package.lower() for word in ('launcher', 'systemui')) or package in (
++                'com.android.settings', 'com.android.permissioncontroller',
++                'com.google.android.permissioncontroller', 'com.android.packageinstaller'):
+             raise RuntimeError('Open the game in BlueStacks before starting ADB sniping.')
+         self.package = package
+         self.capture()
+--- a/LoongLens/tests/test_adb_patrol.py
++++ b/LoongLens/tests/test_adb_patrol.py
+@@ -41,7 +41,7 @@
+                     self.output = b'device\n'
+                 elif command[-2:] == ['screencap', '-p']:
+                     self.output = device.image() if callable(device.image) else device.image
+-                elif command[-2:] == ['window', 'windows']:
++                elif command[-2:] == ['dumpsys', 'window']:
+                     self.output = f'mCurrentFocus=Window{{abc u0 {device.package}/.MainActivity}}'.encode()
+                 else:
+                     self.output = b'connected'
+@@ -283,3 +283,67 @@
+     else:
+         assert not any(e['kind'] == 'found' for e in events)
+         assert [x[2] for x in game.inputs] == [True, True, False, True, True]
++
++
++@pytest.mark.parametrize('state', [
++    '  mCurrentFocus=Window{abc u0 com.example.game/.MainActivity}\n',
++    '  mCurrentFocus = Window{abc u0 com.example.game/org.cocos2dx.cpp.AppActivity}\r\n',
++    'mFocusedWindow: Window{abc u0 com.example.game/.Game}\n',
++])
++def test_android_window_focus_formats(state):
++    assert AdbBackend.active_package(state, ('mCurrentFocus', 'mFocusedWindow')) == (True, 'com.example.game')
++
++
++@pytest.mark.parametrize('field', ['topResumedActivity', 'mResumedActivity'])
++def test_android_activity_manager_formats(field):
++    state = f'    {field}=ActivityRecord{{abc u0 com.example.game/.MainActivity t12}}\n'
++    assert AdbBackend.active_package(state, ('topResumedActivity', 'mResumedActivity')) == (True, 'com.example.game')
++
++
++@pytest.mark.parametrize('state', [
++    'mCurrentFocus=null\nmFocusedWindow=Window{old u0 com.old.game/.Old}\n',
++    'mCurrentFocus=Window{unreadable}\n',
++    'mCurrentFocus=Window{abc u0 com.one.game/.Main}\nmCurrentFocus=Window{def u0 com.other.game/.Main}\n',
++])
++def test_null_unreadable_or_ambiguous_focus_is_not_replaced_by_stale_app(state):
++    assert AdbBackend.active_package(state, ('mCurrentFocus', 'mFocusedWindow')) == (True, None)
++
++
++def test_unfocused_window_listing_does_not_identify_active_app():
++    state = 'Window #0 Window{abc u0 com.example.game/.MainActivity}\n'
++    assert AdbBackend.active_package(state, ('mCurrentFocus',)) == (False, None)
++
++
++def test_android_11_full_window_dump_and_activity_fallback(monkeypatch):
++    device = Device(monkeypatch)
++    backend = device.backend
++    commands = []
++    def command(*args):
++        commands.append(args)
++        if args == ('shell', 'dumpsys', 'window'):
++            return b'WINDOW MANAGER WINDOWS\nWindow #0 Window{abc u0 com.stale.app/.Old}\n'
++        assert args == ('shell', 'dumpsys', 'activity', 'activities')
++        return b'  topResumedActivity=ActivityRecord{abc u0 com.example.game/.Main t42}\n'
++    monkeypatch.setattr(backend, 'command', command)
++    assert backend.foreground_package() == 'com.example.game'
++    assert len(commands) == 2
++
++
++def test_unknown_focus_still_stops_without_touch_or_stale_fallback(monkeypatch):
++    device = Device(monkeypatch)
++    backend = device.backend
++    commands = []
++    def command(*args):
++        commands.append(args)
++        return b'mCurrentFocus=null\n'
++    monkeypatch.setattr(backend, 'command', command)
++    with pytest.raises(RuntimeError, match='cannot identify'): backend.foreground_package()
++    assert commands == [('shell', 'dumpsys', 'window')]
++
++
++@pytest.mark.parametrize('package', ['com.android.permissioncontroller', 'com.google.android.permissioncontroller'])
++def test_permission_dialog_does_not_become_the_game(monkeypatch, package):
++    device = Device(monkeypatch)
++    device.package = package
++    with pytest.raises(RuntimeError, match='Open the game'): device.connect()
++    assert not any('input' in cmd for cmd in device.commands)
