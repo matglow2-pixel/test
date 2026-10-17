@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/LoongLens/CHANGELOG-v27.md
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,32 @@
 +# v27 — continuous held map panning
 +
 +Gem Sniping now keeps the mouse button held while moving the map and checking
@@ -13,7 +13,8 @@
 +- Measure progress after movements of at most 120 reference pixels, keeping
 +  the same button hold across those screenshot/recognition checks.
 +- Keep drag starts, cursor paths and target clicks within the user-marked map
-+  outline, with padding around the legend, zoom controls, Back and region tabs.
++  outline, excluding the top/title, legend, entire right-hand strip and bottom
++  Back/region controls. An additional inset protects against edge clicks.
 +- Stop the cursor, hold it stationary for 0.18 seconds, then release. Confirm
 +  the settled map again before clicking the next location.
 +- At the window edge, release safely before re-anchoring for another stroke.
@@ -64,7 +65,14 @@
  
  The app targets Windows 10 (2004+) / Windows 11 and BlueStacks at Loong Haven's default zoom. Linux checks use the pinned Python 3.12 environment and simulated desktop delivery. No live game input is sent by these checks.
  
-@@ -18,7 +18,7 @@
+@@ -12,13 +12,13 @@
+ 
+ ## Visible map click area
+ 
+-The old rectangle (X 32–510, Y 150–800) unnecessarily classified visible edge dots as offscreen. A shared eight-vertex polygon in 570×1029 reference coordinates now follows the supplied yellow outline, with a small inset, a legend notch and a zoom-control cutout. The lower boundary slopes upward toward the right above the map tabs. The patrol engine and route-map drag predictions use the same geometry. Parameterized engine checks place targets at independently specified screen pixels and require direct selection with no drag in the newly available top/left/right/bottom regions. Legend, zoom and tab targets must be panned into the map before selection. Nonfinite points are rejected. The full atlas route simulation verifies the complete fixed route with the expanded surface.
++A shared six-vertex polygon in 570×1029 reference coordinates follows the latest red exclusion markings: X 10–412 below Y 100, extending to X 480 only below Y 250, and ending at Y 918. The top/title, legend, entire right-hand strip and bottom Back/region controls are excluded from panning and location selection. Fixed targets and held cursor paths require a further 8-pixel inset. The patrol engine and route-map drag predictions use this geometry. Parameterized checks place targets at independent screen pixels: clear targets are selected directly; targets behind the legend, right strip or bottom controls are revealed inside the safe surface first. Nonfinite points are rejected. The full atlas route simulation verifies all 76 camera selections using the updated surface.
+ 
+ ## Faster mouse dragging and alignment
  
  Native drag sequence checks require one mouse-down held throughout movement, final movement to the requested endpoint, a stationary 0.18-second hold, and guaranteed mouse-up on cancellation. The motion now uses 4–18 waits of 0.02 seconds instead of 18 waits of 0.03 seconds. Input guard tests cover foreground loss, moved/resized windows, covered points and F10 cancellation.
  
@@ -249,6 +257,21 @@
              fresh=backend.capture()
 --- a/LoongLens/patrol_route.py
 +++ b/LoongLens/patrol_route.py
+@@ -7,10 +7,10 @@
+ from camera_patrol import Viewpoint, PatrolSettings, camera_click_clear
+ 
+ 
+-# User-marked map surface in the 570 x 1029 reference capture, with a small
+-# inset. The notch avoids the legend; the lower-right cutout avoids zoom.
+-MAP_CLICK_POLYGON=((10.,98.),(416.,98.),(416.,250.),(548.,250.),
+-                   (542.,610.),(502.,616.),(502.,918.),(10.,934.))
++# Latest user-marked surface, inset in the 570 x 1029 reference capture.
++# Exclude the top chrome/title, legend, entire right strip and bottom tabs.
++MAP_CLICK_POLYGON=((10.,100.),(412.,100.),(412.,250.),(480.,250.),
++                   (480.,918.),(10.,918.))
+ 
+ 
+ def map_clickable(point):
 @@ -71,6 +71,47 @@
      dx,dy=tx-x,ty-y
      factor=max(1.,math.hypot(dx,dy)/limit)
@@ -265,14 +288,14 @@
 +def route_reveal_delta(point):
 +    """Move toward the nearest clear map area, rather than toward its centre."""
 +    x,y=point
-+    rectangles=((24.,112.,400.,910.),(24.,264.,488.,900.),(24.,264.,526.,596.))
++    rectangles=((24.,112.,400.,900.),(24.,264.,464.,900.))
 +    targets=[(min(right,max(left,x)),min(bottom,max(top,y)))
 +             for left,top,right,bottom in rectangles]
 +    tx,ty=min(targets,key=lambda p:math.dist(point,p))
 +    return tx-x,ty-y
 +
 +
-+DRAG_BOUNDS=(38.,270.,490.,900.)
++DRAG_BOUNDS=(38.,270.,464.,900.)
 +
 +
 +def route_drag_start(delta):
@@ -361,7 +384,7 @@
 +                self.held=False;self.inputs.append(('drag',start,self.cursor))
 +        def drag_held_to(self,end):
 +            assert self.held
-+            for x,y in (self.cursor,end):assert 38<=x<=490 and 270<=y<=900
++            for x,y in (self.cursor,end):assert 38<=x<=464 and 270<=y<=900
 +            self.wait(.02*max(1,math.ceil(math.dist(self.cursor,end)/24)))
 +            self.center=(self.center[0]-(end[0]-self.cursor[0])/12.45,
 +                         self.center[1]+(end[1]-self.cursor[1])/12.45)
@@ -389,9 +412,9 @@
 +
 +@pytest.mark.parametrize('delta,start',[
 +    ((0,-100),(285,900)),((0,100),(285,270)),
-+    ((-100,0),(490,500)),((100,0),(38,500)),
-+    ((-100,-100),(490,900)),((100,100),(38,270)),
-+    ((100,-100),(38,900)),((-100,100),(490,270))])
++    ((-100,0),(464,500)),((100,0),(38,500)),
++    ((-100,-100),(464,900)),((100,100),(38,270)),
++    ((100,-100),(38,900)),((-100,100),(464,270))])
 +def test_directional_anchor_leaves_room_and_avoids_controls(delta,start):
 +    assert route_drag_start(delta)==start
 +    assert route_point_visible(start)
@@ -504,12 +527,12 @@
 +
 +
 +def test_first_visible_target_is_not_pulled_to_center():
-+    engine,backend,events,view=fixed_engine(125,100)
++    engine,backend,events,view=fixed_engine(120,100)
 +    engine.run(backend)
 +    strokes=[a for a in backend.inputs if a[0]=='drag']
 +    assert len(strokes)==1
 +    point=engine.locator.locate(backend.capture()).project(view.x,view.y)
-+    assert route_point_visible(point) and point[0]>480
++    assert route_point_visible(point) and point[0]>450
 +    assert math.dist(strokes[0][1],strokes[0][2])<100
 +
 +
@@ -560,7 +583,7 @@
 +
 +
 +def test_release_movement_is_measured_again_before_the_target_click():
-+    engine,backend,events,view=fixed_engine(125,100)
++    engine,backend,events,view=fixed_engine(120,100)
 +    original_hold=backend.hold_drag;original_click=backend.click;shifted=[];clicked=[]
 +    @contextmanager
 +    def hold(start):
@@ -575,7 +598,7 @@
 +        original_click(point)
 +    backend.hold_drag=hold;backend.click=click
 +    engine.run(backend)
-+    assert shifted and len(clicked)==1 and clicked[0][0]==pytest.approx(496)
++    assert shifted and len(clicked)==1 and clicked[0][0]==pytest.approx(434)
 +
 +
 +def test_lost_intermediate_recognition_releases_before_realigning_and_continuing():
@@ -624,22 +647,32 @@
      def __init__(self,backend):self.backend=backend
 --- a/LoongLens/tests/test_map_click_area.py
 +++ b/LoongLens/tests/test_map_click_area.py
-@@ -20,7 +20,8 @@
+@@ -7,7 +7,7 @@
+ from test_live_patrol import setup
+ 
+ 
+-SAFE_POINTS=((20,110),(400,110),(20,500),(530,300),(530,590),(480,850),(20,920),(400,920),(495,910))
++SAFE_POINTS=((20,110),(400,110),(20,500),(470,300),(470,590),(470,850),(20,910),(400,910),(470,900))
+ 
+ 
+ @pytest.mark.parametrize('point',SAFE_POINTS)
+@@ -15,7 +15,9 @@
+     assert map_clickable(point)
+ 
+ 
+-@pytest.mark.parametrize('point',[(450,150),(540,220),(530,700),(515,910),(450,960),(15,50),(-5,300),(570,500),(20,940),(float('nan'),500),(300,float('inf'))])
++@pytest.mark.parametrize('point',[(450,150),(540,220),(530,700),(515,910),(450,960),(15,50),(-5,300),(570,500),(20,940),
++                                  (490,300),(490,590),(495,910),(20,920),(400,920),(530,300),
++                                  (float('nan'),500),(300,float('inf'))])
+ def test_legend_zoom_tabs_chrome_and_outside_are_excluded(point):
      assert not map_clickable(point)
  
- 
--@pytest.mark.parametrize('point',SAFE_POINTS)
-+@pytest.mark.parametrize('point',((20,110),(400,110),(20,500),(530,300),(530,590),
-+                                  (480,850),(20,920),(400,910),(490,900)))
- def test_visible_edge_dot_is_selected_directly_without_any_map_drag(point):
-     engine,backend,events=setup()
-     # Independently place the target at the requested reference pixel using
-@@ -35,7 +36,7 @@
+@@ -35,7 +37,7 @@
      assert backend.inputs[0][0]=='click' and backend.inputs[0][1]==pytest.approx(point)
  
  
 -@pytest.mark.parametrize('point',[(450,150),(530,700),(450,960)])
-+@pytest.mark.parametrize('point',[(450,150),(530,700),(450,960),(400,920),(495,910)])
++@pytest.mark.parametrize('point',[(450,150),(530,700),(450,960),(400,920),(495,910),(530,300),(490,590)])
  def test_target_over_a_control_is_dragged_to_map_surface_before_selection(point):
      engine,backend,events=setup()
      x=100+(point[0]-285)/12.45;y=100+(500-point[1])/12.45
