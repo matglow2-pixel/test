@@ -1895,10 +1895,11 @@
              'The measured held frame is the first alignment observation.\n'
 --- /dev/null
 +++ b/LoongLens/tools/ui_spy_smoke.py
-@@ -0,0 +1,129 @@
+@@ -0,0 +1,133 @@
 +"""Native Tk + real Spy/detector/storage; camera delivery uses a simulated backend."""
 +from datetime import datetime
 +import json
++import logging
 +import os
 +from pathlib import Path
 +import sys
@@ -2016,6 +2017,9 @@
 +    try:loong_lens.main([],default_tab='spy')
 +    finally:
 +        tk.Tk=original;patrol_live_panel.LivePatrolPanel.__init__=original_sniper;spy_panel.SpyPanel.__init__=original_spy
++        # Windows cannot remove the isolated directory while its FileHandler
++        # owns loonglens.log, even after the app and SQLite stores are closed.
++        logging.shutdown()
 +        if original_local is None:os.environ.pop('LOCALAPPDATA',None)
 +        else:os.environ['LOCALAPPDATA']=original_local
 +        temporary.cleanup()
