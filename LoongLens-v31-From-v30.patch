@@ -49,7 +49,7 @@
  
  **Edit route → Run route** switches saved routes. Default stays protected;
  **Save as…** creates variants such as Busy zones, with their own removed points
-@@ -10,7 +10,7 @@
+@@ -10,27 +10,74 @@
  
  ## Start
  
@@ -58,7 +58,12 @@
  
  The EXE bundles its own code. To run edited Python files, use RUN_LOONG_LENS.bat; editing adjacent source does not alter the EXE. The launcher activates an existing instance, so exit that instance before changing launchers.
  
-@@ -22,15 +22,62 @@
+ The EXE keeps the white gem badge in Explorer. Its window and taskbar use the original transparent gem artwork. Settings, history and screenshots remain in `%LOCALAPPDATA%\LoongLens` when upgrading.
+ 
+-## Map overlay
++## Map Tweaker
+ 
+ Open the large Loong Haven map with BlueStacks visible. Pink dots mark 86 possible gem locations; Ingredients groups the bean, bamboo and crab layers. Pause, Re-align and appearance controls affect only the overlay.
  
  Recent sightings appear as teal dots with a 30-minute countdown from their original spotting time. Editing coordinates moves the dot without restarting its timer. Expired dots disappear; history stays saved. Manual pickups have their own Mark collected, Pickup history and timer controls.
  
@@ -126,7 +131,12 @@
  
  This replaces the former Live patrol tab. The separate Patrol preview tab and its simulation controls have been removed; screenshot-based engine and UI checks remain in the development tools.
  
-@@ -44,7 +91,7 @@
+@@ -40,11 +87,11 @@
+ 4. Each check selects the next fixed camera destination, closes the map and inspects gameplay. Reopening normally recentres on the selected camera. The next destination is clicked directly when visible. The clickable surface is the game content except the four marked title, legend, zoom/portrait and bottom-control boxes; there is no added padding or broad right strip. Visible targets anywhere inside that surface are selected directly. If it is outside that surface, a held-button drag reveals it; the earlier B/R intermediate camera selections are not used. The fixed order is not replaced by nearest-dot selection.
+ 5. Every click targets the saved map coordinate using fresh screenshot alignment. The actual mouse pixels and corrective drag length depend on the current map position, recentering, edge clamping and emulator size. Unconfirmed alignment stops input. Resuming keeps the first unfinished check; Reset checks returns to #1. Each completed loop returns to the same start and order.
+ 
+-The default-route documentation includes **GemSniping-Fixed-Route.png**, a zoomable SVG and a CSV listing all 76 checks. The data used by the app is **gem_sniping_route.json**. Pink spawn locations on the normal map overlay remain the original 86-location dataset; these exclusions apply to Gem Sniping. Existing history entries are kept.
++The default-route documentation includes **GemSniping-Fixed-Route.png**, a zoomable SVG and a CSV listing all 76 checks. The data used by the app is **gem_sniping_route.json**. Pink spawn locations on the normal map overlay remain the original 86-location dataset; these exclusions apply to Gem Sniper. Existing history entries are kept.
  
  **Edit route** opens the full Loong Haven map and stops sniping input. Select a numbered camera target to see its white camera rectangle and dashed suggested clear area, then drag it or enter X/Y. Pink dots remain the original spawn locations. Use the wheel or +/− to zoom, drag empty map to pan, and use Zoom to selected for fine changes; arrow keys nudge by 0.25 tile. Reset point restores a selected original point to its default position; for an extra it restores the position at which you opened or added it. Reset route to defaults removes extras and restores the bundled camera positions. **Add view after selected** inserts a separate camera target one tile beside the chosen point and selects it for adjustment. It runs immediately after that point, including when you add after another extra. Extra labels such as #12+1 keep the original map numbers intact. Drag the extra to cover the ground you want; **Remove selected** deletes an original point or an extra view from your personal route. Undo remove restores a removal before closing the editor; Restore originals brings back omitted originals at defaults while retaining surviving edits and extras. At least one view must remain. Removing an original leaves its extra views in place; remove those separately if you want to skip them too. Added views do not add spawn coordinates or change the excluded locations. **Save & reset checks** stores your camera positions and extra views locally, clears pass progress/timing and uses those positions on future launches and repeated passes. Closing without saving keeps the current route. Remaining route points keep their original order and labels; omitted targets are skipped. The editor shows omitted spawn totals, while the original spawn database stays unchanged. Extras keep their saved order within their original groups. Existing v21 camera adjustments load automatically. Warnings identify recorded centres outside the suggested clear area; manual adjustments can intentionally show ground beside the listed dots. Known portal coordinates are allowed; hide portal icons using the game map filter. One camera view cannot guarantee coverage of every possible 10-tile spawn offset.
  
@@ -177,6 +187,12 @@
 +exit /b %errorlevel%
 --- a/LoongLens/VALIDATION.md
 +++ b/LoongLens/VALIDATION.md
+@@ -1,4 +1,4 @@
+-# Verification — Loong Lens v30
++# Verification — Loong Lens v31
+ 
+ The app targets Windows 10 (2004+) / Windows 11 and BlueStacks at default map
+ zoom. Local algorithm checks use pinned Python dependencies. The release
 @@ -84,13 +84,36 @@
  removed targets are absent from that loop and never selected for inspection.
  
@@ -328,7 +344,20 @@
          return status
 --- a/LoongLens/loong_lens.py
 +++ b/LoongLens/loong_lens.py
-@@ -52,7 +52,7 @@
+@@ -1,4 +1,4 @@
+-"""Loong Lens — combined Windows / BlueStacks map overlay and Gem Watch."""
++"""Loong Lens — combined Windows / BlueStacks Map Tweaker, Gem Sniper and Gem Spy."""
+ from __future__ import annotations
+ import argparse
+ import json
+@@ -46,13 +46,13 @@
+     fixed=load_fixed_route(store.data)
+     assert len(fixed)==76 and len(set().union(*(v.cells for v in fixed)))==83
+     assert [v.route_number for v in fixed]==[i for i in range(1,78) if i not in (26,51,72) for _ in range(2 if i in (40,64) else 1)]
+-    print('Fixed Gem Sniping path: 76 checks / 83 spots; route IDs 26, 51 and 72 excluded.')
++    print('Fixed Gem Sniper path: 76 checks / 83 spots; route IDs 26, 51 and 72 excluded.')
+     print('This offline check does not validate Windows capture, click-through, or the live game.')
+ 
  def main(argv=None, default_tab='map'):
      parser = argparse.ArgumentParser(description=__doc__)
      parser.add_argument('--self-check', action='store_true', help='Check data and atlas recognition without opening a window')
