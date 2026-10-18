@@ -31,6 +31,9 @@ jobs:
       - name: Verify native Spy UI with real detector and simulated route input
         working-directory: source/LoongLens
         run: python tools/ui_spy_smoke.py
+      - name: Verify source GUI layout and shared controls on Windows
+        working-directory: source/LoongLens
+        run: python desktop_entry.py --gui-check-report source-gui-check.json
       - name: Run Windows application tests
         working-directory: source/LoongLens
         shell: pwsh
@@ -100,6 +103,7 @@ jobs:
             source/LoongLens/gui-check.json
             source/LoongLens/input-check.json
             source/LoongLens/spy-ui-check.json
+            source/LoongLens/source-gui-check.json
             source/LoongLens/artifacts/benchmark-v30.json
             source/LoongLens/artifacts/benchmark-v31.json
             source/LoongLens/build/LoongLens/warn-LoongLens.txt
