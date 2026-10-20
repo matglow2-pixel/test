@@ -1,0 +1,422 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v34.md
+@@ -0,0 +1,20 @@
++# v34 — recognise dim camera selections
++
++- Fix successful camera selections being rejected because the translucent
++  outline is gray rather than bright white. Detect thin local-contrast lines
++  and the projected camera rectangle instead of imposing a white-pixel cutoff.
++- Require the expected horizontal and vertical geometry where visible so a
++  nearby offset rectangle or a click ripple cannot confirm the wrong target.
++- Recognised selections close the map and inspect the view. Genuinely ignored
++  clicks still retry once and remain unchecked if confirmation fails.
++- Process the rectangle neighbourhood; add no fixed pause, input padding,
++  portal restrictions or changes to map-control boxes and drag bounds.
++- Preserve v33 daily 5/5 collection, 20-second waits, Emerald Corner (241,107)
++  return, 16:00 Europe/Sofia reset, 1h 15s sighting dots, routes, assets,
++  native cursor protection and Gem Spy histories/observation-only behaviour.
++
++Validation includes dim/antialiased outlines on brown/green/snow backgrounds at
++three capture sizes, clipped outlines, offset rectangles, click ripples and
++one-tap/one-Back simulated inspection. The full Windows suite, native UI/input,
++frozen EXE and archive extraction/hash checks are run before publication.
++These checks are not a live BlueStacks game run.
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,6 +1,6 @@
+ # Loong Lens
+ 
+-**v33 recovers from late map movement and runs Gem Sniper until the 5/5 game-day goal. After each gem click it waits 20 seconds, returns to Emerald Corner (241,107), then starts a new route pass.** Gem Watch is removed. Shared detection preferences, alerts and the existing history remain available through Gem Sniper. Gem Spy uses that selected route and settings, continuously observes without clicking gems, and keeps durable encounter and hourly histories. See [CHANGELOG-v33.md](CHANGELOG-v33.md).
++**v34 recognises dim camera rectangles so a successful selection can close the map and continue. It also recovers from late map movement and runs Gem Sniper until the 5/5 game-day goal. After each gem click it waits 20 seconds, returns to Emerald Corner (241,107), then starts a new route pass.** Gem Watch is removed. Shared detection preferences, alerts and the existing history remain available through Gem Sniper. Gem Spy uses that selected route and settings, continuously observes without clicking gems, and keeps durable encounter and hourly histories. See [CHANGELOG-v34.md](CHANGELOG-v34.md).
+ 
+ **Edit route → Run route** switches saved routes. Default stays protected;
+ **Save as…** creates variants such as Busy zones, with their own removed points
+@@ -10,7 +10,7 @@
+ 
+ ## Start
+ 
+-Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v33**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
++Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v34**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
+ 
+ The EXE bundles its own code. To run edited Python files, use RUN_LOONG_LENS.bat; editing adjacent source does not alter the EXE. The launcher activates an existing instance, so exit that instance before changing launchers.
+ 
+@@ -157,3 +157,17 @@
+ the usable map surface, the held drag reveals it again. Recovery is bounded;
+ unrecognisable or continuously moving terrain remains unchecked. The original
+ four control boxes and exact no-padding boundaries remain unchanged.
++
++
++## v34 camera confirmation
++
++The camera outline is translucent, so it need not be bright white. Selection
++confirmation now recognises thin lines by their local contrast and rectangular
++geometry, including dim or darker outlines over light terrain and antialiased
++captures. A confirmed selection closes the map and proceeds to inspection.
++A click ripple, plain bright ground or a rectangle offset from the selected
++point cannot acknowledge that target. Genuine ignored clicks still get one
++retry against fresh recognition and remain unchecked if unsuccessful.
++
++This correction adds no fixed wait and changes no input boundaries, control
++boxes or padding. Daily collection/return, Gem Spy, routes and history remain.
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,4 +1,4 @@
+-# Verification — Loong Lens v33
++# Verification — Loong Lens v34
+ 
+ The app targets Windows 10 (2004+) / Windows 11 and BlueStacks at default map
+ zoom. Local algorithm checks use pinned Python dependencies. The release
+@@ -84,12 +84,12 @@
+ removed targets are absent from that loop and never selected for inspection.
+ 
+ The Windows workflow builds a new windowed one-file EXE, verifies all embedded
+-icon images, and checks frozen assets, the v33 GUI label and actual native input.
+-Fresh reports identify version 33. The complete folder includes the EXE,
++icon images, and checks frozen assets, the v34 GUI label and actual native input.
++Fresh reports identify version 34. The complete folder includes the EXE,
+ source, assets, OCR models, launchers, tools, tests and validation reports.
+ Packaging extracts the completed 7z and verifies every payload file by SHA256.
+ 
+-The v32/v33 timings come from sequential runs on the same Windows machine with
++The v33/v34 timings come from sequential runs on the same Windows machine with
+ simulated input/loading/detection and real atlas processing. Processing time,
+ modeled waits, per-view timings and movement counts are reported separately.
+ They are not measured live BlueStacks times. Live animation, loading, gesture
+@@ -165,9 +165,25 @@
+ collection wait, stop at quota and Reset checks preserving the daily count.
+ The existing Spy integration, native client-border/confinement/F10, route
+ editor/profile, frozen GUI/resource/input and archive hash checks are retained.
+-The full-route v32/v33 comparison uses the same atlas fixture and excludes gem
++The full-route v33/v34 comparison uses the same atlas fixture and excludes gem
+ collection; it is a simulated timing comparison, not a live BlueStacks result.
+ 
+ Sighting-map timer checks cover the new 3,615-second lifetime, hour-aware
+ labels, visibility after the former 30-minute cutoff, the final 15 seconds,
+ exact/fractional expiry, restarts, original timestamps and edited coordinates.
++
++
++## v34 camera-outline regressions
++
++Camera checks exercise dim and antialiased outlines over brown ground, green
++ground and bright snow at three capture sizes, plus the existing clipped-edge
++cases. Nearby offset rectangles with overlapping horizontal or vertical sides,
++click ripples and bright flat ground remain rejected. A simulated selected
++camera with a dim outline sends one target tap and one Back, checks the view
++once and never enters the unconfirmed retry path. Genuine ignored clicks,
++delayed automatic closing and F10 remain covered.
++
++Native Windows runs the full suite and the same UI, input, frozen EXE and full
++archive checks. The v33/v34 full-route benchmark uses the same atlas simulation.
++It does not measure this player's game client, the latest inline screenshot,
++or a live BlueStacks run. Private videos are not included in the archive.
+--- a/LoongLens/desktop_entry.py
++++ b/LoongLens/desktop_entry.py
+@@ -81,7 +81,7 @@
+                     icons = [user.GetClassLongPtrW(wrapper, field) for field in (-14, -34)]
+                 assert any(icons), 'The native window has no configured icon'
+             widgets = descendants(self)
+-            assert any(isinstance(item,ttk.Label) and item.cget('text')=='LOONG LENS · v33' for item in widgets)
++            assert any(isinstance(item,ttk.Label) and item.cget('text')=='LOONG LENS · v34' for item in widgets)
+             notebook = next(item for item in widgets if isinstance(item, ttk.Notebook))
+             assert [notebook.tab(tab, 'text') for tab in notebook.tabs()] == ['Map Tweaker', 'Gem Sniper', 'Gem Spy']
+             assert not any(isinstance(item,ttk.Checkbutton) and item.cget('text')=='Enable live clicking' for item in widgets)
+@@ -221,10 +221,10 @@
+                 gui_check()
+             else:
+                 check_native_input()
+-            result = {'passed': True, 'mode': sys.argv[1], 'version': 33}
++            result = {'passed': True, 'mode': sys.argv[1], 'version': 34}
+             status = 0
+         except Exception:
+-            result = {'passed': False, 'mode': sys.argv[1], 'version': 33, 'error': traceback.format_exc()}
++            result = {'passed': False, 'mode': sys.argv[1], 'version': 34, 'error': traceback.format_exc()}
+             status = 1
+         path.write_text(json.dumps(result, indent=2), encoding='utf-8')
+         return status
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -77,7 +77,7 @@
+     folder.mkdir(parents=True, exist_ok=True)
+     logging.basicConfig(filename=folder / 'loonglens.log', level=logging.INFO,
+                         format='%(asctime)s %(levelname)s %(message)s')
+-    logging.getLogger('loonglens').info('Loong Lens v33 executable=%s source=%s',sys.executable,Path(__file__).resolve())
++    logging.getLogger('loonglens').info('Loong Lens v34 executable=%s source=%s',sys.executable,Path(__file__).resolve())
+     settings_path = folder / 'settings.json'
+     coordinates_path = folder / 'coordinates.csv'
+     settings = {}
+@@ -163,7 +163,7 @@
+             apply_theme(self.root)
+             brand = ttk.Frame(self.root, padding=(20, 12))
+             brand.pack(fill='x')
+-            ttk.Label(brand, text='LOONG LENS · v33', style='Brand.TLabel').pack(side='left')
++            ttk.Label(brand, text='LOONG LENS · v34', style='Brand.TLabel').pack(side='left')
+             ttk.Label(brand, text='Loong Haven companion', style='Muted.TLabel', font=(FONT, 9)).pack(side='right')
+             self.notebook = ttk.Notebook(self.root)
+             self.notebook.pack(fill='both', expand=True)
+@@ -226,7 +226,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Gem Spy v33; persistent observations and recovery'
++            details['version']='Gem Spy v34; persistent observations and recovery'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+--- a/LoongLens/patrol_live.py
++++ b/LoongLens/patrol_live.py
+@@ -124,39 +124,51 @@
+ 
+ 
+ def camera_selection_visible(frame,point,scale):
+-    """Require the camera's white rectangular outline, not a tap ripple.
+-
+-    Test the expected outline at the clicked map coordinate. Clipped edges and
+-    the four marked map controls contribute no evidence. A small round click
+-    animation cannot supply two long perpendicular rectangle edges.
++    """Recognise the thin camera rectangle, including dim/antialiased lines.
++
++    The game's outline is translucent and can be darker than snowy terrain.
++    Measure local line contrast and geometry instead of requiring white pixels.
++    Process only its neighbourhood; input bounds and control boxes are unchanged.
+     """
+     import numpy as np
+     from patrol_route import MAP_BLOCKED_RECTS,MAP_CONTENT_BOUNDS
+-    normal=LivePatrol.normal(frame);hsv=cv2.cvtColor(normal,cv2.COLOR_BGR2HSV)
+-    white=cv2.inRange(hsv,np.array((0,0,205)),np.array((179,75,255)))!=0
+-    gray=cv2.cvtColor(normal,cv2.COLOR_BGR2GRAY)
+-    thin=cv2.morphologyEx(gray,cv2.MORPH_TOPHAT,np.ones((9,9),np.uint8))>=8
+-    white &= thin  # Pale terrain/blank frames are not a white camera outline.
++    if not all(math.isfinite(v) for v in (*point,scale)) or scale<=0:return False
++    normal=LivePatrol.normal(frame)
+     x,y=point;half_w=scale*6.7/2;half_h=scale*12.1/2
+-    allowed=np.zeros_like(white)
+-    a,b,c,d=MAP_CONTENT_BOUNDS;allowed[b:d+1,a:c+1]=True
+-    for a,b,c,d in MAP_BLOCKED_RECTS:allowed[b:d+1,a:c+1]=False
+-    def edge(x1,y1,x2,y2):
++    left=max(0,math.floor(x-half_w)-10);right=min(570,math.ceil(x+half_w)+11)
++    top=max(0,math.floor(y-half_h)-10);bottom=min(1029,math.ceil(y+half_h)+11)
++    if right-left<9 or bottom-top<9:return False
++    crop=normal[top:bottom,left:right];hsv=cv2.cvtColor(crop,cv2.COLOR_BGR2HSV)
++    gray=cv2.cvtColor(crop,cv2.COLOR_BGR2GRAY);kernel=np.ones((9,9),np.uint8)
++    contrast=np.maximum(cv2.morphologyEx(gray,cv2.MORPH_TOPHAT,kernel),
++                        cv2.morphologyEx(gray,cv2.MORPH_BLACKHAT,kernel))
++    thin=((contrast>=5)&(hsv[:,:,1]<=110)).astype(np.uint8)
++    vertical=cv2.morphologyEx(thin,cv2.MORPH_OPEN,np.ones((9,1),np.uint8))!=0
++    horizontal=cv2.morphologyEx(thin,cv2.MORPH_OPEN,np.ones((1,9),np.uint8))!=0
++    yy,xx=np.indices(thin.shape);xx+=left;yy+=top
++    a,b,c,d=MAP_CONTENT_BOUNDS;allowed=(xx>=a)&(xx<=c)&(yy>=b)&(yy<=d)
++    for a,b,c,d in MAP_BLOCKED_RECTS:allowed &= ~((xx>=a)&(xx<=c)&(yy>=b)&(yy<=d))
++    def edge(x1,y1,x2,y2,lines):
+         count=max(1,round(math.dist((x1,y1),(x2,y2))))
+         px=np.rint(np.linspace(x1,x2,count)).astype(int);py=np.rint(np.linspace(y1,y2,count)).astype(int)
+-        inside=(px>=3)&(px<567)&(py>=3)&(py<1026)
++        px-=left;py-=top
++        inside=(px>=3)&(px<crop.shape[1]-3)&(py>=3)&(py<crop.shape[0]-3)
+         px=px[inside];py=py[inside]
+         keep=allowed[py,px];px=px[keep];py=py[keep]
+-        if len(px)<8:return False
++        if len(px)<8:return False,False
+         matches=np.zeros(len(px),bool)
+         for dx in range(-3,4):
+-            for dy in range(-3,4):matches |= white[py+dy,px+dx]
+-        return float(matches.mean())>=.72
+-    left=edge(x-half_w,y-half_h,x-half_w,y+half_h)
+-    right=edge(x+half_w,y-half_h,x+half_w,y+half_h)
+-    top=edge(x-half_w,y-half_h,x+half_w,y-half_h)
+-    bottom=edge(x-half_w,y+half_h,x+half_w,y+half_h)
+-    return sum((left,right,top,bottom))>=2
++            for dy in range(-3,4):matches |= lines[py+dy,px+dx]
++        return float(matches.mean())>=.72,True
++    sides=(edge(x-half_w,y-half_h,x-half_w,y+half_h,vertical),
++           edge(x+half_w,y-half_h,x+half_w,y+half_h,vertical),
++           edge(x-half_w,y-half_h,x+half_w,y-half_h,horizontal),
++           edge(x-half_w,y+half_h,x+half_w,y+half_h,horizontal))
++    if sum(matched for matched,available in sides)<2:return False
++    # Two overlapping horizontal edges from an offset rectangle cannot prove
++    # its centre. Require both axes whenever both are actually visible.
++    return all(not any(available for matched,available in pair) or any(matched for matched,available in pair)
++               for pair in (sides[:2],sides[2:]))
+ 
+ 
+ class LivePatrol:
+--- a/LoongLens/tests/test_camera_selection.py
++++ b/LoongLens/tests/test_camera_selection.py
+@@ -25,6 +25,46 @@
+     if kind=='ripple':cv2.circle(frame,point,16,(255,255,255),2)
+     if kind=='wrong-camera':outline(frame,(150,300))
+     assert not camera_selection_visible(frame,point,12.45)
++
++
++@pytest.mark.parametrize('background,line',[
++    ((95,117,135),(180,180,180)),
++    ((125,170,140),(160,166,161)),
++    ((222,229,232),(180,180,180)),
++])
++@pytest.mark.parametrize('capture_size',[(570,1029),(380,686),(700,1264)])
++def test_translucent_outline_on_ground_snow_and_resized_capture(background,line,capture_size):
++    point=(237,188);scale=12.45
++    frame=np.full((1029,570,3),background,np.uint8)
++    x,y=point
++    cv2.rectangle(frame,(round(x-scale*6.7/2),round(y-scale*12.1/2)),
++                  (round(x+scale*6.7/2),round(y+scale*12.1/2)),line,1,cv2.LINE_AA)
++    frame=cv2.resize(frame,capture_size,interpolation=cv2.INTER_AREA)
++    assert camera_selection_visible(frame,point,scale)
++
++
++@pytest.mark.parametrize('offset',[(12,0),(0,15)])
++def test_overlapping_sides_of_a_different_camera_cannot_confirm_the_target(offset):
++    point=(285,500);frame=np.full((1029,570,3),100,np.uint8)
++    outline(frame,(point[0]+offset[0],point[1]+offset[1]))
++    assert not camera_selection_visible(frame,point,12.45)
++
++
++def test_dim_camera_closes_map_after_one_tap_and_checks_once():
++    engine,backend,events=setup();capture=backend.capture
++    def screenshot():
++        frame=capture()
++        if backend.open:
++            # Preserve the map classifier sentinel; only dim the rendered outline.
++            frame[frame==255]=175
++        return frame
++    backend.capture=screenshot
++    engine.run(backend,auto=False)
++    assert engine.checked=={0} and not backend.open
++    assert len(backend.inputs)==2
++    assert backend.inputs[-1][1]==LiveSettings().map_close
++    assert sum(row['kind']=='checked' for row in events)==1
++    assert not any('not confirmed' in row.get('message','') for row in events)
+ 
+ 
+ def test_ignored_map_click_never_closes_map_inspects_or_marks_checked():
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,7 +4,7 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+          'sniper_counter.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v33 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v34 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -29,7 +29,7 @@
+     for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check'):
+         report=ROOT/(mode+'.json')
+         data=json.loads(report.read_text('utf-8-sig'))
+-        if data.get('passed') is not True or data.get('version')!=33:
++        if data.get('passed') is not True or data.get('version')!=34:
+             raise SystemExit(f'{mode} did not pass')
+         reports.append(report)
+     tests=ROOT/'tests-result.txt'
+@@ -38,19 +38,19 @@
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v32','v33'):
++    for version in ('v33','v34'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
+         comparisons[version]=data;reports.append(path)
+-    baseline=comparisons['v32'];latest=comparisons['v33']
++    baseline=comparisons['v33'];latest=comparisons['v34']
+     if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
+         raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+     if latest['held_strokes']>=30 or latest['held_moves']>latest['held_strokes']*5:
+         raise SystemExit('The centre-start route comparison exceeded its movement bounds.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v33-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v34-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+@@ -60,13 +60,13 @@
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=33,baseline=32,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=34,baseline=33,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                   speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v33.txt').write_text(
+-            'Loong Lens v33 - map settling recovery and daily collection loop\n\n'
++        (app/'START-HERE-v34.txt').write_text(
++            'Loong Lens v34 - dim camera outline confirmation\n\n'
+             'Sniper clicks each confirmed gem, waits 20s, returns to Emerald Corner (241,107), then restarts.\n'
+             'The top-right counter and Today only use 16:00 Europe/Sofia game-day reset.\n'
+             'Teal sighting dots last 1 hour and 15 seconds from their original spotted time.\n'
+@@ -75,7 +75,9 @@
+             'Late map movement triggers settling and recalculation instead of an immediate stop.\n'
+             'Stable views keep the existing capture check and have no extra fixed wait.\n'
+             'Mouse input uses native client hit-testing, temporary confinement and cursor verification.\n'
+-            'Camera selection must close automatically or show its white camera outline before Back.\n'
++            'Camera selection must close automatically or show its camera outline before Back.\n'
++            'Dim and antialiased camera outlines are recognised using line contrast and geometry.\n'
++            'A click ripple or an offset camera rectangle does not confirm this target.\n'
+             'An ignored tap retries once and never marks that location checked.\n'
+             'Held movement uses lightweight terrain tracking with a SIFT fallback.\n\n'
+             'Exit the old app completely. Extract this whole folder and run LoongLens.exe here.\n'
+@@ -87,7 +89,7 @@
+             'No padding or broad right-hand exclusion strip is added.\n'
+             'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
+             'Hide portal icons in the game map as you requested.\n'
+-            'The header shows v33; settings and personal routes remain in LocalAppData.\n'
++            'The header shows v34; settings and personal routes remain in LocalAppData.\n'
+             'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
+             'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
+             'It observes repeatedly, never clicks a gem, and continues after a find.\n'
+--- a/LoongLens/tools/ui_sniper_smoke.py
++++ b/LoongLens/tools/ui_sniper_smoke.py
+@@ -50,6 +50,12 @@
+             panel.apply_route(views)
+             clock=Clock();backend=SceneBackend(views,clock)
+             backend.cancel=panel.runner.cancel
++            capture=backend.capture
++            def dim_camera_frame():
++                frame=capture()
++                if backend.open:frame[frame==255]=175
++                return frame
++            backend.capture=dim_camera_frame
+             image=cv2.imread(str(ROOT/'gem_templates/gem_0.png'));h,w=image.shape[:2]
+             backend.frame[400:400+h,240:240+w]=image
+             runner=panel.runner;runner.backend_factory=lambda cancel:backend
+@@ -85,14 +91,16 @@
+             assert reopened-stamp>=20
+             assert clicks[-1][0]==(285.,530.) and not clicks[-1][2]
+             assert backend.selected_world==(241.,107.)
++            assert backend.selections==[0,0],backend.selections
+             assert len(panel.services.sighting_history.list())==1
+             assert len(list((Path(temporary.name)/'LoongLens/screenshots').glob('*.png')))==1
+             panel.reset()
+             assert panel.services.sighting_history.sniper_seen()==5
+             count=len(clicks);panel.snipe.invoke()
+             assert panel.services.owner is None and len(clicks)==count and '5/5' in panel.status.get()
+-            results.append(dict(passed=True,version=33,collection_seconds=20,return_world=[241,107],
++            results.append(dict(passed=True,version=34,collection_seconds=20,return_world=[241,107],
+                                 daily_count=5,stopped_at_goal=True,source_screenshot_saved=True,
++                                dim_camera_selected_once_per_visit=True,
+                                 reset_kept_daily_counter=True,scope='Native Tk and detector; simulated game input and waits'))
+             self.exit_app()
+     tk.Tk=Window
+--- a/LoongLens/tools/ui_spy_smoke.py
++++ b/LoongLens/tools/ui_spy_smoke.py
+@@ -117,7 +117,7 @@
+             assert runner.cancel.is_set() and sniper.services.owner is None
+             assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
+             assert len(spy.history.encounters())==2
+-            completed.append(dict(passed=True,version=33,unique_gems=2,screenshots=2,
++            completed.append(dict(passed=True,version=34,unique_gems=2,screenshots=2,
+                                   passes=2,recovery_kept_progress=True,f10_stays_stopped=True))
+             next(w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit').invoke()
+     tk.Tk=Window

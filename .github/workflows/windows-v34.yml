@@ -1,0 +1,117 @@
+name: Build v34 camera outline confirmation
+
+on:
+  push:
+    paths:
+      - 'LoongLens-WindowsBuild-v34.zip'
+      - '.github/workflows/windows-v34.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Extract v34 and its v33 benchmark baseline
+        shell: pwsh
+        run: |
+          Expand-Archive LoongLens-WindowsBuild-v34.zip -DestinationPath source
+          Expand-Archive LoongLens-WindowsBuild-v33.zip -DestinationPath baseline
+      - name: Install pinned dependencies and build tools
+        working-directory: source/LoongLens
+        run: python -m pip install -r requirements.txt pytest==8.4.2 pyinstaller==6.16.0 pefile==2023.2.7 py7zr==1.0.0
+      - name: Verify native Spy UI with real detector and simulated route input
+        working-directory: source/LoongLens
+        run: python tools/ui_spy_smoke.py
+      - name: Verify native daily collection UI and persistent quota
+        working-directory: source/LoongLens
+        run: python tools/ui_sniper_smoke.py
+      - name: Verify source GUI layout and shared controls on Windows
+        working-directory: source/LoongLens
+        run: python desktop_entry.py --gui-check-report source-gui-check.json
+      - name: Verify native client borders and cursor confinement before building
+        working-directory: source/LoongLens
+        run: python desktop_entry.py --input-check-report source-input-check.json
+      - name: Run Windows application tests
+        working-directory: source/LoongLens
+        shell: pwsh
+        run: |
+          python -m pytest -q --tb=long 2>&1 | Tee-Object tests-result.txt
+          exit $LASTEXITCODE
+      - name: Test route removal and saved-route dropdown in native Tk
+        working-directory: source/LoongLens
+        shell: pwsh
+        run: |
+          python tools/ui_route_editor_smoke.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/ui_route_profiles_smoke.py
+          exit $LASTEXITCODE
+      - name: Compare v33 and v34 on the full route
+        shell: pwsh
+        run: |
+          python source/LoongLens/tools/benchmark_sniping.py --app-root baseline/LoongLens --output source/LoongLens/artifacts/benchmark-v33.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python source/LoongLens/tools/benchmark_sniping.py --output source/LoongLens/artifacts/benchmark-v34.json
+          exit $LASTEXITCODE
+      - name: Build Windows EXE
+        working-directory: source/LoongLens
+        run: python tools/build_windows_exe.py
+      - name: Verify embedded icon
+        working-directory: source/LoongLens
+        run: python tools/check_exe_icon.py dist/LoongLens.exe LoongLens-WhiteIcon.ico
+      - name: Verify frozen resources, GUI and Windows input
+        working-directory: source/LoongLens
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path dist/LoongLens.exe).Path
+          foreach ($mode in @('self-check', 'gui-check', 'input-check')) {
+            $report = Join-Path $PWD "$mode.json"
+            if (Test-Path $report) { Remove-Item $report }
+            $process = Start-Process -FilePath $exe -ArgumentList "--$mode-report", $report -PassThru
+            if (-not $process.WaitForExit(120000)) { $process.Kill(); throw "$mode timed out" }
+            if ($process.ExitCode -ne 0) { throw "$mode exited with $($process.ExitCode)" }
+            if (-not (Test-Path $report)) { throw "$mode did not write a report" }
+            Get-Content $report
+            if (-not (Get-Content $report -Raw | ConvertFrom-Json).passed) { throw "$mode failed" }
+          }
+      - name: Create and verify complete 7z package
+        working-directory: source/LoongLens
+        run: python tools/package_full_windows.py --exe dist/LoongLens.exe --output dist/LoongLens-v34-Full.7z
+      - name: Publish complete v34 package
+        working-directory: source/LoongLens
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_COMMIT: ${{ github.sha }}
+        shell: pwsh
+        run: |
+          gh release create windows-exe-v34 dist/LoongLens-v34-Full.7z dist/LoongLens-v34-Full.7z.sha256 --repo $env:GITHUB_REPOSITORY --target $env:BUILD_COMMIT --prerelease --title "Loong Lens v34 - camera outline confirmation" --notes "Newly rebuilt Windows EXE plus all source/assets. Fixes successful camera selections being rejected when their outline is dim or antialiased, allowing the map to close and inspection to continue. Local line contrast and rectangle geometry replace the bright-white cutoff; offset outlines and click ripples remain rejected. No fixed pause, map padding or portal blacklist added. All v33 features remain: daily 5/5 loop, 20-second collection wait, Emerald Corner (241,107) return, 16:00 Europe/Sofia reset, 1h 15s sighting dots, saved routes and observation-only Gem Spy with persistent histories. Full Windows tests, native UI/input/F10, frozen EXE and full archive hash verification included. Simulated route input is not a live BlueStacks run."
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LoongLens-v34-Full
+          path: source/LoongLens/dist/LoongLens-v34-Full.7z*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LoongLens-v34-validation
+          path: |
+            source/LoongLens/tests-result.txt
+            source/LoongLens/self-check.json
+            source/LoongLens/gui-check.json
+            source/LoongLens/input-check.json
+            source/LoongLens/spy-ui-check.json
+            source/LoongLens/sniper-ui-check.json
+            source/LoongLens/source-gui-check.json
+            source/LoongLens/source-input-check.json
+            source/LoongLens/artifacts/benchmark-v33.json
+            source/LoongLens/artifacts/benchmark-v34.json
+            source/LoongLens/build/LoongLens/warn-LoongLens.txt
