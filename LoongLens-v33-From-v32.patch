@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/LoongLens/CHANGELOG-v33.md
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,36 @@
 +# v33 — map-settling recovery and daily gem collection
 +
 +- Late movement after a map drag no longer immediately stops the fixed route.
@@ -23,6 +23,9 @@
 +  before starting. The game day still resets at 16:00 Europe/Sofia.
 +- F10 interrupts collection and return, releases mouse input and never
 +  restarts the worker. An unconfirmed return camera sends no character click.
++- Teal sighting dots last exactly 1 hour and 15 seconds (3,615 seconds) from
++  the original sighting, with hour-aware countdown labels. Editing coordinates,
++  screenshot completion and restarting the app retain the original deadline.
 +- Gem Spy remains observation-only, retains its separate encounter/hourly
 +  histories, and does not increment or stop at the Sniper daily goal.
 +- v32 native cursor guards, confirmed gem edge clicks, four map-control boxes
@@ -34,6 +37,26 @@
 +UI/storage/detector integration; real Win32 input against a test window; the
 +frozen EXE; and complete archive extraction/hash verification. These checks do
 +not constitute a live BlueStacks game run. No private recordings are packaged.
+--- a/LoongLens/GEM_WATCH.md
++++ b/LoongLens/GEM_WATCH.md
+@@ -2,13 +2,13 @@
+ 
+ Gem Watch looks for the actual multicolored crystal piles shown in the user's `GemsPictures.rar`. It scans visible normal gameplay instead of assuming exact spawn positions. A gem can appear anywhere in the allowed viewing area.
+ 
+-## Sighting dots and 30-minute timers (v10)
++## Sighting dots and 1h 15s timers (v33)
+ 
+-Recent live sightings now appear as **teal dots** on the large Loong Haven map overlay, at the entry's exact **X,Y**. A countdown above each dot ends **30 minutes after its original spotting time**. For example, a sighting spotted at 01:00 ends at 01:30; correcting its coordinates at 01:10 moves the dot and leaves 20 minutes remaining.
++Recent live sightings now appear as **teal dots** on the large Loong Haven map overlay, at the entry's exact **X,Y**. A countdown above each dot ends **1 hour and 15 seconds after its original spotting time**. For example, a sighting spotted at 01:00 ends at 02:00:15; correcting its coordinates at 01:10 moves the dot and leaves 50 minutes and 15 seconds remaining.
+ 
+-On the Map overlay tab, enable **Gems** and **Sighting timers (30 min)**. The sighting-timer setting is enabled by default and saved between launches. The map must be open and aligned for dots to be drawn. Pink dots remain the bundled possible spawn locations. Manual pickup reminders keep their separate **Pickup timers** control.
++On the Map overlay tab, enable **Gems** and **Sighting timers (1h 15s)**. The sighting-timer setting is enabled by default and saved between launches. The map must be open and aligned for dots to be drawn. Pink dots remain the bundled possible spawn locations. Manual pickup reminders keep their separate **Pickup timers** control.
+ 
+-A sighting gains a dot once its coordinates are known, including a manual correction after an unreadable screenshot. A delayed screenshot does not restart the timer. Editing a location moves its dot immediately when the map is next visible; removing a row removes its dot. Existing sightings from the last 30 minutes also work after restarting. Expired dots disappear while their history entries remain. Editing an expired entry does not restart its timer.
++A sighting gains a dot once its coordinates are known, including a manual correction after an unreadable screenshot. A delayed screenshot does not restart the timer. Editing a location moves its dot immediately when the map is next visible; removing a row removes its dot. Existing sightings from the last hour and 15 seconds also work after restarting. Expired dots disappear while their history entries remain. Editing an expired entry does not restart its timer.
+ 
+ Image-test entries and entries without valid coordinates do not create map dots. The Today/Show all history filter does not affect active map dots. If multiple live rows have identical X,Y, the latest spotting time supplies the single timer at that point; all history rows are kept. These are sighting coordinates, not automatic pickup confirmations.
+ 
 --- a/LoongLens/README.md
 +++ b/LoongLens/README.md
 @@ -1,6 +1,6 @@
@@ -52,6 +75,15 @@
 +Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v33**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
  
  The EXE bundles its own code. To run edited Python files, use RUN_LOONG_LENS.bat; editing adjacent source does not alter the EXE. The launcher activates an existing instance, so exit that instance before changing launchers.
+ 
+@@ -20,7 +20,7 @@
+ 
+ Open the large Loong Haven map with BlueStacks visible. Pink dots mark 86 possible gem locations; Ingredients groups the bean, bamboo and crab layers. Pause, Re-align and appearance controls affect only the overlay.
+ 
+-Recent sightings appear as teal dots with a 30-minute countdown from their original spotting time. Editing coordinates moves the dot without restarting its timer. Expired dots disappear; history stays saved. Manual pickups have their own Mark collected, Pickup history and timer controls.
++Recent sightings appear as teal dots with a **1 hour 15 seconds (1:00:15)** countdown from their original spotting time. Editing coordinates moves the dot without restarting its timer. Expired dots disappear; history stays saved. Manual pickups have their own Mark collected, Pickup history and timer controls.
+ 
+ ## Gem Spy
  
 @@ -82,10 +82,10 @@
  This replaces the former Live patrol tab. The separate Patrol preview tab and its simulation controls have been removed; screenshot-based engine and UI checks remain in the development tools.
@@ -142,7 +174,7 @@
  simulated input/loading/detection and real atlas processing. Processing time,
  modeled waits, per-view timings and movement counts are reported separately.
  They are not measured live BlueStacks times. Live animation, loading, gesture
-@@ -141,3 +141,29 @@
+@@ -141,3 +141,33 @@
  minimum supported size. Spy UI checks ensure Spy never increments the Sniper
  counter. Pinned timezone data is bundled into the EXE. No private recording or
  user screenshots are included in the source archive.
@@ -172,9 +204,13 @@
 +editor/profile, frozen GUI/resource/input and archive hash checks are retained.
 +The full-route v32/v33 comparison uses the same atlas fixture and excludes gem
 +collection; it is a simulated timing comparison, not a live BlueStacks result.
++
++Sighting-map timer checks cover the new 3,615-second lifetime, hour-aware
++labels, visibility after the former 30-minute cutoff, the final 15 seconds,
++exact/fractional expiry, restarts, original timestamps and edited coordinates.
 --- a/LoongLens/desktop_entry.py
 +++ b/LoongLens/desktop_entry.py
-@@ -81,7 +81,7 @@
+@@ -81,13 +81,13 @@
                      icons = [user.GetClassLongPtrW(wrapper, field) for field in (-14, -34)]
                  assert any(icons), 'The native window has no configured icon'
              widgets = descendants(self)
@@ -183,6 +219,13 @@
              notebook = next(item for item in widgets if isinstance(item, ttk.Notebook))
              assert [notebook.tab(tab, 'text') for tab in notebook.tabs()] == ['Map Tweaker', 'Gem Sniper', 'Gem Spy']
              assert not any(isinstance(item,ttk.Checkbutton) and item.cget('text')=='Enable live clicking' for item in widgets)
+             assert not any('patrol preview' in str(item.cget('text')).lower() for item in widgets if isinstance(item, (ttk.Label, ttk.Checkbutton)))
+             buttons = {item.cget('text'): item for item in widgets if isinstance(item, ttk.Button)}
+-            assert any(isinstance(item, ttk.Checkbutton) and item.cget('text') == 'Sighting timers (30 min)' for item in widgets)
++            assert any(isinstance(item, ttk.Checkbutton) and item.cget('text') == 'Sighting timers (1h 15s)' for item in widgets)
+             assert sum(isinstance(item,ttk.Button) and item.cget('text')=='History' for item in widgets)==1
+             buttons['History'].invoke()
+             history = next(item for item in descendants(self)
 @@ -221,10 +221,10 @@
                  gui_check()
              else:
@@ -216,6 +259,15 @@
              ttk.Label(brand, text='Loong Haven companion', style='Muted.TLabel', font=(FONT, 9)).pack(side='right')
              self.notebook = ttk.Notebook(self.root)
              self.notebook.pack(fill='both', expand=True)
+@@ -193,7 +193,7 @@
+             ttk.Button(actions, text='Pickup history', command=self.pickups.show_history).pack(side='left', padx=8)
+             line = row(timers)
+             ttk.Checkbutton(line, text='Pickup timers', style='Card.TCheckbutton', variable=self.show_timers, command=self.changed).pack(side='left')
+-            ttk.Checkbutton(line, text='Sighting timers (30 min)', style='Card.TCheckbutton', variable=self.show_sighting_timers, command=self.changed).pack(side='right')
++            ttk.Checkbutton(line, text='Sighting timers (1h 15s)', style='Card.TCheckbutton', variable=self.show_sighting_timers, command=self.changed).pack(side='right')
+             ttk.Label(timers, textvariable=self.pickups.summary, style='CardMuted.TLabel').pack(anchor='w')
+             appearance = card(body, 'APPEARANCE')
+             ttk.Checkbutton(appearance, text='Shade ingredient areas', style='Card.TCheckbutton', variable=self.fill, command=self.changed).pack(anchor='w')
 @@ -226,7 +226,7 @@
              details['panel_info']=self.info.get()
              details['overlay_created']=bool(self.overlay.hwnd)
@@ -534,6 +586,25 @@
          detection_mode=tk.StringVar(value=self.services.mode.get())
          mask_interface=tk.BooleanVar(value=self.services.mask_hud.get())
          sound_alerts=tk.BooleanVar(value=self.services.sound.get())
+--- a/LoongLens/sighting_history.py
++++ b/LoongLens/sighting_history.py
+@@ -8,7 +8,7 @@
+ import sqlite3
+ import time
+ 
+-SIGHTING_TIMER_SECONDS = 30 * 60
++SIGHTING_TIMER_SECONDS = 60 * 60 + 15
+ 
+ 
+ @dataclass(frozen=True)
+@@ -47,6 +47,7 @@
+ 
+     def label(self, now):
+         value = math.ceil(self.remaining(now))
++        if value>=3600:return f'{value//3600}:{value//60%60:02d}:{value%60:02d}'
+         return f'{value//60:02d}:{value%60:02d}'
+ 
+     def can_mark(self, now):
 --- a/LoongLens/sniper_counter.py
 +++ b/LoongLens/sniper_counter.py
 @@ -2,6 +2,9 @@
@@ -690,6 +761,79 @@
 +    engine.emit=stop
 +    with pytest.raises(PatrolStopped):engine.run(backend)
 +    assert not backend.inputs and not engine.checked
+--- a/LoongLens/tests/test_sighting_map_timers.py
++++ b/LoongLens/tests/test_sighting_map_timers.py
+@@ -29,11 +29,25 @@
+     history=SightingHistory(tmp_path/'sightings.sqlite3')
+     history.record([event(),event('test',test_mode=True,game_x=101),
+         event('unknown',game_x=None,game_y=None),event('invalid',game_x=280),
+-        event('expired',seen_at=-1000),event('future',seen_at=1101)])
++        event('expired',seen_at=-3000),event('future',seen_at=1101)])
+     rows=history.active_markers(now=1100)
+     assert [row.event_id for row in rows]==['live']
+-    assert rows[0].label(1100)=='28:20' and rows[0].check_at==2800
++    assert rows[0].label(1100)=='58:35' and rows[0].check_at==4615
+     assert len(history.list(include_tests=True))==6
++    history.close()
++
++
++def test_sighting_dot_lasts_one_hour_and_fifteen_seconds_from_original_time(tmp_path):
++    history=SightingHistory(tmp_path/'sightings.sqlite3')
++    history.record([event()])
++    row=history.get(1)
++    assert row.label(1000)=='1:00:15' and row.label(1015)=='1:00:00'
++    assert row.label(1016)=='59:59'
++    assert history.active_markers(now=2800)  # Survives the former 30-minute expiry.
++    assert history.active_markers(now=4600)[0].label(4600)=='00:15'
++    assert history.active_markers(now=4614.99)[0].label(4614.99)=='00:01'
++    assert not history.active_markers(now=4615)
++    assert history.get(1).seen_at==1000 and len(history.list())==1
+     history.close()
+ 
+ 
+@@ -43,14 +57,14 @@
+     history.record([pending])
+     assert not history.active_markers(now=1006)
+     history.record([event(captured_at=1005)])
+-    assert history.active_markers(now=1006)[0].label(1006)=='29:54'
++    assert history.active_markers(now=1006)[0].label(1006)=='1:00:09'
+     original=history.get(1)
+     history.edit_location(1,'Autumnal Plain',76,152)
+     marker=history.active_markers(now=1006.1)[0]
+     assert (marker.marker_x,marker.marker_y)==(76,152)
+-    assert marker.seen_at==original.seen_at and marker.check_at==2800
++    assert marker.seen_at==original.seen_at and marker.check_at==4615
+     assert marker.captured_at==original.captured_at and marker.screenshot_path==original.screenshot_path
+-    assert marker.label(1300)=='25:00'
++    assert marker.label(1300)=='55:15'
+     history.close()
+ 
+ 
+@@ -60,11 +74,11 @@
+     history.record([event(seen_at=1000.25)])
+     history.close()
+     history=SightingHistory(path)
+-    assert history.active_markers(now=1300.25)[0].label(1300.25)=='25:00'
+-    assert history.active_markers(now=2800.2)[0].label(2800.2)=='00:01'
+-    assert not history.active_markers(now=2800.25)
++    assert history.active_markers(now=1300.25)[0].label(1300.25)=='55:15'
++    assert history.active_markers(now=4615.2)[0].label(2800.2)=='00:01'
++    assert not history.active_markers(now=4615.25)
+     history.edit_location(1,'Loong Haven IX',78,48)
+-    assert not history.active_markers(now=2801)  # Editing does not restart an expired timer.
++    assert not history.active_markers(now=4616)  # Editing does not restart an expired timer.
+     assert len(history.list())==1
+     history.close()
+ 
+@@ -145,7 +159,7 @@
+     if reason=='image_test':marker=replace(marker,test_mode=True)
+     if reason=='no_coordinates':marker=replace(marker,game_x=None)
+     image,counts,_=renderer.render((570,1029),pose,{} if reason=='layer_off' else {'gems':True},
+-        sighting_markers=[marker],now=2800 if reason=='expired' else 1100)
++        sighting_markers=[marker],now=4615 if reason=='expired' else 1100)
+     assert not np.asarray(image)[:,:,3].any() and counts['gems']==0
+     history.close()
+ 
 --- /dev/null
 +++ b/LoongLens/tests/test_sniper_collection_cycle.py
 @@ -0,0 +1,154 @@
@@ -902,7 +1046,7 @@
          folder=Path(temporary);source_zip=folder/'source.zip'
          subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
          with zipfile.ZipFile(source_zip) as archive:
-@@ -60,16 +60,19 @@
+@@ -60,16 +60,20 @@
          shutil.copy2(binary,app/'LoongLens.exe')
          validation=app/'validation';validation.mkdir()
          for report in reports:shutil.copy2(report,validation/report.name)
@@ -920,6 +1064,7 @@
 +            'Sniper clicks each confirmed gem, waits 20s, returns to Emerald Corner (241,107), then restarts.\n'
              'The top-right counter and Today only use 16:00 Europe/Sofia game-day reset.\n'
 -            'The counter survives route resets and app restarts.\n'
++            'Teal sighting dots last 1 hour and 15 seconds from their original spotted time.\n'
 +            'The counter survives route resets and app restarts. At 5/5 it finishes collection/return and stops.\n'
 +            'F10 interrupts collection waits and return input immediately; it never auto-restarts.\n'
 +            'Late map movement triggers settling and recalculation instead of an immediate stop.\n'
@@ -927,7 +1072,7 @@
              'Mouse input uses native client hit-testing, temporary confinement and cursor verification.\n'
              'Camera selection must close automatically or show its white camera outline before Back.\n'
              'An ignored tap retries once and never marks that location checked.\n'
-@@ -83,7 +86,7 @@
+@@ -83,7 +87,7 @@
              'No padding or broad right-hand exclusion strip is added.\n'
              'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
              'Hide portal icons in the game map as you requested.\n'
@@ -936,6 +1081,51 @@
              'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
              'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
              'It observes repeatedly, never clicks a gem, and continues after a find.\n'
+--- a/LoongLens/tools/ui_sighting_timer_smoke.py
++++ b/LoongLens/tools/ui_sighting_timer_smoke.py
+@@ -71,7 +71,7 @@
+         root.after(80,confirmed)
+     def confirmed():
+         assert teal_at((250,460))
+-        assert panels[0].sighting_history.active_markers()[0].label(state['now'])=='29:55'
++        assert panels[0].sighting_history.active_markers()[0].label(state['now'])=='1:00:10'
+         state['now']=start+600
+         controls=panels[0].sighting_controls
+         controls.show()
+@@ -87,23 +87,23 @@
+     def edited():
+         assert teal_at((275,460)) and not teal_at((250,460))
+         row=panels[0].sighting_history.active_markers()[0]
+-        assert row.seen_at==start and row.label(state['now'])=='20:00'
++        assert row.seen_at==start and row.label(state['now'])=='50:15'
+         pose=state['pose']
+         state['pose']=Match(pose.scale,pose.tx+75,pose.ty+20,20,0,[])
+         root.after(80,panned)
+     def panned():
+         assert teal_at((350,480))
+-        checkbox=next(w for w in descendants(root) if isinstance(w,ttk.Checkbutton) and w.cget('text')=='Sighting timers (30 min)')
++        checkbox=next(w for w in descendants(root) if isinstance(w,ttk.Checkbutton) and w.cget('text')=='Sighting timers (1h 15s)')
+         checkbox.invoke()
+         root.after(80,disabled)
+     def disabled():
+         assert not teal_at((350,480))
+-        checkbox=next(w for w in descendants(root) if isinstance(w,ttk.Checkbutton) and w.cget('text')=='Sighting timers (30 min)')
++        checkbox=next(w for w in descendants(root) if isinstance(w,ttk.Checkbutton) and w.cget('text')=='Sighting timers (1h 15s)')
+         checkbox.invoke()
+         root.after(80,reenabled)
+     def reenabled():
+         assert teal_at((350,480))
+-        state['now']=start+1800
++        state['now']=start+3615
+         root.after(80,expired)
+     def expired():
+         assert not teal_at((350,480))
+@@ -128,4 +128,4 @@
+ finally:
+     time.time=real_time
+ assert finished and not errors,(finished,errors)
+-print('Sighting map UI passed: pending/confirmed capture metadata, 29:55 from original time, edited coordinates moving the dot at 20:00, pan, timer toggle, expiry, deletion and unchanged spotting time.')
++print('Sighting map UI passed: pending/confirmed capture metadata, 1:00:10 from original time, edited coordinates moving the dot at 50:15, pan, timer toggle, expiry, deletion and unchanged spotting time.')
 --- /dev/null
 +++ b/LoongLens/tools/ui_sniper_smoke.py
 @@ -0,0 +1,111 @@
