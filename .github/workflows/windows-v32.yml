@@ -34,6 +34,9 @@ jobs:
       - name: Verify source GUI layout and shared controls on Windows
         working-directory: source/LoongLens
         run: python desktop_entry.py --gui-check-report source-gui-check.json
+      - name: Verify native client borders and cursor confinement before building
+        working-directory: source/LoongLens
+        run: python desktop_entry.py --input-check-report source-input-check.json
       - name: Run Windows application tests
         working-directory: source/LoongLens
         shell: pwsh
@@ -104,6 +107,7 @@ jobs:
             source/LoongLens/input-check.json
             source/LoongLens/spy-ui-check.json
             source/LoongLens/source-gui-check.json
+            source/LoongLens/source-input-check.json
             source/LoongLens/artifacts/benchmark-v31.json
             source/LoongLens/artifacts/benchmark-v32.json
             source/LoongLens/build/LoongLens/warn-LoongLens.txt
