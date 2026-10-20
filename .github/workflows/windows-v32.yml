@@ -1,0 +1,109 @@
+name: Build v32 with native cursor bounds and camera confirmation
+
+on:
+  push:
+    paths:
+      - 'LoongLens-WindowsBuild-v32.zip'
+      - '.github/workflows/windows-v32.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Extract v32 and its v31 benchmark baseline
+        shell: pwsh
+        run: |
+          Expand-Archive LoongLens-WindowsBuild-v32.zip -DestinationPath source
+          Expand-Archive LoongLens-WindowsBuild-v31.zip -DestinationPath baseline
+      - name: Install pinned dependencies and build tools
+        working-directory: source/LoongLens
+        run: python -m pip install -r requirements.txt pytest==8.4.2 pyinstaller==6.16.0 pefile==2023.2.7 py7zr==1.0.0
+      - name: Verify native Spy UI with real detector and simulated route input
+        working-directory: source/LoongLens
+        run: python tools/ui_spy_smoke.py
+      - name: Verify source GUI layout and shared controls on Windows
+        working-directory: source/LoongLens
+        run: python desktop_entry.py --gui-check-report source-gui-check.json
+      - name: Run Windows application tests
+        working-directory: source/LoongLens
+        shell: pwsh
+        run: |
+          python -m pytest -q --tb=long 2>&1 | Tee-Object tests-result.txt
+          exit $LASTEXITCODE
+      - name: Test route removal and saved-route dropdown in native Tk
+        working-directory: source/LoongLens
+        shell: pwsh
+        run: |
+          python tools/ui_route_editor_smoke.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/ui_route_profiles_smoke.py
+          exit $LASTEXITCODE
+      - name: Compare v31 and v32 on the full route
+        shell: pwsh
+        run: |
+          python source/LoongLens/tools/benchmark_sniping.py --app-root baseline/LoongLens --output source/LoongLens/artifacts/benchmark-v31.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python source/LoongLens/tools/benchmark_sniping.py --output source/LoongLens/artifacts/benchmark-v32.json
+          exit $LASTEXITCODE
+      - name: Build Windows EXE
+        working-directory: source/LoongLens
+        run: python tools/build_windows_exe.py
+      - name: Verify embedded icon
+        working-directory: source/LoongLens
+        run: python tools/check_exe_icon.py dist/LoongLens.exe LoongLens-WhiteIcon.ico
+      - name: Verify frozen resources, GUI and Windows input
+        working-directory: source/LoongLens
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path dist/LoongLens.exe).Path
+          foreach ($mode in @('self-check', 'gui-check', 'input-check')) {
+            $report = Join-Path $PWD "$mode.json"
+            if (Test-Path $report) { Remove-Item $report }
+            $process = Start-Process -FilePath $exe -ArgumentList "--$mode-report", $report -PassThru
+            if (-not $process.WaitForExit(120000)) { $process.Kill(); throw "$mode timed out" }
+            if ($process.ExitCode -ne 0) { throw "$mode exited with $($process.ExitCode)" }
+            if (-not (Test-Path $report)) { throw "$mode did not write a report" }
+            Get-Content $report
+            if (-not (Get-Content $report -Raw | ConvertFrom-Json).passed) { throw "$mode failed" }
+          }
+      - name: Create and verify complete 7z package
+        working-directory: source/LoongLens
+        run: python tools/package_full_windows.py --exe dist/LoongLens.exe --output dist/LoongLens-v32-Full.7z
+      - name: Publish complete v32 package
+        working-directory: source/LoongLens
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_COMMIT: ${{ github.sha }}
+        shell: pwsh
+        run: |
+          gh release create windows-exe-v32 dist/LoongLens-v32-Full.7z dist/LoongLens-v32-Full.7z.sha256 --repo $env:GITHUB_REPOSITORY --target $env:BUILD_COMMIT --prerelease --title "Loong Lens v32 - cursor borders, camera confirmation and game-day counter" --notes "Complete Windows EXE plus source/assets. Native hit-testing excludes actual resize borders without map padding; temporary cursor confinement is restored on completion/error/F10 and actual cursor position is verified before input. Held panning uses terrain optical flow with verified SIFT fallback. Camera selection waits for delayed automatic close or camera outline confirmation before Back; ignored taps retry and remain unchecked. Gem Sniper always clicks a confirmed gem once, with no HUD or region click veto; Gem Spy remains observation-only. Top-right seen counter and Today only share the 16:00 Europe/Sofia game day, with daylight-saving support. Counter survives app restarts and route resets. All v31 Spy, route and history features retained. Windows suite, native GUI/input/F10 and complete archive extraction/hash checks included. Simulated camera input is not live BlueStacks testing."
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LoongLens-v32-Full
+          path: source/LoongLens/dist/LoongLens-v32-Full.7z*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LoongLens-v32-validation
+          path: |
+            source/LoongLens/tests-result.txt
+            source/LoongLens/self-check.json
+            source/LoongLens/gui-check.json
+            source/LoongLens/input-check.json
+            source/LoongLens/spy-ui-check.json
+            source/LoongLens/source-gui-check.json
+            source/LoongLens/artifacts/benchmark-v31.json
+            source/LoongLens/artifacts/benchmark-v32.json
+            source/LoongLens/build/LoongLens/warn-LoongLens.txt

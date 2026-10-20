@@ -1,0 +1,1564 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v32.md
+@@ -0,0 +1,36 @@
++# v32 — client-area input, confirmed camera selection and game-day sightings
++
++- Native Windows input now asks for the real client area and hit-tests pointer
++  positions. Resize borders and title bars never receive map clicks or drags.
++  A held gesture temporarily confines the cursor to the client area and restores
++  the previous confinement after release, cancellation or failure. GetCursorPos
++  verifies the actual destination; redirected input stops before a click.
++- The four exact map control boxes remain unchanged. Native window chrome is
++  excluded using Windows geometry; no arbitrary map padding is added.
++- Held motion uses smaller, paced cursor steps and measured optical flow on map
++  terrain. Forward/backward and texture checks validate flow; ambiguous frames
++  use the existing SIFT path. Release still happens after a stationary pause.
++- A map tap is no longer treated as successful merely because it was sent.
++  Delayed automatic closure is allowed; otherwise the white camera outline must
++  match the selected point before Back. A click ripple is not confirmation.
++  One ignored tap is retried against fresh alignment. Failed selection stays
++  unchecked and cannot create a false empty visit or advance the Spy history.
++- Gem Sniper always clicks a confirmed gem's centre once and stops. Broad right
++  edge/HUD-region click vetoes are removed. A one-frame score drop does not
++  cancel an already confirmed find. A fresh image can refine its position;
++  native focus, resize, obstruction, finite-image bounds and F10 checks remain.
++  Gem Spy remains observation-only.
++- The top-right Sniper counter shows seen gems / 5. Photo completion/replayed
++  events do not double count. Finds during the photo cooldown still count.
++  The counter persists across app restarts, route changes and Reset checks.
++- The counter and standard history Today only use the same game day: 16:00
++  Europe/Sofia through just before the next 16:00. Midnight does not reset it.
++  Daylight-saving transitions are included; tzdata is pinned and bundled into
++  the Windows EXE. Show all and original history rows remain available.
++
++The Windows build checks native mouse delivery, client-border rejection,
++confinement restoration and F10 on its own test window; UI checks cover the
++counter, original source history, saved routes and Spy integration. The full
++route uses real atlas pixels and simulated input. These are not live BlueStacks
++or game-account tests. The user's recording informed the border/click fixes;
++private video frames are not distributed in the release.
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,6 +1,6 @@
+ # Loong Lens
+ 
+-**v31 adds Gem Spy and renames the tabs to Map Tweaker, Gem Sniper and Gem Spy.** Gem Watch is removed. Shared detection preferences, alerts and the existing history remain available through Gem Sniper. Gem Spy uses that selected route and settings, continuously observes without clicking gems, and keeps durable encounter and hourly histories. See [CHANGELOG-v31.md](CHANGELOG-v31.md).
++**v32 fixes window-border input and camera selection, adds a 0/5 seen counter and uses the 16:00 Sofia game day.** Gem Watch is removed. Shared detection preferences, alerts and the existing history remain available through Gem Sniper. Gem Spy uses that selected route and settings, continuously observes without clicking gems, and keeps durable encounter and hourly histories. See [CHANGELOG-v32.md](CHANGELOG-v32.md).
+ 
+ **Edit route → Run route** switches saved routes. Default stays protected;
+ **Save as…** creates variants such as Busy zones, with their own removed points
+@@ -10,7 +10,7 @@
+ 
+ ## Start
+ 
+-Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v31**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
++Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v32**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
+ 
+ The EXE bundles its own code. To run edited Python files, use RUN_LOONG_LENS.bat; editing adjacent source does not alter the EXE. The launcher activates an existing instance, so exit that instance before changing launchers.
+ 
+@@ -125,3 +125,23 @@
+ ```
+ 
+ `--tab map`, `--tab live` and `--tab spy` select a startup page. Tests use simulated desktop input and real atlas/detector fixtures; the Windows workflow additionally checks the frozen app, icons and native input against its own test window. These checks do not measure a live BlueStacks pass. See VALIDATION.md for the current verification scope. OCR model notices and licences are included in `ocr_models`.
++
++
++## v32 input and game-day changes
++
++Gem Sniper always clicks a confirmed gem once and stops, including gems near
++screen edges. There is no HUD or region veto after confirmation. Gem Spy never
++clicks gems. Native focus, visibility, actual client boundaries and F10 checks
++still apply. Map taps must close automatically or show the correct camera
++outline before Back; an ignored tap retries once and stays unchecked on failure.
++
++The top-right seen counter and **Today only** use **16:00 Europe/Sofia** as the
++game-day boundary, including daylight-saving changes. Midnight, Reset checks,
++route changes and restarting the app do not reset the current game-day counter.
++Screenshot updates do not create extra counts; a sighting during the screenshot
++cooldown still counts. The /5 display is a goal, not an extra stop condition.
++
++Window borders use native client geometry and hit-testing. No extra map padding
++or portal-coordinate restrictions are introduced. Keep the emulator visible and
++focused. Cursor confinement is temporary during a click/drag and is restored
++on completion, failure or F10.
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,4 +1,4 @@
+-# Verification — Loong Lens v31
++# Verification — Loong Lens v32
+ 
+ The app targets Windows 10 (2004+) / Windows 11 and BlueStacks at default map
+ zoom. Local algorithm checks use pinned Python dependencies. The release
+@@ -84,12 +84,12 @@
+ removed targets are absent from that loop and never selected for inspection.
+ 
+ The Windows workflow builds a new windowed one-file EXE, verifies all embedded
+-icon images, and checks frozen assets, the v31 GUI label and actual native input.
+-Fresh reports identify version 31. The complete folder includes the EXE,
++icon images, and checks frozen assets, the v32 GUI label and actual native input.
++Fresh reports identify version 32. The complete folder includes the EXE,
+ source, assets, OCR models, launchers, tools, tests and validation reports.
+ Packaging extracts the completed 7z and verifies every payload file by SHA256.
+ 
+-The v30/v31 timings come from sequential runs on the same Windows machine with
++The v31/v32 timings come from sequential runs on the same Windows machine with
+ simulated input/loading/detection and real atlas processing. Processing time,
+ modeled waits, per-view timings and movement counts are reported separately.
+ They are not measured live BlueStacks times. Live animation, loading, gesture
+@@ -117,3 +117,27 @@
+ The standard Sniper route is compared against v30 on the same Windows runner.
+ The v30 drag/exclusion and portal-removal regressions remain in the full suite.
+ Build reports identify this version and are included in the verified full archive.
++
++
++## v32 regressions and native Windows checks
++
++Camera confirmation tests cover delayed closure, ignored taps, one retry, click
++ripples, bright terrain, partly clipped outlines and cancellation before Back.
++Native tests reject real non-client window borders, verify the delivered cursor
++position and require cursor confinement to be restored after gestures and F10.
++The original four map exclusions and no-padding boundary tests remain.
++
++Fast held tracking is tested against independent atlas translations, blank and
++stationary backgrounds, and a SIFT-free clear match. Ambiguous motion falls back
++to SIFT. These checks prove measured displacement, not live emulator latency.
++
++Confirmed gems are clicked across the image without a HUD/region veto, including
++the reported lower-right case and a one-frame detection drop. Counter tests cover
++idempotent photo updates, restarts, history deletion, cooldown sightings, 16:00
++Sofia boundaries, midnight and 23/25-hour daylight-saving game days. Today only
++uses those same bounds while preserving Show all.
++
++The native source and frozen GUI checks verify the new header counter at the
++minimum supported size. Spy UI checks ensure Spy never increments the Sniper
++counter. Pinned timezone data is bundled into the EXE. No private recording or
++user screenshots are included in the source archive.
+--- a/LoongLens/camera_patrol.py
++++ b/LoongLens/camera_patrol.py
+@@ -147,14 +147,9 @@
+ 
+ 
+ def gem_click(gem_center, frame_shape):
+-    """The gem's actual centre, scaled to reference pixels, away from the HUD."""
++    """Every confirmed gem's actual centre; no HUD or region veto."""
+     h,w = frame_shape[:2]
+     if h<=0 or w<=0:return None
+     gx,gy = gem_center[0]*570/w,gem_center[1]*1029/h
+-    if not (40<gx<520 and 280<gy<760):return None
+-    if gx>420 and gy<470:return None
+-    from gem_detector import gameplay_mask
+-    mask=gameplay_mask((1029,570))
+-    px,py=round(gx),round(gy)
+-    if not mask[py-4:py+5,px-4:px+5].all():return None
++    if not (math.isfinite(gx) and math.isfinite(gy) and 0<=gx<570 and 0<=gy<1029):return None
+     return float(gx),float(gy)
+--- a/LoongLens/desktop_entry.py
++++ b/LoongLens/desktop_entry.py
+@@ -81,7 +81,7 @@
+                     icons = [user.GetClassLongPtrW(wrapper, field) for field in (-14, -34)]
+                 assert any(icons), 'The native window has no configured icon'
+             widgets = descendants(self)
+-            assert any(isinstance(item,ttk.Label) and item.cget('text')=='LOONG LENS · v31' for item in widgets)
++            assert any(isinstance(item,ttk.Label) and item.cget('text')=='LOONG LENS · v32' for item in widgets)
+             notebook = next(item for item in widgets if isinstance(item, ttk.Notebook))
+             assert [notebook.tab(tab, 'text') for tab in notebook.tabs()] == ['Map Tweaker', 'Gem Sniper', 'Gem Spy']
+             assert not any(isinstance(item,ttk.Checkbutton) and item.cget('text')=='Enable live clicking' for item in widgets)
+@@ -108,6 +108,7 @@
+             assert 'Check one' not in buttons and 'Start loop' not in buttons
+             assert 'Snipe' in buttons and 'Loop Sniping' in buttons
+             assert panel.stats_text.get()=='Time spent: 0:00\nGems found: 0'
++            assert panel.seen_text.get().endswith('/5') and panel.seen_label.winfo_exists()
+             assert panel.progress.cget('maximum')==len(panel.runner.views)
+             recent=tuple(dict(number=n,elapsed=t,gems=0) for n,t in ((4,461),(3,456),(2,451)))
+             panel.events.put(dict(kind='pass_complete',passes=4,stats=recent[0],recent_passes=recent));panel.drain()
+@@ -220,10 +221,10 @@
+                 gui_check()
+             else:
+                 check_native_input()
+-            result = {'passed': True, 'mode': sys.argv[1], 'version': 31}
++            result = {'passed': True, 'mode': sys.argv[1], 'version': 32}
+             status = 0
+         except Exception:
+-            result = {'passed': False, 'mode': sys.argv[1], 'version': 31, 'error': traceback.format_exc()}
++            result = {'passed': False, 'mode': sys.argv[1], 'version': 32, 'error': traceback.format_exc()}
+             status = 1
+         path.write_text(json.dumps(result, indent=2), encoding='utf-8')
+         return status
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -77,7 +77,7 @@
+     folder.mkdir(parents=True, exist_ok=True)
+     logging.basicConfig(filename=folder / 'loonglens.log', level=logging.INFO,
+                         format='%(asctime)s %(levelname)s %(message)s')
+-    logging.getLogger('loonglens').info('Loong Lens v31 executable=%s source=%s',sys.executable,Path(__file__).resolve())
++    logging.getLogger('loonglens').info('Loong Lens v32 executable=%s source=%s',sys.executable,Path(__file__).resolve())
+     settings_path = folder / 'settings.json'
+     coordinates_path = folder / 'coordinates.csv'
+     settings = {}
+@@ -163,7 +163,7 @@
+             apply_theme(self.root)
+             brand = ttk.Frame(self.root, padding=(20, 12))
+             brand.pack(fill='x')
+-            ttk.Label(brand, text='LOONG LENS · v31', style='Brand.TLabel').pack(side='left')
++            ttk.Label(brand, text='LOONG LENS · v32', style='Brand.TLabel').pack(side='left')
+             ttk.Label(brand, text='Loong Haven companion', style='Muted.TLabel', font=(FONT, 9)).pack(side='right')
+             self.notebook = ttk.Notebook(self.root)
+             self.notebook.pack(fill='both', expand=True)
+@@ -226,7 +226,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Gem Spy v31; persistent observations and recovery'
++            details['version']='Gem Spy v32; persistent observations and recovery'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+--- a/LoongLens/patrol_input_check.py
++++ b/LoongLens/patrol_input_check.py
+@@ -40,6 +40,14 @@
+                 with WindowsBackend(cancel,find=lambda:target) as backend:
+                     assert ctypes.sizeof(backend.api.Input)==40,'Expected x64 INPUT layout'
+                     backend.focus()
++                    original_clip=backend.api.clip_rect()
++                    assert backend.input_rect is not None
++                    # The real non-client resize frame must never receive a
++                    # click. This fails on the old full-window-only backend.
++                    try:backend.click((0,500))
++                    except RuntimeError as exc:assert 'border' in str(exc)
++                    else:raise AssertionError('A native window border was clicked')
++                    assert backend.api.clip_rect()==original_clip,'Rejected click left cursor confined'
+                     import numpy as np
+                     frame=backend.capture()
+                     magenta=(frame[:,:,0]>200)&(frame[:,:,1]<50)&(frame[:,:,2]>200)
+@@ -47,6 +55,7 @@
+                     backend.click((100,300));backend.drag((180,400),(350,500))
+                     backend.wait(.1);before=dict(counts)
+                     with backend.hold_drag((450,850)):
++                        assert backend.api.clip_rect()==backend.input_rect,'Held cursor can escape the client area'
+                         backend.drag_held_to((390,700));backend.capture()
+                         backend.drag_held_to((330,550));backend.capture()
+                         backend.wait(.1)
+@@ -54,6 +63,7 @@
+                         assert counts['release']==before['release'],'Held drag released between checks'
+                     backend.wait(.1)
+                     assert counts['release']==before['release']+1,'Held drag did not release once'
++                    assert backend.api.clip_rect()==original_clip,'Completed drag did not restore confinement'
+                     backend.api.key(0x77);backend.api.key(0x77,up=True)  # F8
+                     assert advance.wait(2),'Global advance hotkey did not fire'
+                     try:
+@@ -65,6 +75,7 @@
+                     except PatrolStopped:pass
+                     else:raise AssertionError('F10 did not interrupt the held drag')
+                     assert not backend.down,'F10 left the mouse button held'
++                    assert backend.api.clip_rect()==original_clip,'F10 left the cursor confined'
+                     assert not (backend.api.user.GetAsyncKeyState(0x01)&0x8000),'Windows still reports the mouse button down'
+                 result.put(None)
+             except Exception as exc:result.put(str(exc))
+--- a/LoongLens/patrol_live.py
++++ b/LoongLens/patrol_live.py
+@@ -123,6 +123,42 @@
+     pass
+ 
+ 
++def camera_selection_visible(frame,point,scale):
++    """Require the camera's white rectangular outline, not a tap ripple.
++
++    Test the expected outline at the clicked map coordinate. Clipped edges and
++    the four marked map controls contribute no evidence. A small round click
++    animation cannot supply two long perpendicular rectangle edges.
++    """
++    import numpy as np
++    from patrol_route import MAP_BLOCKED_RECTS,MAP_CONTENT_BOUNDS
++    normal=LivePatrol.normal(frame);hsv=cv2.cvtColor(normal,cv2.COLOR_BGR2HSV)
++    white=cv2.inRange(hsv,np.array((0,0,205)),np.array((179,75,255)))!=0
++    gray=cv2.cvtColor(normal,cv2.COLOR_BGR2GRAY)
++    thin=cv2.morphologyEx(gray,cv2.MORPH_TOPHAT,np.ones((9,9),np.uint8))>=8
++    white &= thin  # Pale terrain/blank frames are not a white camera outline.
++    x,y=point;half_w=scale*6.7/2;half_h=scale*12.1/2
++    allowed=np.zeros_like(white)
++    a,b,c,d=MAP_CONTENT_BOUNDS;allowed[b:d+1,a:c+1]=True
++    for a,b,c,d in MAP_BLOCKED_RECTS:allowed[b:d+1,a:c+1]=False
++    def edge(x1,y1,x2,y2):
++        count=max(1,round(math.dist((x1,y1),(x2,y2))))
++        px=np.rint(np.linspace(x1,x2,count)).astype(int);py=np.rint(np.linspace(y1,y2,count)).astype(int)
++        inside=(px>=3)&(px<567)&(py>=3)&(py<1026)
++        px=px[inside];py=py[inside]
++        keep=allowed[py,px];px=px[keep];py=py[keep]
++        if len(px)<8:return False
++        matches=np.zeros(len(px),bool)
++        for dx in range(-3,4):
++            for dy in range(-3,4):matches |= white[py+dy,px+dx]
++        return float(matches.mean())>=.72
++    left=edge(x-half_w,y-half_h,x-half_w,y+half_h)
++    right=edge(x+half_w,y-half_h,x+half_w,y+half_h)
++    top=edge(x-half_w,y-half_h,x+half_w,y-half_h)
++    bottom=edge(x-half_w,y+half_h,x+half_w,y+half_h)
++    return sum((left,right,top,bottom))>=2
++
++
+ class LivePatrol:
+     def __init__(self,views,settings,cancel,emit,checked=None,cooldown=None,
+                  detector=None,locator=None,title=None,clock=time.perf_counter,wall=time.time,skipped=None,navigation=None,observer=None):
+@@ -154,6 +190,13 @@
+     def is_map(self,frame):return self.title.score(self.normal(frame))>=.64
+ 
+     @staticmethod
++    def target_visible(backend,point):
++        from patrol_route import route_point_visible
++        if not route_point_visible(point):return False
++        bounds=getattr(backend,'drag_bounds',None)
++        return bounds is None or (bounds[0]<=point[0]<=bounds[2] and bounds[1]<=point[1]<=bounds[3])
++
++    @staticmethod
+     def stationary_map(before,after):
+         """A fresh textured map frame can confirm the preceding recognition.
+ 
+@@ -164,6 +207,8 @@
+         from vision import patrol_map_mask
+         mask=patrol_map_mask(after.shape)!=0
+         gray=cv2.cvtColor(before,cv2.COLOR_BGR2GRAY)
++        mask &= gray<220  # A camera outline alone cannot prove stationary terrain.
++        if int(mask.sum())<1000:return False
+         if float(gray[mask].std())<8:return False
+         difference=cv2.absdiff(before,after).max(axis=2)
+         return float(np.mean(difference[mask]>8))<=.002
+@@ -329,7 +374,7 @@
+             with backend.hold_drag(start):
+                 for _ in range(32):
+                     self.check();point=pose.project(view.x,view.y)
+-                    if route_point_visible(point):break
++                    if self.target_visible(backend,point):break
+                     delta=route_reveal_delta(point)
+                     if sum(a*b for a,b in zip(delta,direction))<=0:
+                         raise MapAlignmentLost('Map target changed direction during the held drag.')
+@@ -337,7 +382,7 @@
+                     stalled=stalled+1 if previous_distance is not None and distance>=previous_distance-2 else 0
+                     if stalled>=3:raise RuntimeError('Map panning is not moving toward the dot. Patrol stopped.')
+                     previous_distance=distance
+-                    end=route_drag_step(cursor,direction)
++                    end=route_drag_step(cursor,direction,bounds=getattr(backend,'drag_bounds',None))
+                     if end is None:break  # At the window edge: settle, release, then re-anchor.
+                     movement=(end[0]-cursor[0],end[1]-cursor[1])
+                     before=self.normal(current);before.setflags(write=False)
+@@ -347,7 +392,7 @@
+                     if not self.is_map(current):
+                         raise RuntimeError('The large map changed during the drag. Patrol stopped.')
+                     normal=self.normal(current)
+-                    updated=track_map_pan(before,normal,pose,movement)
++                    updated=track_map_pan(before,normal,pose,movement,fast=True)
+                     if updated is None:updated=self.locator.locate(normal)
+                     self.check()
+                     if updated is None:raise MapAlignmentLost('Map alignment was lost during the held drag.')
+@@ -355,7 +400,7 @@
+                     pose=updated
+                     normal.setflags(write=False);reference=(normal,pose,(0.,0.))
+                     observed_at=self.clock()
+-                    if route_point_visible(pose.project(view.x,view.y)):break
++                    if self.target_visible(backend,pose.project(view.x,view.y)):break
+                 else:raise RuntimeError('Could not reveal the route point with a held drag. Patrol stopped.')
+         except MapAlignmentLost:
+             # The context released the button. Re-establish a settled position
+@@ -371,6 +416,47 @@
+             except MapAlignmentLost:return self.recover_pan(backend)
+         self.navigation.pop('pending',None);self.navigation.pop('recovery_exhausted',None)
+         return current,pose
++
++    def select_camera(self,backend,frame,pose,view):
++        """A sent click is not a completed camera selection.
++
++        Allow a delayed automatic close, or require the rectangular camera
++        outline at the target before Back. An ignored click is retried once
++        against fresh recognised terrain. No unchecked scene reaches inspect.
++        """
++        from patrol_route import route_point_visible
++        for attempt in range(2):
++            point=tuple(round(v) for v in pose.project(view.x,view.y))
++            if not self.target_visible(backend,point):raise RuntimeError('Camera target is outside the usable map surface.')
++            self.check();backend.click(point)
++            deadline=self.clock()+1.25;outline_since=None;closed_since=None
++            while self.clock()<deadline:
++                self.check();scene=backend.capture();now=self.clock()
++                if not self.is_map(scene):
++                    if closed_since is None:closed_since=now
++                    if now-closed_since>=.08:
++                        self.navigation['selected_camera']=(view.x,view.y)
++                        return scene
++                else:
++                    closed_since=None
++                    if camera_selection_visible(scene,point,pose.scale):
++                        if outline_since is None:outline_since=now
++                        if now-outline_since>=.1:
++                            backend.click(self.settings.map_close)
++                            close_deadline=self.clock()+5
++                            while True:
++                                self.check();scene=backend.capture()
++                                if not self.is_map(scene):
++                                    self.navigation['selected_camera']=(view.x,view.y)
++                                    return scene
++                                if self.clock()>=close_deadline:raise RuntimeError('The map did not close. Calibrate its Back button.')
++                                backend.wait(.08)
++                    else:outline_since=None
++                backend.wait(.05)
++            if not self.is_map(scene):continue
++            self.send('status',message='Camera selection was not confirmed; rechecking this target…')
++            frame,pose=self.align(backend,timeout=3.,initial_frame=scene)
++        raise RuntimeError(f'Camera selection not confirmed for route #{view.route_label}. This spot was not checked; resume to retry.')
+ 
+     def inspect(self,backend):
+         gate=AlertGate(cooldown=0)
+@@ -444,7 +530,7 @@
+             for attempt in range(257):
+                 self.check();point=pose.project(view.x,view.y)
+                 from patrol_route import route_point_visible
+-                if (route_point_visible(point) if self.fixed_route else clickable(point)):break
++                if (self.target_visible(backend,point) if self.fixed_route else clickable(point)):break
+                 if attempt==256:raise RuntimeError('Could not bring this dot into view. Patrol stopped.')
+                 distance=math.hypot(point[0]-285,point[1]-500)
+                 stalled=stalled+1 if previous is not None and distance>=previous-3 else 0
+@@ -478,7 +564,7 @@
+             view=available;point=pose.project(view.x,view.y)
+             if self.fixed_route:point=tuple(round(value) for value in point)
+             from patrol_route import route_point_visible
+-            if not (route_point_visible(point) if self.fixed_route else clickable(point)):
++            if not (self.target_visible(backend,point) if self.fixed_route else clickable(point)):
+                 raise RuntimeError('The accessible camera target moved outside the clickable map; stopped.')
+             # Recognition came from this fresh screenshot; guard input again.
+             self.check();self.send('status',message=f'Clicking {view.near_zone} ({math.floor(view.x)},{math.floor(view.y)})')
+@@ -491,15 +577,7 @@
+                 terrain=patrol_map_mask(difference.shape)!=0
+                 if np.mean(difference[terrain]>28)>.06:
+                     raise RuntimeError('The map moved before the fixed route click. Stopped; resume when the map has settled.')
+-            backend.click(point);backend.wait(.2)
+-            self.navigation['selected_camera']=(view.x,view.y)
+-            scene=backend.capture()
+-            if self.is_map(scene):
+-                backend.click(self.settings.map_close);scene=backend.capture()
+-            deadline=self.clock()+5
+-            while self.is_map(scene):
+-                if self.clock()>deadline:raise RuntimeError('The map did not close. Calibrate its Back button.')
+-                backend.wait(.2);scene=backend.capture()
++            self.select_camera(backend,fresh,pose,view)
+             backend.wait(self.settings.settle_seconds)
+             self.send('status',message='Inspecting the visible scene…')
+             inspect_started=self.clock()
+@@ -517,17 +595,17 @@
+                       map_seconds=inspect_started-view_started,inspect_seconds=self.clock()-inspect_started,skipped=False)
+             self.checked.add(index);self.send('checked',index=index,count=len(self.checked))
+             if found is not None:
+-                now=self.clock();event=None
++                now=self.clock();event=None;seen_id='patrol:'+uuid.uuid4().hex;seen_at=self.wall()
+                 if now-self.cooldown['last']>=20:
+                     self.cooldown['last']=now
+-                    event=dict(event_id='patrol:'+uuid.uuid4().hex,seen_at=self.wall(),screen_x=found.center[0],
++                    event=dict(event_id=seen_id,seen_at=seen_at,screen_x=found.center[0],
+                         screen_y=found.center[1],score=found.score,test_mode=False,capture_status='pending',
+                         zone=view.near_zone,game_x=math.floor(view.x),game_y=math.floor(view.y),
+                         capture_note='Camera view: selected spawn area, not the gem tile.',
+                         camera_location=dict(zone=view.near_zone,x=math.floor(view.x),y=math.floor(view.y)))
+                 sound=now-self.cooldown.get('sound',-float('inf'))>=30
+                 if sound:self.cooldown['sound']=now
+-                self.send('found',event=event,view=view,sound=sound)
++                self.send('found',event=event,view=view,sound=sound,seen_id=seen_id,seen_at=seen_at)
+                 if self.settings.approach_gem:
+                     from camera_patrol import gem_click
+                     if event is not None:
+@@ -535,16 +613,16 @@
+                         self.send('capture',event=event,frame=frame.copy(),captured_at=self.wall())
+                     self.check()
+                     # Capture guards cover focus/resize/obstruction, and a fresh
+-                    # visual check confirms the current centre before clicking.
++                    # image can refine the centre. A one-frame score drop must
++                    # not veto a gem already confirmed by the temporal gate.
+                     fresh=backend.capture()
+                     if self.is_map(fresh):return 'Gem found. Map reopened; gem click cancelled.'
+                     current=self.detector.detect(fresh,exclude_hud=self.settings.mask_hud)
+                     latest=min(current,key=lambda box:math.dist(box.center,found.center),default=None)
+-                    if latest is None or math.dist(latest.center,found.center)>=max(30,found.width*2):
+-                        return 'Gem found. Scene changed before the gem click; stopped without clicking.'
++                    if latest is None or math.dist(latest.center,found.center)>=max(30,found.width*2):latest=found
+                     point=gem_click(latest.center,fresh.shape)
+                     if point is None:
+-                        return 'Gem found. Its centre overlaps interface controls; stopped without clicking.'
++                        return 'Gem found. Its centre is outside the game image; stopped without clicking.'
+                     self.check();backend.click(point)
+                     self.send('gem_clicked',point=point)
+                     return 'Gem found. Clicked the gem once; sniping stopped.'
+--- a/LoongLens/patrol_live_panel.py
++++ b/LoongLens/patrol_live_panel.py
+@@ -1,8 +1,9 @@
+ """User-controlled real BlueStacks input and patrol status/history integration."""
+ from concurrent.futures import ThreadPoolExecutor
+-from dataclasses import asdict
++from dataclasses import asdict,replace
+ import json
+ import queue
++import time
+ import tkinter as tk
+ from tkinter import ttk,messagebox,simpledialog
+ from pathlib import Path
+@@ -26,6 +27,7 @@
+         self.pass_text=tk.StringVar(value='')
+         self.performance=tk.StringVar(value='')
+         self.stats_text=tk.StringVar(value='Time spent: 0:00\nGems found: 0')
++        self.seen_text=tk.StringVar(value=f'{self.services.sighting_history.sniper_seen()}/5');self.seen_refresh=0.
+         self.events=queue.Queue();self.keys=None;self.closed=False;self.busy=False
+         self.job=None;self.photo=None;self.futures=[];self.editing=False;self.editor=None;self.switching=False
+         self.path=user_dir()/'patrol-live-settings.json'
+@@ -35,6 +37,7 @@
+             self.key.set(key)
+             if migrated:self.status.set('Updated Open map to the top-right minimap.')
+         except (OSError,ValueError,KeyError,TypeError):self.settings=LiveSettings()
++        self.settings=replace(self.settings,approach_gem=True)
+         self.base_views=load_fixed_route(data);self.route_path=user_dir()/'camera-route-adjustments.json'
+         self.routes=None;self.route_name=tk.StringVar(value='Default')
+         warning=None
+@@ -56,7 +59,11 @@
+     def build_ui(self):
+         from ui_theme import FONT, heading, card, row, CARD, MUTED
+         body=ttk.Frame(self.parent,padding=(20,18));body.pack(fill='both',expand=True)
+-        heading(body, 'Gem Sniper', 'Check known gem spots without moving your character.')
++        title=ttk.Frame(body);title.pack(fill='x')
++        ttk.Label(title,text='Gem Sniper',style='Title.TLabel').pack(side='left')
++        self.seen_label=ttk.Label(title,textvariable=self.seen_text,style='Title.TLabel')
++        self.seen_label.pack(side='right')
++        ttk.Label(body,text='Check known gem spots without moving your character.',style='Muted.TLabel',wraplength=470).pack(anchor='w',pady=(3,14))
+         controls=card(body, 'SNIPING CONTROLS')
+         line=row(controls)
+         ttk.Label(line,text='Ready when you are',style='Card.TLabel').pack(side='left')
+@@ -226,7 +233,7 @@
+         self.runner.cooldown['sound']=max(self.runner.cooldown.get('sound',-float('inf')),self.services.last_sound)
+         settings=LiveSettings(self.settings.map_open,self.settings.map_close,
+             self.settings.settle_seconds,self.settings.inspect_seconds,
+-            {'Conservative':.84,'Balanced':.77,'Sensitive':.70}[self.services.mode.get()],self.services.mask_hud.get(),self.settings.approach_gem)
++            {'Conservative':.84,'Balanced':.77,'Sensitive':.70}[self.services.mode.get()],self.services.mask_hud.get(),True)
+         
+         self.on_active(True);self.busy=True;self.buttons()
+         if not self.runner.start(settings,auto=True,repeat=repeat):
+@@ -284,7 +291,9 @@
+                 self.pass_text.set(f"Passes completed: {event['passes']}\nLast 3 runs: "+' · '.join(times));self.update_count()
+             elif kind=='pass_started':self.update_count()
+             elif kind=='found':
+-                self.status.set('GEM FOUND — saving the scene, then clicking the gem once…' if self.settings.approach_gem else 'GEM FOUND — holding this view for its screenshot…')
++                self.status.set('GEM FOUND — saving the scene, then clicking the gem once…');self.seen_refresh=0.
++                if event.get('seen_id'):
++                    self.services.sighting_history.mark_sniper_seen(event['seen_id'],event['seen_at'])
+                 if self.services.sound.get() and event.get('sound',True):
+                     self.services.last_sound=self.runner.cooldown.get('sound',self.services.last_sound);self.services.play_sound()
+                 if event['event'] is not None:
+@@ -313,6 +322,8 @@
+         try:
+             self.drain()
+             self.stats_text.set(self.runner.stats.text())
++            if time.time()>=self.seen_refresh:
++                self.seen_text.set(f'{self.services.sighting_history.sniper_seen()}/5');self.seen_refresh=time.time()+1
+         except Exception:
+             import logging
+             self.runner.stop();logging.exception('Live patrol panel update failed')
+@@ -344,8 +355,7 @@
+         for row,name,label in ((4,'settle_seconds','Scene loading wait (seconds)'),(5,'inspect_seconds','Empty-view check (seconds)')):
+             ttk.Label(body,text=label).grid(row=row,column=0,sticky='w',pady=6)
+             field=ttk.Entry(body,width=15);field.insert(0,str(getattr(self.settings,name)));field.grid(row=row,column=1,padx=8);fields[name]=field
+-        approach=tk.BooleanVar(value=self.settings.approach_gem)
+-        ttk.Checkbutton(body,text='On gem: click the gem itself once, then stop',variable=approach).grid(row=6,column=0,columnspan=3,sticky='w')
++        ttk.Label(body,text='On confirmed gem: always click its centre once, then stop.').grid(row=6,column=0,columnspan=3,sticky='w')
+         detection_mode=tk.StringVar(value=self.services.mode.get())
+         mask_interface=tk.BooleanVar(value=self.services.mask_hud.get())
+         sound_alerts=tk.BooleanVar(value=self.services.sound.get())
+@@ -358,7 +368,7 @@
+         def apply():
+             try:
+                 points={name:tuple(float(v.strip()) for v in fields[name].get().split(',')) for name in ('map_open','map_close')}
+-                self.settings=LiveSettings(**points,settle_seconds=float(fields['settle_seconds'].get()),inspect_seconds=float(fields['inspect_seconds'].get()),approach_gem=approach.get())
++                self.settings=LiveSettings(**points,settle_seconds=float(fields['settle_seconds'].get()),inspect_seconds=float(fields['inspect_seconds'].get()),approach_gem=True)
+             except (TypeError,ValueError):error.set('Enter X,Y pairs inside 570×1029. Loading wait: 0.2–10s. Check: 1.2–10s.');return
+             self.services.mode.set(detection_mode.get());self.services.mask_hud.set(mask_interface.get());self.services.sound.set(sound_alerts.get())
+             self.services.save();self.save_config();win.destroy()
+--- a/LoongLens/patrol_route.py
++++ b/LoongLens/patrol_route.py
+@@ -94,7 +94,7 @@
+     return DRAG_CENTER
+ 
+ 
+-def route_drag_step(cursor,delta,limit=240.):
++def route_drag_step(cursor,delta,limit=240.,bounds=None):
+     """Extend a fast straight stroke up to its next check or exact control edge.
+ 
+     Check each reference pixel on the ray, so a step cannot jump across a
+@@ -107,6 +107,7 @@
+         distance=limit*step/steps
+         point=(cursor[0]+dx/length*distance,cursor[1]+dy/length*distance)
+         if not route_point_visible(point):break
++        if bounds is not None and not (bounds[0]<=point[0]<=bounds[2] and bounds[1]<=point[1]<=bounds[3]):break
+         last=point
+     return last if math.dist(cursor,last)>=.5 else None
+ 
+--- a/LoongLens/patrol_windows.py
++++ b/LoongLens/patrol_windows.py
+@@ -44,6 +44,56 @@
+         self.user.GetWindowRect.restype=wintypes.BOOL
+         self.user.GetAsyncKeyState.argtypes=[ctypes.c_int]
+         self.user.GetAsyncKeyState.restype=wintypes.SHORT
++        self.user.GetCursorPos.argtypes=[ctypes.POINTER(wintypes.POINT)]
++        self.user.GetCursorPos.restype=wintypes.BOOL
++        self.user.GetClientRect.argtypes=[wintypes.HWND,ctypes.POINTER(wintypes.RECT)]
++        self.user.GetClientRect.restype=wintypes.BOOL
++        self.user.ClientToScreen.argtypes=[wintypes.HWND,ctypes.POINTER(wintypes.POINT)]
++        self.user.ClientToScreen.restype=wintypes.BOOL
++        self.user.SendMessageTimeoutW.argtypes=[wintypes.HWND,wintypes.UINT,wintypes.WPARAM,wintypes.LPARAM,
++                                              wintypes.UINT,wintypes.UINT,ctypes.POINTER(ctypes.c_size_t)]
++        self.user.SendMessageTimeoutW.restype=wintypes.LPARAM
++        self.user.ClipCursor.argtypes=[ctypes.POINTER(wintypes.RECT)]
++        self.user.ClipCursor.restype=wintypes.BOOL
++        self.user.GetClipCursor.argtypes=[ctypes.POINTER(wintypes.RECT)]
++        self.user.GetClipCursor.restype=wintypes.BOOL
++
++    def cursor(self):
++        point=wintypes.POINT()
++        if not self.user.GetCursorPos(ctypes.byref(point)):raise OSError('Could not read the Windows cursor.')
++        return point.x,point.y
++
++    def client_hit(self,hwnd,point):
++        x,y=point;result=ctypes.c_size_t()
++        location=(x&0xffff)|((y&0xffff)<<16)
++        if not self.user.SendMessageTimeoutW(hwnd,0x84,0,location,0x2,100,ctypes.byref(result)):
++            raise RuntimeError('BlueStacks did not answer its window-border check.')
++        return result.value==1  # HTCLIENT; resize borders/caption are not map input.
++
++    def input_rect(self,hwnd):
++        rect=wintypes.RECT();origin=wintypes.POINT()
++        if not self.user.GetClientRect(hwnd,ctypes.byref(rect)) or not self.user.ClientToScreen(hwnd,ctypes.byref(origin)):
++            raise RuntimeError('Could not read the BlueStacks client area.')
++        left,top,right,bottom=origin.x,origin.y,origin.x+rect.right,origin.y+rect.bottom
++        cx,cy=(left+right)//2,(top+bottom)//2
++        # Some frameless emulator windows include resize pixels in their client
++        # rectangle. Ask Windows about those exact pixels; add no fixed margin.
++        while left<cx and not self.client_hit(hwnd,(left,cy)):left+=1
++        while right>cx and not self.client_hit(hwnd,(right-1,cy)):right-=1
++        while top<cy and not self.client_hit(hwnd,(cx,top)):top+=1
++        while bottom>cy and not self.client_hit(hwnd,(cx,bottom-1)):bottom-=1
++        if left>=cx or right<=cx or top>=cy or bottom<=cy:
++            raise RuntimeError('BlueStacks has no usable client input area.')
++        return left,top,right,bottom
++
++    def clip(self,rect):
++        native=wintypes.RECT(*rect)
++        if not self.user.ClipCursor(ctypes.byref(native)):raise OSError('Could not confine the mouse to BlueStacks.')
++
++    def clip_rect(self):
++        rect=wintypes.RECT()
++        if not self.user.GetClipCursor(ctypes.byref(rect)):raise OSError('Could not read cursor confinement.')
++        return rect.left,rect.top,rect.right,rect.bottom
+ 
+     def mouse(self,flags):
+         event=self.Input();event.type=0;event.mi.dwFlags=flags
+@@ -66,6 +116,7 @@
+         self.visible_at=window_visible_at
+         self.cancel=cancel;self.api=NativeInput();self.target=None;self.screen=None
+         self.down=False
++        self.input_rect=None;self._clip_saved=None;self._clip_owned=None
+ 
+     def __enter__(self):
+         import mss
+@@ -86,6 +137,10 @@
+         self.api.user.SetForegroundWindow(hwnd)
+         self.wait(.25)
+         self.guard()
++        self.input_rect=self.api.input_rect(hwnd)
++        x,y,w,h=self.target[1];left,top,right,bottom=self.input_rect
++        self.drag_bounds=((left-x)*570/w,(top-y)*1029/h,
++                          (right-1-x)*570/w,(bottom-1-y)*1029/h)
+ 
+     def guard(self):
+         if self.cancel.is_set():raise PatrolStopped('Stopped.')
+@@ -103,28 +158,54 @@
+         if not (math.isfinite(rx) and math.isfinite(ry) and 0<=rx<570 and 0<=ry<1029):
+             raise ValueError('Input point is outside the BlueStacks screenshot.')
+         x,y,w,h=self.target[1]
+-        return round(x+rx*w/570),round(y+ry*h/1029)
++        return min(x+w-1,round(x+rx*w/570)),min(y+h-1,round(y+ry*h/1029))
++
++    def client_point(self,point):
++        rect=getattr(self,'input_rect',None)
++        if rect is not None and not (rect[0]<=point[0]<rect[2] and rect[1]<=point[1]<rect[3]):
++            raise RuntimeError('Mouse target is on the BlueStacks window border, not its map surface.')
++        if not self.api.client_hit(self.target[0],point):
++            raise RuntimeError('Mouse target is a BlueStacks resize border or title bar.')
++
++    def verify_cursor(self,expected):
++        actual=self.api.cursor()
++        if actual!=expected:raise RuntimeError('The mouse did not reach the intended map point. Input stopped.')
++        self.client_point(actual)
++
++    def confine(self):
++        rect=getattr(self,'input_rect',None)
++        if rect is None:return
++        self._clip_saved=self.api.clip_rect();self.api.clip(rect);self._clip_owned=rect
+ 
+     def move(self,reference):
+         self.guard();point=self.point(reference)
++        self.client_point(point)
+         if not self.visible_at(self.target[0],*point):raise RuntimeError('Another window covers the click point.')
+         if not self.api.user.SetCursorPos(*point):raise OSError('Windows could not move the mouse.')
+-        self.guard()
++        self.guard();self.verify_cursor(point)
+ 
+     def release(self):
+-        if self.down:
+-            try:self.api.mouse(0x0004)
+-            finally:self.down=False
++        try:
++            if self.down:
++                try:self.api.mouse(0x0004)
++                finally:self.down=False
++        finally:
++            owned=getattr(self,'_clip_owned',None)
++            if owned is not None:
++                try:
++                    if self.api.clip_rect()==owned:self.api.clip(self._clip_saved)
++                finally:self._clip_owned=None;self._clip_saved=None
+ 
+     def click(self,reference):
+-        self.move(reference)
+-        try:
+-            self.guard();self.down=True;self.api.mouse(0x0002);self.wait(.05)
++        try:
++            self.confine();self.move(reference)
++            self.guard();self.verify_cursor(self.point(reference))
++            self.down=True;self.api.mouse(0x0002);self.wait(.08)
+         finally:self.release()
+ 
+     def drag(self,start,end):
+-        self.move(start)
+-        try:
++        try:
++            self.confine();self.move(start)
+             self.guard();self.down=True;self.api.mouse(0x0002)
+             steps=max(4,min(18,math.ceil(math.dist(start,end)/24)))
+             for i in range(1,steps+1):
+@@ -141,8 +222,8 @@
+         from patrol_route import route_point_visible
+         if not route_point_visible(start):raise ValueError('Drag start overlaps map controls.')
+         if self.down:raise RuntimeError('A mouse button is already held.')
+-        self.move(start)
+-        try:
++        try:
++            self.confine();self.move(start)
+             self.guard();self.down=True;self.api.mouse(0x0002)
+             self._drag_position=tuple(start)
+             self.wait(.025)  # Let the emulator receive down before fast motion.
+@@ -157,19 +238,22 @@
+     def require_hold(self):
+         if not self.down or not self.api.left_down():
+             raise RuntimeError('The mouse hold was released. Patrol stopped before moving the cursor.')
++        if getattr(self,'input_rect',None) is not None:
++            self.verify_cursor(self.point(self._drag_position))
+ 
+     def drag_held_to(self,end):
+         from patrol_route import route_point_visible
++        if self.cancel.is_set():raise PatrolStopped('Stopped.')
+         if not self.down or getattr(self,'_drag_position',None) is None:
+             raise RuntimeError('Start a held drag before moving it.')
+         start=self._drag_position
+-        steps=max(1,math.ceil(math.dist(start,end)/40))
++        steps=max(1,math.ceil(math.dist(start,end)/24))
+         points=[(start[0]+(end[0]-start[0])*i/steps,start[1]+(end[1]-start[1])*i/steps)
+                 for i in range(1,steps+1)]
+         if not all(route_point_visible(point) for point in points):
+             raise ValueError('Held movement overlaps map controls.')
+         for point in points:
+-            self.wait(.004)
++            self.wait(.008)
+             self.require_hold()
+             self.move(point);self._drag_position=point
+ 
+--- a/LoongLens/requirements.txt
++++ b/LoongLens/requirements.txt
+@@ -3,3 +3,5 @@
+ mss==10.1.0
+ pillow==11.3.0
+ onnxruntime==1.23.2
++
++tzdata==2025.2
+--- a/LoongLens/sighting_history.py
++++ b/LoongLens/sighting_history.py
+@@ -99,6 +99,8 @@
+             if name not in columns:
+                 self.connection.execute(f'ALTER TABLE sightings ADD COLUMN {name} {definition}')
+         self.connection.execute('CREATE INDEX IF NOT EXISTS sighting_time ON sightings(seen_at DESC,id DESC)')
++        self.connection.execute('CREATE TABLE IF NOT EXISTS sniper_seen_events(event_id TEXT PRIMARY KEY,seen_at REAL NOT NULL)')
++        self.connection.execute('CREATE INDEX IF NOT EXISTS sniper_seen_time ON sniper_seen_events(seen_at)')
+         self.connection.commit()
+         self._marker_cache_key = None
+         self._marker_cache = []
+@@ -121,6 +123,16 @@
+             self.connection.executemany(f'''INSERT INTO sightings ({columns}) VALUES({','.join('?' for _ in range(14))})
+                 ON CONFLICT(event_id) DO UPDATE SET {updates}
+                 WHERE sightings.capture_status IN ('pending','legacy') AND excluded.capture_status NOT IN ('pending','legacy')''', values)
++            self.connection.executemany('INSERT OR IGNORE INTO sniper_seen_events VALUES(?,?)',
++                [(row[0],row[1]) for row in values if row[0].startswith('patrol:') and not row[5]])
++
++    def sniper_seen(self,now=None):
++        from sniper_counter import game_day_window
++        start,end=game_day_window(now)
++        return self.connection.execute('SELECT COUNT(*) FROM sniper_seen_events WHERE seen_at>=? AND seen_at<?',(start,end)).fetchone()[0]
++
++    def mark_sniper_seen(self,event_id,stamp):
++        with self.connection:self.connection.execute('INSERT OR IGNORE INTO sniper_seen_events VALUES(?,?)',(event_id,stamp))
+ 
+     def recover_pending(self):
+         with self.connection:
+@@ -151,10 +163,9 @@
+     def date_filter(today_only, now=None):
+         if not today_only:
+             return [], []
+-        # Separate local midnights handle 23/25-hour daylight-saving days.
+-        today = (now or datetime.now()).date()
+-        start = datetime.combine(today, day_time.min).timestamp()
+-        end = datetime.combine(today+timedelta(days=1), day_time.min).timestamp()
++        from sniper_counter import game_day_window
++        stamp=now.timestamp() if isinstance(now,datetime) else now
++        start,end=game_day_window(stamp)
+         return ['seen_at>=?', 'seen_at<?'], [start, end]
+ 
+     def list(self, include_tests=False, limit=None, today_only=False, now=None):
+--- a/LoongLens/sighting_panel.py
++++ b/LoongLens/sighting_panel.py
+@@ -25,11 +25,12 @@
+ 
+     def refresh(self):
+         today_only = self.date_scope.get() == 'today'
+-        self.display_day = datetime.now().date()
++        from sniper_counter import game_day_window
++        self.display_day = game_day_window()[0]
+         counts = self.history.counts(today_only=today_only)
+         pending = self.history.pending_count()
+         suffix = f' · Captures pending: {pending}' if pending else ''
+-        scope = 'Today' if today_only else 'All dates'
++        scope = 'Game day (16:00 Sofia)' if today_only else 'All dates'
+         self.summary.set(f'{scope} · Live sightings: {counts.get(0, 0)} · Image tests: {counts.get(1, 0)}' + suffix)
+         if self.tree is None or not self.tree.winfo_exists():
+             return
+@@ -111,7 +112,8 @@
+         self.day_job = None
+         if self.window is None or not self.window.winfo_exists():
+             return
+-        if datetime.now().date() != self.display_day:
++        from sniper_counter import game_day_window
++        if game_day_window()[0] != self.display_day:
+             self.refresh()
+         self.day_job = self.root.after(30_000, self.check_day)
+ 
+--- /dev/null
++++ b/LoongLens/sniper_counter.py
+@@ -0,0 +1,14 @@
++"""The user's game day starts at 16:00 in Europe/Sofia, not midnight."""
++from datetime import datetime,time,timedelta
++from zoneinfo import ZoneInfo
++import time as clock
++
++ZONE=ZoneInfo('Europe/Sofia')
++
++
++def game_day_window(now=None):
++    local=datetime.fromtimestamp(clock.time() if now is None else now,ZONE)
++    day=local.date() if local.hour>=16 else local.date()-timedelta(days=1)
++    start=datetime.combine(day,time(16),ZONE).timestamp()
++    end=datetime.combine(day+timedelta(days=1),time(16),ZONE).timestamp()
++    return start,end
+--- /dev/null
++++ b/LoongLens/tests/test_camera_selection.py
+@@ -0,0 +1,78 @@
++"""Delayed/ignored map taps must never become checks at the character's view."""
++import cv2
++import numpy as np
++import pytest
++from patrol_live import camera_selection_visible,LiveSettings
++from test_live_patrol import setup
++
++
++def outline(frame,point,scale=12.45):
++    x,y=point
++    cv2.rectangle(frame,(round(x-scale*6.7/2),round(y-scale*12.1/2)),
++                  (round(x+scale*6.7/2),round(y+scale*12.1/2)),(240,240,240),2)
++    return frame
++
++
++@pytest.mark.parametrize('point',[(285,500),(14,300),(140,38),(14,38),(400,900),(555,150)])
++def test_camera_outline_can_confirm_clear_or_clipped_views_without_padding(point):
++    frame=np.full((1029,570,3),(125,170,140),np.uint8)
++    assert camera_selection_visible(outline(frame,point),point,12.45)
++
++
++@pytest.mark.parametrize('kind',['ripple','blank','snow','wrong-camera'])
++def test_click_ripple_or_bright_ground_cannot_acknowledge_a_camera_selection(kind):
++    point=(285,500);frame=np.full((1029,570,3),230 if kind in ('blank','snow') else 100,np.uint8)
++    if kind=='ripple':cv2.circle(frame,point,16,(255,255,255),2)
++    if kind=='wrong-camera':outline(frame,(150,300))
++    assert not camera_selection_visible(frame,point,12.45)
++
++
++def test_ignored_map_click_never_closes_map_inspects_or_marks_checked():
++    engine,backend,events=setup();original=backend.click
++    def ignore(point):
++        if backend.open and point!=LiveSettings().map_close:backend.inputs.append(('click',point,True))
++        else:original(point)
++    backend.click=ignore
++    with pytest.raises(RuntimeError,match='Camera selection not confirmed'):engine.run(backend,auto=False)
++    assert not engine.checked and backend.open
++    assert len(backend.inputs)==2 and all(row[1]!=LiveSettings().map_close for row in backend.inputs)
++    assert not any(row['kind'] in ('checked','found','capture') for row in events)
++
++
++def test_one_ignored_tap_is_retried_against_fresh_recognition_then_checked_once():
++    engine,backend,events=setup();original=backend.click;attempts=[]
++    def ignore_first(point):
++        if backend.open and point!=LiveSettings().map_close:
++            attempts.append(point)
++            if len(attempts)==1:backend.inputs.append(('click',point,True));return
++        original(point)
++    backend.click=ignore_first;engine.run(backend,auto=False)
++    assert len(attempts)==2 and engine.checked=={0}
++    assert sum(row[1]==LiveSettings().map_close for row in backend.inputs)==1
++    assert sum(row['kind']=='checked' for row in events)==1
++
++
++def test_delayed_automatic_camera_selection_is_allowed_without_premature_back():
++    engine,backend,events=setup();original=backend.click;capture=backend.capture;due=[None]
++    def select(point):
++        original(point)
++        if point!=LiveSettings().map_close and backend.open:
++            backend.selected_world=None;due[0]=engine.clock()+.7
++    def screenshot():
++        if due[0] is not None and engine.clock()>=due[0]:backend.open=False
++        return capture()
++    backend.click=select;backend.capture=screenshot
++    engine.run(backend,auto=False)
++    assert engine.checked=={0} and len(backend.inputs)==1
++
++
++def test_stop_while_waiting_for_camera_confirmation_sends_no_back():
++    engine,backend,events=setup();capture=backend.capture
++    def screenshot():
++        frame=capture()
++        if backend.inputs:engine.cancel.set()
++        return frame
++    backend.capture=screenshot
++    from patrol_windows import PatrolStopped
++    with pytest.raises(PatrolStopped):engine.run(backend,auto=False)
++    assert not engine.checked and len(backend.inputs)==1
+--- /dev/null
++++ b/LoongLens/tests/test_cursor_client_area.py
+@@ -0,0 +1,86 @@
++"""A BlueStacks resize border is never a valid map drag or click target."""
++from types import SimpleNamespace
++import threading
++import pytest
++from patrol_windows import WindowsBackend,NativeInput,PatrolStopped
++from patrol_live import LivePatrol
++from patrol_route import route_drag_step
++
++
++def backend():
++    value=WindowsBackend.__new__(WindowsBackend)
++    value.cancel=threading.Event();value.down=False;value.target=(123,(100,100,570,1029))
++    value.input_rect=(108,130,662,1121);value.drag_bounds=(8,30,561,1020)
++    value._clip_saved=None;value._clip_owned=None
++    state=dict(cursor=(300,400),clip=(-1920,0,3840,2160),events=[])
++    def move(x,y):state['cursor']=(x,y);state['events'].append(('move',(x,y)));return True
++    value.api=SimpleNamespace(user=SimpleNamespace(SetCursorPos=move),cursor=lambda:state['cursor'],
++        client_hit=lambda hwnd,p:108<=p[0]<662 and 130<=p[1]<1121,
++        mouse=lambda flag:state['events'].append(('button',flag)),left_down=lambda:True,
++        clip_rect=lambda:state['clip'],clip=lambda rect:state.update(clip=rect))
++    value.guard=lambda:(_ for _ in ()).throw(PatrolStopped('Stopped')) if value.cancel.is_set() else None
++    value.visible_at=lambda *a:True;value.wait=lambda t:value.guard()
++    return value,state
++
++
++@pytest.mark.parametrize('point',[(4,500),(565,500),(285,1028),(285,20)])
++def test_border_target_never_moves_or_presses_mouse_and_restores_clip(point):
++    value,state=backend();original=state['clip']
++    with pytest.raises(RuntimeError,match='border'):value.click(point)
++    assert not state['events'] and state['clip']==original and not value.down
++
++
++def test_hit_test_rejects_a_resize_handle_even_inside_the_client_rectangle():
++    value,state=backend();value.api.client_hit=lambda *a:False
++    with pytest.raises(RuntimeError,match='resize border'):value.click((200,400))
++    assert state['events']==[]
++
++
++def test_cursor_redirected_by_windows_is_not_clicked():
++    value,state=backend()
++    value.api.user.SetCursorPos=lambda *p:True  # Windows/another clip redirected it.
++    with pytest.raises(RuntimeError,match='did not reach'):value.click((200,400))
++    assert not any(event[0]=='button' for event in state['events'])
++
++
++def test_normal_click_is_delivered_inside_client_and_restores_previous_clip():
++    value,state=backend();original=state['clip']
++    value.click((200,400))
++    assert state['events']==[('move',(300,500)),('button',2),('button',4)]
++    assert state['clip']==original and not value.down
++
++
++def test_f10_during_hold_releases_button_and_original_cursor_clip():
++    value,state=backend();original=state['clip']
++    with pytest.raises(PatrolStopped):
++        with value.hold_drag((285,530)):
++            assert state['clip']==value.input_rect
++            value.cancel.set();value.release();value.drag_held_to((300,500))
++    assert state['clip']==original and not value.down
++    assert [row for row in state['events'] if row[0]=='button']==[('button',2),('button',4)]
++
++
++def test_pointer_boundary_uses_real_native_border_width_not_added_padding():
++    native=NativeInput.__new__(NativeInput)
++    def client(hwnd,p):p._obj.right=400;p._obj.bottom=700;return True
++    def origin(hwnd,p):p._obj.x=100;p._obj.y=50;return True
++    native.user=SimpleNamespace(GetClientRect=client,ClientToScreen=origin)
++    native.client_hit=lambda hwnd,p:107<=p[0]<493 and 81<=p[1]<744
++    assert native.input_rect(123)==(107,81,493,744)
++
++
++def test_full_window_reference_rounding_never_maps_to_pixel_outside_window():
++    value,_=backend()
++    assert value.point((569.99,1028.99))==(669,1128)
++
++
++def test_route_reveals_a_target_on_the_native_border_instead_of_clicking_it():
++    value,_=backend()
++    assert not LivePatrol.target_visible(value,(5,500))
++    assert LivePatrol.target_visible(value,(8,500))
++    cursor=(285,530)
++    for _ in range(4):
++        end=route_drag_step(cursor,(1,0),bounds=value.drag_bounds)
++        if end is None:break
++        cursor=end
++    assert cursor[0]<=561 and cursor[0]>560
+--- /dev/null
++++ b/LoongLens/tests/test_fast_map_flow.py
+@@ -0,0 +1,44 @@
++"""Held movement uses measured terrain; ambiguous flow falls back to SIFT."""
++import cv2
++import numpy as np
++import pytest
++from resources import ROOT
++from vision import track_map_flow,track_map_pan
++from test_patrol_pan_tracking import render
++
++
++@pytest.fixture(scope='module')
++def atlas():
++    cv2.setNumThreads(2)
++    return cv2.imread(str(ROOT/'loong_haven_default_atlas.png'))
++
++
++@pytest.mark.parametrize('delta',[(-100,0),(80,-120),(240,0),(0,160),(-200,160)])
++def test_fast_tracking_or_verified_fallback_matches_real_atlas_translation(atlas,delta):
++    before,known=render(atlas,180.5,186.5)
++    frame,expected=render(atlas,180.5-delta[0]/12.45,186.5+delta[1]/12.45)
++    measured=track_map_pan(before,frame,known,delta,fast=True)
++    assert measured is not None
++    assert measured.tx==pytest.approx(expected.tx,abs=1.5)
++    assert measured.ty==pytest.approx(expected.ty,abs=1.5)
++
++
++def test_fast_path_can_measure_without_running_sift(atlas,monkeypatch):
++    before,known=render(atlas,180.5,186.5);frame,_=render(atlas,180.5+100/12.45,186.5)
++    def forbidden(*a,**kw):pytest.fail('This clear held frame should use optical flow')
++    monkeypatch.setattr(cv2,'SIFT_create',forbidden)
++    assert track_map_pan(before,frame,known,(-100,0),fast=True).source=='tracked map terrain'
++
++
++def test_blank_or_unmoving_scene_never_authorizes_an_input_prediction(atlas):
++    before,known=render(atlas,180.5,186.5)
++    assert track_map_flow(before,before,known,(-100,0)) is None
++    blank=np.full_like(before,80)
++    assert track_map_pan(blank,blank,known,(-100,0),fast=True) is None
++
++
++def test_white_camera_box_on_flat_background_is_not_stationary_terrain():
++    from patrol_live import LivePatrol
++    frame=np.full((1029,570,3),1,np.uint8)
++    cv2.rectangle(frame,(244,425),(327,576),(255,255,255),2)
++    assert not LivePatrol.stationary_map(frame,frame)
+--- a/LoongLens/tests/test_fixed_route.py
++++ b/LoongLens/tests/test_fixed_route.py
+@@ -121,7 +121,11 @@
+                 p=self.pose()
+                 f=cv2.warpAffine(atlas,np.float32([[1,0,p.tx],[0,1,p.ty-279*12.45]]),(570,1029))
+                 f[0,0]=255;self.cache[key]=f
+-            return self.cache[key]
++            frame=self.cache[key].copy()
++            x,y=self.pose().project(*self.camera)
++            cv2.rectangle(frame,(round(x-12.45*6.7/2),round(y-12.45*12.1/2)),
++                          (round(x+12.45*6.7/2),round(y+12.45*12.1/2)),(255,255,255),2)
++            return frame
+         def click(self,p):
+             self.inputs.append(('click',p))
+             if not self.open:
+--- a/LoongLens/tests/test_held_pan.py
++++ b/LoongLens/tests/test_held_pan.py
+@@ -76,6 +76,8 @@
+         GetAncestor=lambda hwnd,kind:hwnd,
+         SetCursorPos=lambda *p:actions.append(('move',p)) or True)
+     backend.api=SimpleNamespace(user=user,left_down=lambda:True,mouse=lambda flag:actions.append(('button',flag)))
++    backend.api.client_hit=lambda *a:True
++    backend.api.cursor=lambda:next(a[1] for a in reversed(actions) if a[0]=='move')
+     backend.visible_at=lambda *p:state['failure']!='covered'
+     backend.wait=lambda seconds:None
+     with pytest.raises(RuntimeError):
+--- a/LoongLens/tests/test_history_edit_filters.py
++++ b/LoongLens/tests/test_history_edit_filters.py
+@@ -74,19 +74,31 @@
+         time.tzset()
+ 
+ 
+-@pytest.mark.parametrize('day,hours',[(date(2026,10,14),24),(date(2026,3,29),23),(date(2026,10,25),25)])
+-def test_today_filter_uses_local_midnights_and_keeps_full_history(tmp_path,sofia_timezone,day,hours):
+-    now=datetime.combine(day,day_time(hour=12))
+-    start=datetime.combine(day,day_time.min).timestamp()
+-    end=datetime.combine(day+timedelta(days=1),day_time.min).timestamp()
++@pytest.mark.parametrize('day,hours',[(date(2026,10,14),24),(date(2026,3,28),23),(date(2026,10,24),25)])
++def test_today_filter_uses_sofia_game_day_and_keeps_full_history(tmp_path,day,hours):
++    from sniper_counter import ZONE
++    now=datetime.combine(day,day_time(hour=17),ZONE)
++    start=datetime.combine(day,day_time(hour=16),ZONE).timestamp()
++    end=datetime.combine(day+timedelta(days=1),day_time(hour=16),ZONE).timestamp()
+     assert end-start==hours*3600
+     history=SightingHistory(tmp_path/'sightings.sqlite3')
+-    history.record([event('yesterday',seen_at=start-.001),event('midnight',seen_at=start),
++    history.record([event('yesterday',seen_at=start-.001),event('reset',seen_at=start),
+                     event('last-moment',seen_at=end-.001),event('tomorrow',seen_at=end),
+                     event('test-today',seen_at=start+1,test_mode=True)])
+-    assert [row.event_id for row in history.list(today_only=True,now=now)]==['last-moment','midnight']
++    assert [row.event_id for row in history.list(today_only=True,now=now)]==['last-moment','reset']
+     assert history.counts(today_only=True,now=now)=={0:2,1:1}
+     assert len(history.list(today_only=True,include_tests=True,now=now))==3
+     assert len(history.list())==4 and len(history.list(include_tests=True))==5
+     assert history.list(today_only=True,now=now,limit=1)[0].event_id=='last-moment'
+     history.close()
++
++
++def test_after_midnight_today_only_still_includes_previous_afternoon(tmp_path):
++    from sniper_counter import ZONE
++    history=SightingHistory(tmp_path/'sightings.sqlite3')
++    def stamp(day,hour,minute=0):return datetime(2026,10,day,hour,minute,tzinfo=ZONE).timestamp()
++    history.record([event('before-reset',seen_at=stamp(20,15,59)),event('afternoon',seen_at=stamp(20,16)),
++                    event('after-midnight',seen_at=stamp(21,0,5)),event('next-game-day',seen_at=stamp(21,16))])
++    assert [row.event_id for row in history.list(today_only=True,now=datetime(2026,10,21,1,tzinfo=ZONE))]==['after-midnight','afternoon']
++    assert [row.event_id for row in history.list(today_only=True,now=datetime(2026,10,21,16,tzinfo=ZONE))]==['next-game-day']
++    history.close()
+--- a/LoongLens/tests/test_live_patrol.py
++++ b/LoongLens/tests/test_live_patrol.py
+@@ -1,4 +1,5 @@
+ import threading
++import cv2
+ from contextlib import contextmanager
+ import math
+ from types import SimpleNamespace
+@@ -18,7 +19,7 @@
+ class Backend:
+     def __init__(self,cancel,clock):
+         self.cancel=cancel;self.clock=clock;self.open=True;self.center=(100.,100.)
+-        self.target=(123,(0,0,570,1029));self.inputs=[];self.break_back=False;self.stuck=False
++        self.target=(123,(0,0,570,1029));self.inputs=[];self.break_back=False;self.stuck=False;self.selected_world=None
+     def wait(self,t):
+         if self.cancel.is_set():raise PatrolStopped('Stopped.')
+         self.clock.now+=t
+@@ -27,6 +28,10 @@
+         self.wait(0)
+         frame=np.full((1029,570,3),int(self.open),np.uint8)
+         frame[10,10]=int(self.clock.now)%255
++        if self.open and self.selected_world is not None:
++            wx,wy=self.selected_world;x=285+(wx-self.center[0])*12.45;y=500-(wy-self.center[1])*12.45
++            cv2.rectangle(frame,(round(x-12.45*6.7/2),round(y-12.45*12.1/2)),
++                          (round(x+12.45*6.7/2),round(y+12.45*12.1/2)),(255,255,255),2)
+         return frame
+     def click(self,point):
+         self.wait(0);self.inputs.append(('click',point,self.open))
+@@ -36,6 +41,7 @@
+             if 390<point[0]<550 and 80<point[1]<245:self.open=True
+         elif point==LiveSettings().map_close:
+             if not self.break_back:self.open=False
++        else:self.selected_world=(self.center[0]+(point[0]-285)/12.45,self.center[1]-(point[1]-500)/12.45)
+     def drag(self,a,b):
+         self.wait(.36);self.inputs.append(('drag',a,b))
+         if not self.stuck:self.center=(self.center[0]-(b[0]-a[0])/12.45,self.center[1]+(b[1]-a[1])/12.45)
+@@ -245,7 +251,7 @@
+         return True
+     user=SimpleNamespace(GetWindowRect=bounds,GetForegroundWindow=lambda:999 if reason=='focus' else 123,
+         GetAncestor=lambda hwnd,kind:hwnd,SetCursorPos=lambda *p:sent.append(p))
+-    backend.api=SimpleNamespace(user=user,mouse=sent.append)
++    backend.api=SimpleNamespace(user=user,mouse=sent.append,client_hit=lambda *a:True)
+     backend.visible_at=lambda *p:reason!='covered'
+     if reason=='stop':backend.cancel.set()
+     with pytest.raises(RuntimeError):backend.click((200,300))
+--- a/LoongLens/tests/test_patrol_approach_and_locks.py
++++ b/LoongLens/tests/test_patrol_approach_and_locks.py
+@@ -40,7 +40,7 @@
+     assert len(backend.inputs)==2
+ 
+ 
+-def test_changed_scene_cancels_gem_click_instead_of_clicking_blindly():
++def test_single_frame_detection_drop_does_not_veto_an_already_confirmed_gem():
+     engine,backend,events=setup(positive=True);engine.settings=LiveSettings(approach_gem=True)
+     original=engine.detector.detect;triggered=[]
+     def detect(*args,**kw):return [] if triggered else original(*args,**kw)
+@@ -49,8 +49,8 @@
+         events.append(event)
+         if event['kind']=='found':triggered.append(True)
+     engine.emit=emit
+-    assert 'Scene changed' in engine.run(backend)
+-    assert len(backend.inputs)==2
++    assert 'Clicked the gem once' in engine.run(backend)
++    assert len(backend.inputs)==3 and backend.inputs[-1][1]==(200,400)
+ 
+ 
+ def test_locked_shading_does_not_confuse_unlocked_biomes_or_blank_capture():
+@@ -89,14 +89,26 @@
+     assert len(backend.inputs)==2
+ 
+ 
+-@pytest.mark.parametrize('point',[(285,200),(285,850),(500,350),(510,531),(10,500),(float('nan'),500),(float('inf'),500)])
+-def test_hud_offscreen_or_invalid_gem_does_not_get_an_offset_fallback(point):
++@pytest.mark.parametrize('point',[(-1,100),(570,500),(100,1029),(float('nan'),500),(float('inf'),500)])
++def test_offscreen_or_invalid_gem_does_not_get_an_offset_fallback(point):
+     assert gem_click(point,(1029,570,3)) is None
+ 
+ 
+-@pytest.mark.parametrize('gx', [45,80,180,350,460])
++@pytest.mark.parametrize('gx', [0,12,45,80,180,350,460,520,544,560,569])
+ def test_direct_click_does_not_shift_left_or_right(gx):
+     assert gem_click((gx,700),(1029,570,3))==pytest.approx((gx,700))
++
++
++def test_gem_in_reported_right_edge_photo_is_clickable_at_actual_image_scale():
++    assert gem_click((348,444),(664,365,3))==pytest.approx((348*570/365,444*1029/664))
++
++
++def test_confirmed_right_edge_gem_is_clicked_once_in_live_loop():
++    engine,backend,events=setup(positive=True);engine.settings=LiveSettings(approach_gem=True)
++    engine.detector.detect=lambda *a,**kw:[SimpleNamespace(center=(544,688),score=.95,width=20)]
++    assert 'Clicked the gem once' in engine.run(backend)
++    assert backend.inputs[-1][1]==(544,688)
++    assert sum(e['kind']=='gem_clicked' for e in events)==1
+ 
+ 
+ def test_fresh_detection_centre_is_used_if_gem_moves_a_few_pixels():
+@@ -111,7 +123,7 @@
+     assert len(backend.inputs)==3
+ 
+ 
+-def test_gem_moving_onto_interface_cancels_click_without_offset_fallback():
++def test_confirmed_gem_is_clicked_at_current_centre_without_a_hud_veto():
+     engine,backend,events=setup(positive=True);engine.settings=LiveSettings(approach_gem=True)
+     current=[(485,640)]
+     engine.detector.detect=lambda *a,**kw:[SimpleNamespace(center=current[0],score=.95,width=20)]
+@@ -119,5 +131,5 @@
+         events.append(event)
+         if event['kind']=='found':current[0]=(505,615)
+     engine.emit=emit
+-    assert 'overlaps interface' in engine.run(backend)
+-    assert len(backend.inputs)==2 and not any(e['kind']=='gem_clicked' for e in events)
++    assert 'Clicked the gem once' in engine.run(backend)
++    assert len(backend.inputs)==3 and backend.inputs[-1][1]==(505,615)
+--- a/LoongLens/tests/test_patrol_pan_tracking.py
++++ b/LoongLens/tests/test_patrol_pan_tracking.py
+@@ -43,16 +43,22 @@
+ def test_sparse_island_pan_and_next_reopen_survive_missing_absolute_matches(atlas):
+     class Backend:
+         center=(49.5,34.5);open=True;now=0.;inputs=[]
++        camera=None
+         def wait(self,t):self.now+=t
+         def focus(self):pass
+         def capture(self):
+             if not self.open:return np.zeros((1029,570,3),np.uint8)
+             frame,_=render(atlas,*self.center);frame[0,0]=255
++            if self.camera is not None:
++                x,y=render(atlas,*self.center)[1].project(*self.camera)
++                cv2.rectangle(frame,(round(x-12.45*6.7/2),round(y-12.45*12.1/2)),
++                              (round(x+12.45*6.7/2),round(y+12.45*12.1/2)),(255,255,255),2)
+             return frame
+         def click(self,p):
+             self.inputs.append(('click',p))
+             if not self.open:self.open=True
+             elif p==LiveSettings().map_close:self.open=False
++            else:self.camera=(self.center[0]+(p[0]-285)/12.45,self.center[1]-(p[1]-500)/12.45)
+         def drag(self,a,b):
+             self.inputs.append(('drag',a,b));self.wait(.36)
+             self.center=(self.center[0]-(b[0]-a[0])/12.45,self.center[1]+(b[1]-a[1])/12.45)
+--- /dev/null
++++ b/LoongLens/tests/test_sniper_counter.py
+@@ -0,0 +1,64 @@
++from datetime import datetime,timedelta
++from dataclasses import replace
++import pytest
++from sniper_counter import ZONE,game_day_window
++from sighting_history import SightingHistory
++
++
++def at(day,hour,minute=0):return datetime(2026,10,day,hour,minute,tzinfo=ZONE).timestamp()
++
++
++@pytest.mark.parametrize('stamp,start,end',[(at(20,15,59),at(19,16),at(20,16)),
++    (at(20,16),at(20,16),at(21,16)),(at(21,0),at(20,16),at(21,16)),(at(21,15,59),at(20,16),at(21,16))])
++def test_game_day_uses_1600_sofia_instead_of_midnight(stamp,start,end):
++    assert game_day_window(stamp)==(start,end)
++
++
++@pytest.mark.parametrize('stamp,hours',[(datetime(2026,3,28,17,tzinfo=ZONE).timestamp(),23),
++                                      (datetime(2026,10,24,17,tzinfo=ZONE).timestamp(),25)])
++def test_game_day_follows_sofia_daylight_saving_changes(stamp,hours):
++    a,b=game_day_window(stamp);assert b-a==hours*3600
++
++
++def event(ident,stamp,test=False):
++    return dict(event_id=ident,seen_at=stamp,screen_x=544,screen_y=688,score=.95,test_mode=test,capture_status='pending')
++
++
++def test_only_new_sniper_sightings_increment_and_photo_updates_do_not(tmp_path):
++    store=SightingHistory(tmp_path/'sightings.sqlite3');first=event('patrol:one',at(20,17))
++    store.record([first,dict(first,capture_status='ready',screenshot_path='first.png'),
++                  event('spy:one',at(20,17)),event('image:test',at(20,17),True)])
++    assert store.sniper_seen(at(20,18))==1
++    store.record([event('patrol:two',at(20,19))]);assert store.sniper_seen(at(20,20))==2
++    store.close()
++
++
++def test_counter_survives_restarts_and_standard_history_removal(tmp_path):
++    path=tmp_path/'sightings.sqlite3';store=SightingHistory(path)
++    store.record([event('patrol:one',at(20,17))]);store.remove(store.list()[0].id);store.close()
++    restored=SightingHistory(path);assert restored.sniper_seen(at(21,1))==1
++    restored.close()
++
++
++def test_counter_changes_at_1600_and_history_is_retained(tmp_path):
++    store=SightingHistory(tmp_path/'sightings.sqlite3')
++    store.record([event('patrol:previous',at(20,15,59)),event('patrol:new',at(20,16))])
++    assert store.sniper_seen(at(20,15,59))==1
++    assert store.sniper_seen(at(20,16))==1
++    assert store.sniper_seen(at(21,15,59))==1
++    assert store.sniper_seen(at(21,16))==0 and len(store.list())==2
++    store.close()
++
++
++def test_counter_does_not_cap_or_stop_the_sixth_valid_sighting(tmp_path):
++    store=SightingHistory(tmp_path/'sightings.sqlite3')
++    store.record([event('patrol:'+str(i),at(20,17)+i*30) for i in range(6)])
++    assert store.sniper_seen(at(20,18))==6
++    store.close()
++
++
++def test_find_during_photo_cooldown_still_counts_once(tmp_path):
++    store=SightingHistory(tmp_path/'sightings.sqlite3')
++    store.mark_sniper_seen('patrol:cooldown',at(20,17));store.mark_sniper_seen('patrol:cooldown',at(20,17))
++    assert store.sniper_seen(at(20,18))==1 and not store.list()
++    store.close()
+--- a/LoongLens/tests/test_sniping_speed.py
++++ b/LoongLens/tests/test_sniping_speed.py
+@@ -69,7 +69,7 @@
+     assert 1.2<=backend.clock.now<=1.27
+ 
+ 
+-def test_auto_closed_map_does_not_capture_closed_state_twice_before_inspection():
++def test_auto_closed_map_confirms_a_fresh_scene_before_inspection():
+     engine,backend,events=setup();trace=[]
+     original_capture=backend.capture;original_click=backend.click
+     def capture():trace.append(('capture',backend.open));return original_capture()
+@@ -78,7 +78,7 @@
+     engine.detector=SimpleNamespace(detect=lambda *a,**kw:(trace.append(('detect',False)) or []))
+     engine.run(backend,auto=False)
+     first=next(i for i,t in enumerate(trace) if t[0]=='detect')
+-    assert trace[:first].count(('capture',False))==2
++    assert trace[:first].count(('capture',False))==4
+     timing=next(e for e in events if e['kind']=='view_timing')
+     assert timing['inspect_seconds']==pytest.approx(1.2)
+     assert timing['total_seconds']==pytest.approx(timing['map_seconds']+timing['inspect_seconds'])
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,10 +4,10 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+-         'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
++         'sniper_counter.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
+          'win_overlay.py', 'sxs_atlas_tracker.py', 'atlas_metadata.json',
+          'loong_haven_default_atlas.png', 'loong_title_template.png',
+          'loong_haven_map_data.json', 'loong_haven_ingredients.json',
+--- a/LoongLens/tools/build_windows_exe.py
++++ b/LoongLens/tools/build_windows_exe.py
+@@ -20,7 +20,7 @@
+     command = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean', '--onefile',
+                '--windowed', '--noupx', '--name', 'LoongLens',
+                '--icon', str(ROOT/'LoongLens-WhiteIcon.ico'),
+-               '--collect-all', 'onnxruntime']
++               '--collect-all', 'onnxruntime', '--collect-all', 'tzdata']
+     for asset in assets:
+         path = ROOT/asset
+         if not path.exists():
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v31 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v32 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -29,7 +29,7 @@
+     for mode in ('self-check','gui-check','input-check','spy-ui-check'):
+         report=ROOT/(mode+'.json')
+         data=json.loads(report.read_text('utf-8-sig'))
+-        if data.get('passed') is not True or data.get('version')!=31:
++        if data.get('passed') is not True or data.get('version')!=32:
+             raise SystemExit(f'{mode} did not pass')
+         reports.append(report)
+     tests=ROOT/'tests-result.txt'
+@@ -38,19 +38,19 @@
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v30','v31'):
++    for version in ('v31','v32'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
+         comparisons[version]=data;reports.append(path)
+-    baseline=comparisons['v30'];latest=comparisons['v31']
++    baseline=comparisons['v31'];latest=comparisons['v32']
+     if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
+         raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+     if latest['held_strokes']>=30 or latest['held_moves']>latest['held_strokes']*5:
+         raise SystemExit('The centre-start route comparison exceeded its movement bounds.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v31-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v32-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+@@ -60,13 +60,20 @@
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=31,baseline=30,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=32,baseline=31,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                   speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v31.txt').write_text(
+-            'Loong Lens v31 - Gem Sniper and persistent Gem Spy\n\n'
++        (app/'START-HERE-v32.txt').write_text(
++            'Loong Lens v32 - border-safe input, confirmed camera selection and daily seen counter\n\n'
++            'Sniper always clicks a confirmed gem once; no HUD/region click veto.\n'
++            'The top-right counter and Today only use 16:00 Europe/Sofia game-day reset.\n'
++            'The counter survives route resets and app restarts.\n'
++            'Mouse input uses native client hit-testing, temporary confinement and cursor verification.\n'
++            'Camera selection must close automatically or show its white camera outline before Back.\n'
++            'An ignored tap retries once and never marks that location checked.\n'
++            'Held movement uses lightweight terrain tracking with a SIFT fallback.\n\n'
+             'Exit the old app completely. Extract this whole folder and run LoongLens.exe here.\n'
+             'This build uses v24 Windows mouse control; keep BlueStacks visible and focused.\n\n'
+             'Map panning keeps the button held between movement and screenshot checks.\n'
+@@ -76,7 +83,7 @@
+             'No padding or broad right-hand exclusion strip is added.\n'
+             'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
+             'Hide portal icons in the game map as you requested.\n'
+-            'The header shows v31; settings and personal routes remain in LocalAppData.\n'
++            'The header shows v32; settings and personal routes remain in LocalAppData.\n'
+             'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
+             'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
+             'It observes repeatedly, never clicks a gem, and continues after a find.\n'
+--- a/LoongLens/tools/ui_spy_smoke.py
++++ b/LoongLens/tools/ui_spy_smoke.py
+@@ -44,6 +44,10 @@
+             notebook=next(w for w in descendants(self) if isinstance(w,ttk.Notebook))
+             assert [notebook.tab(t,'text') for t in notebook.tabs()]==['Map Tweaker','Gem Sniper','Gem Spy']
+             assert 'gem_watch_panel' not in sys.modules,'Removed tab is still being instantiated/imported'
++            assert sniper.seen_text.get()=='0/5'
++            import time
++            sniper.events.put(dict(kind='found',event=None,seen_id='patrol:header-ui',seen_at=time.time(),sound=False))
++            sniper.drain()
+             old_mode=services.mode.get()
+             sniper.show_settings();self.update_idletasks()
+             settings=next(w for w in self.winfo_children() if isinstance(w,tk.Toplevel) and w.title()=='Gem Sniper settings')
+@@ -83,6 +87,7 @@
+             if runner.running:self.after(100,self.first_done);return
+             spy.drain();self.update_idletasks()
+             assert sniper.services.owner is None and runner.snapshot()['gems']==2
++            assert sniper.seen_text.get()=='1/5','Sniper counter did not update or counted Spy observations'
+             assert runner.detector.threshold==.70,'Spy did not use Sniper detection preferences'
+             assert backend.selections==[0,1,1,0,1],backend.selections
+             assert any(row['outcome']=='unclear' for row in spy.history.visits())
+@@ -112,7 +117,7 @@
+             assert runner.cancel.is_set() and sniper.services.owner is None
+             assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
+             assert len(spy.history.encounters())==2
+-            completed.append(dict(passed=True,version=31,unique_gems=2,screenshots=2,
++            completed.append(dict(passed=True,version=32,unique_gems=2,screenshots=2,
+                                   passes=2,recovery_kept_progress=True,f10_stays_stopped=True))
+             next(w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit').invoke()
+     tk.Tk=Window
+--- a/LoongLens/vision.py
++++ b/LoongLens/vision.py
+@@ -32,13 +32,55 @@
+     return mask
+ 
+ 
+-def track_map_pan(before, frame, pose, expected, recovery=False):
++def track_map_flow(before,frame,pose,expected):
++    """Low-latency held-drag tracking with forward/backward terrain evidence."""
++    from terrain_alignment import RAW
++    old=cv2.resize(cv2.cvtColor(before,cv2.COLOR_BGR2GRAY),None,fx=.5,fy=.5,interpolation=cv2.INTER_AREA)
++    new=cv2.resize(cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY),None,fx=.5,fy=.5,interpolation=cv2.INTER_AREA)
++    mask=patrol_map_mask(before.shape)
++    yy,xx=np.indices(mask.shape);wx=np.floor((xx-pose.tx)/pose.scale).astype(int);wy=np.floor((pose.ty-yy)/pose.scale).astype(int)
++    inside=(wx>=0)&(wx<280)&(wy>=0)&(wy<280)
++    ground=np.zeros_like(inside);ground[inside]=np.isin(RAW[wy[inside],wx[inside]],(0,4,5))
++    mask[~ground]=0;mask=cv2.resize(mask,(old.shape[1],old.shape[0]),interpolation=cv2.INTER_NEAREST)
++    corners=cv2.goodFeaturesToTrack(old,220,.02,7,mask=mask,blockSize=5)
++    if corners is None or len(corners)<16:return None
++    criteria=(cv2.TERM_CRITERIA_EPS|cv2.TERM_CRITERIA_COUNT,24,.02)
++    dest,status,error=cv2.calcOpticalFlowPyrLK(old,new,corners,None,winSize=(25,25),maxLevel=4,criteria=criteria)
++    if dest is None:return None
++    back,status_back,_=cv2.calcOpticalFlowPyrLK(new,old,dest,None,winSize=(25,25),maxLevel=4,criteria=criteria)
++    if back is None:return None
++    src=corners[:,0,:]*2;dst=dest[:,0,:]*2;shifts=dst-src;expected=np.asarray(expected)
++    valid=(status[:,0]>0)&(status_back[:,0]>0)&(error[:,0]<18)&(np.linalg.norm(back[:,0,:]-corners[:,0,:],axis=1)<.65)
++    valid &= np.all((shifts*np.sign(expected)>=-5)&(np.abs(shifts)<=np.abs(expected)*3+30),axis=1)
++    valid &= (dst[:,0]>=24)&(dst[:,0]<513)&(dst[:,1]>=154)&(dst[:,1]<900)
++    if np.linalg.norm(expected)>12:valid &= np.linalg.norm(shifts,axis=1)>3
++    if valid.sum()<16:return None
++    delta=np.median(shifts[valid],axis=0);valid &= np.linalg.norm(shifts-delta,axis=1)<1.8
++    if valid.sum()<16 or np.ptp(src[valid],axis=0).min()<65:return None
++    # Separate textured patches must agree after translation. This rejects
++    # aperture ambiguities on repeating terrain and unmoving HUD/background.
++    agreements=0
++    for a,b in zip(src[valid][::max(1,valid.sum()//24)],dst[valid][::max(1,valid.sum()//24)]):
++        pa=cv2.getRectSubPix(old,(11,11),tuple(a/2));pb=cv2.getRectSubPix(new,(11,11),tuple(b/2))
++        if pa.std()<8 or pb.std()<8:continue
++        score=float(cv2.matchTemplate(pa,pb,cv2.TM_CCOEFF_NORMED)[0,0])
++        agreements+=score>.88
++    if agreements<8:return None
++    delta=np.median(shifts[valid],axis=0)
++    return Match(pose.scale,pose.tx+float(delta[0]),pose.ty+float(delta[1]),int(valid.sum()),
++                 float(np.median(np.linalg.norm(shifts[valid]-delta,axis=1))),[],'tracked map terrain')
++
++
++def track_map_pan(before, frame, pose, expected, recovery=False,fast=False):
+     """Measure a drag from overlapping screenshot features, never from input alone.
+ 
+     Terrain near an isolated island may not have an absolute atlas match in
+     the central crop. Its overlap with the previous known view is sufficient.
+     Stationary background and HUD features cannot establish a moving map pose.
+     """
++    if fast and not recovery:
++        found=track_map_flow(before,frame,pose,expected)
++        if found is not None:return found
+     from terrain_alignment import classify_screen,RAW
+     mapped=cv2.dilate(np.isin(RAW,(0,4,5)).astype(np.uint8),np.ones((3,3),np.uint8))
+     # Patrol stores immutable reference images. Reuse only their source
