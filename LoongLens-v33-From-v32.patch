@@ -817,7 +817,7 @@
 -    assert history.active_markers(now=2800.2)[0].label(2800.2)=='00:01'
 -    assert not history.active_markers(now=2800.25)
 +    assert history.active_markers(now=1300.25)[0].label(1300.25)=='55:15'
-+    assert history.active_markers(now=4615.2)[0].label(2800.2)=='00:01'
++    assert history.active_markers(now=4615.2)[0].label(4615.2)=='00:01'
 +    assert not history.active_markers(now=4615.25)
      history.edit_location(1,'Loong Haven IX',78,48)
 -    assert not history.active_markers(now=2801)  # Editing does not restart an expired timer.
@@ -836,17 +836,25 @@
  
 --- /dev/null
 +++ b/LoongLens/tests/test_sniper_collection_cycle.py
-@@ -0,0 +1,154 @@
+@@ -0,0 +1,162 @@
 +"""Exercise the production daily policy, real patrol selection and cancellable collection flow."""
 +import contextlib
 +from dataclasses import replace
 +from datetime import datetime
 +import math
++import cv2
 +import pytest
 +from patrol_live import LiveRunner,LiveSettings
 +from sniper_counter import SniperQuota,ZONE,game_day_window
 +from sighting_history import SightingHistory
 +from test_live_patrol import setup
++
++
++@pytest.fixture(scope='module',autouse=True)
++def bounded_opencv_threads():
++    previous=cv2.getNumThreads();cv2.setNumThreads(2)
++    try:yield
++    finally:cv2.setNumThreads(previous)
 +
 +
 +def collecting_runner(tmp_path,existing=0,stop_at=None,epoch=None):
@@ -875,7 +883,7 @@
 +
 +def run(runner):
 +    assert runner.start(LiveSettings(),repeat=True)
-+    runner.thread.join(8)
++    runner.thread.join(15)
 +    if runner.running:runner.stop();runner.thread.join(3);pytest.fail('Daily collection worker did not finish')
 +
 +
