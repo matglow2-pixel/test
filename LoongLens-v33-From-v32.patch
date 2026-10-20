@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/LoongLens/CHANGELOG-v33.md
-@@ -0,0 +1,32 @@
+@@ -0,0 +1,33 @@
 +# v33 — map-settling recovery and daily gem collection
 +
 +- Late movement after a map drag no longer immediately stops the fixed route.
@@ -13,7 +13,8 @@
 +- After each confirmed gem, save its photo and click its centre, wait 20
 +  cancellable seconds, select Emerald Corner (241,107), confirm and close
 +  the map, then click the gameplay centre to return the character.
-+- Return after the fifth find too, then stop without starting a sixth pass.
++- Return after the fifth find too, then stop without starting a sixth pass,
++  including when the collection wait crosses the 16:00 game-day reset.
 +  Earlier finds restart at the selected route's first point with fresh map
 +  recognition. Total elapsed time, finds and completed-pass times are retained.
 +- The worker uses the same persistent seen ledger as the header/history with
@@ -141,7 +142,7 @@
  simulated input/loading/detection and real atlas processing. Processing time,
  modeled waits, per-view timings and movement counts are reported separately.
  They are not measured live BlueStacks times. Live animation, loading, gesture
-@@ -141,3 +141,28 @@
+@@ -141,3 +141,29 @@
  minimum supported size. Spy UI checks ensure Spy never increments the Sniper
  counter. Pinned timezone data is bundled into the EXE. No private recording or
  user screenshots are included in the source archive.
@@ -157,7 +158,8 @@
 +The production daily policy uses the same SQLite seen ledger through separate
 +worker connections. Checks cover pre-existing counts, fifth collection, all
 +five collection/return cycles without a sixth, the exact (241,107) map target,
-+20-second cancellable waits, restart at the first route point, F10 while
++20-second cancellable waits (including a fifth find just before 16:00),
++restart at the first route point, F10 while
 +collecting/returning, and a failed return camera blocking gameplay clicks.
 +Counter replays, app reconnection, day boundaries and history filters remain
 +covered by the existing counter suite. No inventory/collection result is read.
@@ -392,23 +394,25 @@
      @property
      def running(self):return self.thread is not None and self.thread.is_alive()
      def stop(self):self.cancel.set()
-@@ -698,15 +750,22 @@
+@@ -698,15 +750,24 @@
          self.loop_session=self.loop_session or repeat
          self.cancel.clear()
          self.stats.start();self.pass_stats.start()
 -        found=False
-+        found=False;clicked=False
++        found=False;clicked=False;goal_reached=False
          def report(event):
 -            nonlocal found
 -            if event['kind']=='found':self.stats.found();self.pass_stats.found();found=True
-+            nonlocal found,clicked
++            nonlocal found,clicked,goal_reached
 +            if event['kind']=='found':
-+                if self.quota is not None:self.quota.mark(event['seen_id'],event['seen_at'])
++                if self.quota is not None:
++                    self.quota.mark(event['seen_id'],event['seen_at'])
++                    goal_reached=self.quota.count(event['seen_at'])>=self.quota.limit
 +                self.stats.found();self.pass_stats.found();found=True
 +            elif event['kind']=='gem_clicked':clicked=True
              self.emit(event)
          def work():
-+            nonlocal found,clicked
++            nonlocal found,clicked,goal_reached
              message='Stopped.'
              try:
                  if self.cancel.is_set():raise PatrolStopped('Stopped.')
@@ -418,21 +422,21 @@
                  if self.detector is None:self.detector=GemDetector(threshold=settings.threshold)
                  self.detector.threshold=settings.threshold
                  if self.cancel.is_set():raise PatrolStopped('Stopped.')
-@@ -716,8 +775,12 @@
+@@ -716,8 +777,12 @@
                      self.locator=Calibrator(user_dir(),wide=True);self.title=TitleDetector()
                  with self.backend_factory(self.cancel) as backend:
                      while True:
 +                        if self.quota is not None and self.quota.count(self.wall())>=self.quota.limit:
 +                            message='5/5 gems seen for this game day. Stopped until the 16:00 Sofia reset.'
 +                            break
-+                        found=False;clicked=False
++                        found=False;clicked=False;goal_reached=False
                          patrol=LivePatrol(self.views,settings,self.cancel,report,self.checked,self.cooldown,
 -                            self.detector,self.locator,self.title,clock=self.stats.clock,skipped=self.skipped,navigation=self.navigation)
 +                            self.detector,self.locator,self.title,clock=self.stats.clock,wall=self.wall,skipped=self.skipped,navigation=self.navigation)
                          patrol.check();message=patrol.run(backend,auto)
                          complete=len(self.checked)>=len(self.views)
                          if complete:
-@@ -726,8 +789,19 @@
+@@ -726,8 +791,19 @@
                              self.recent_passes.insert(0,dict(number=self.passes,**self.last_pass));del self.recent_passes[3:]
                              self.emit(dict(kind='pass_complete',passes=self.passes,stats=self.last_pass,
                                  recent_passes=tuple(dict(p) for p in self.recent_passes)))
@@ -444,8 +448,8 @@
 +                            backend.wait(self.quota.collection_seconds);patrol.check()
 +                            patrol.return_home(backend,self.quota.home)
 +                            self.checked.clear();self.skipped.clear();self.pass_stats.reset()
-+                            if self.quota.count(self.wall())>=self.quota.limit:
-+                                message='5/5 gems seen for this game day. Returned to Emerald Corner; sniping stopped.'
++                            if goal_reached or self.quota.count(self.wall())>=self.quota.limit:
++                                message='5/5 goal reached. Returned to Emerald Corner; sniping stopped.'
 +                                break
 +                            self.pass_stats.start()
 +                            self.emit(dict(kind='pass_started',passes=self.passes,reason='gem_return'))
@@ -688,7 +692,7 @@
 +    assert not backend.inputs and not engine.checked
 --- /dev/null
 +++ b/LoongLens/tests/test_sniper_collection_cycle.py
-@@ -0,0 +1,144 @@
+@@ -0,0 +1,154 @@
 +"""Exercise the production daily policy, real patrol selection and cancellable collection flow."""
 +import contextlib
 +from dataclasses import replace
@@ -701,12 +705,12 @@
 +from test_live_patrol import setup
 +
 +
-+def collecting_runner(tmp_path,existing=0,stop_at=None):
++def collecting_runner(tmp_path,existing=0,stop_at=None,epoch=None):
 +    engine,backend,events=setup(positive=True)
 +    backend.center=(241.,107.)
 +    views=(replace(engine.views[0],x=241.,y=107.,cells=frozenset({(241,107)}),route_number=1),)
 +    quota=SniperQuota(tmp_path/'sightings.sqlite3')
-+    epoch=datetime(2026,10,21,18,tzinfo=ZONE).timestamp()
++    if epoch is None:epoch=datetime(2026,10,21,18,tzinfo=ZONE).timestamp()
 +    for i in range(existing):quota.mark('patrol:prior-'+str(i),epoch-60)
 +    times=[];selections=[];original_click=backend.click
 +    def click(point):
@@ -833,6 +837,16 @@
 +    history=SightingHistory(quota.path);history.mark_sniper_seen('patrol:new',after)
 +    assert quota.count(after)==history.sniper_seen(after)==1
 +    history.close()
++
++
++def test_fifth_find_just_before_reset_still_finishes_and_stops_after_twenty_second_wait(tmp_path):
++    epoch=datetime(2026,10,21,15,59,55,tzinfo=ZONE).timestamp()
++    runner,backend,events,quota,times,_=collecting_runner(tmp_path,existing=4,epoch=epoch)
++    run(runner)
++    assert quota.count(epoch)==5 and quota.count(runner.wall())==0
++    assert '5/5' in events[-1]['message'] and 'Returned' in events[-1]['message']
++    assert sum(e['kind']=='returned_home' for e in events)==1
++    assert not any(e['kind']=='pass_started' for e in events)
 --- a/LoongLens/tools/build_release.py
 +++ b/LoongLens/tools/build_release.py
 @@ -4,7 +4,7 @@
