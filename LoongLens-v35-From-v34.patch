@@ -952,7 +952,7 @@
              events=state['events'];clicks=state['clicks'];backend=state['backend']
 -            assert panel.services.owner is None and panel.seen_text.get()=='5/5'
 +            if phase[0]==1:
-+                assert panel.services.owner is None and panel.seen_text.get()=='7/5'
++                assert panel.services.owner is None and panel.seen_text.get()=='7/5',dict(owner=panel.services.owner,counter=panel.seen_text.get(),status=panel.status.get(),stats=runner.stats.snapshot(),events=[(e['kind'],e.get('message')) for e in events if e['kind'] in ('status','found','gem_clicked','returned_home','finished')])
 +                assert runner.cancel.is_set() and not runner.running
 +                assert sum(e['kind']=='gem_clicked' for e in events)==2
 +                assert sum(e['kind']=='returned_home' for e in events)==1
