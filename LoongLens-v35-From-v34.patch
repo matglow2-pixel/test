@@ -1,0 +1,1033 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v35.md
+@@ -0,0 +1,26 @@
++# v35 — saved obtained gems and Endless mode
++
++- Persist the daily count with each obtained choice. Recover older saved
++  Sniper sightings if their daily ledger was missing; never reset on app exit,
++  route reset or opening a different extracted app folder in the same account.
++- Commit each find and its location/score metadata before notifying the UI or
++  clicking the gem, including finds within the screenshot cooldown. Capture
++  completion and UI replays preserve the original time and obtained choice.
++- Click the /5 counter, or History → Daily gems, for the daily list. Obtained
++  defaults to checked. Untick missed gems to subtract them and retick to add
++  them back. Keep their original history and screenshots, including entries
++  whose old screenshot is unavailable. Today only uses the 16:00 Sofia day.
++- Add Endless mode directly below Gems found. Its preference survives restart.
++  When enabled, scan beyond 5/5 with the existing collection/return sequence.
++  Turning it off restores the normal five-obtained goal. Stop/F10 always stops.
++- An obtained choice changed during collection is rechecked before stopping.
++- Keep v34 smooth movement and dim-outline confirmation, the exact four map
++  control boxes, no padding/portal blacklist, cursor confinement, saved routes,
++  Gem Spy observation-only histories, and the 1 hour 15 second sighting dots.
++
++Validation: obtained storage/migration/replay/forced-exit checks, normal/endless
++runner cases and cancellation, two native Windows app launches on one profile,
++real detector/photo pipeline with simulated game input, source/frozen GUI and
++native input checks, full route comparison and complete archive hash checks.
++No private recordings or user databases are packaged. No live BlueStacks run
++is claimed; Obtained defaults true and remains the user's collection judgment.
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,6 +1,24 @@
+ # Loong Lens
+ 
+-**v34 recognises dim camera rectangles so a successful selection can close the map and continue. It also recovers from late map movement and runs Gem Sniper until the 5/5 game-day goal. After each gem click it waits 20 seconds, returns to Emerald Corner (241,107), then starts a new route pass.** Gem Watch is removed. Shared detection preferences, alerts and the existing history remain available through Gem Sniper. Gem Spy uses that selected route and settings, continuously observes without clicking gems, and keeps durable encounter and hourly histories. See [CHANGELOG-v34.md](CHANGELOG-v34.md).
++**v35 saves the daily obtained count and adds Endless mode.** Click the `/5`
++counter or **History → Daily gems** to open the daily ledger. Every Gem Sniper
++find starts with **Obtained** checked. Untick missed gems to subtract them;
++retick to add them back. Sightings and screenshots stay saved. The daily count
++and each choice survive closing, relaunching and extracting another app folder
++under the same Windows account. Older stored Sniper history repairs a missing
++ledger on startup. The game day still resets at **16:00 Europe/Sofia**.
++
++**Endless mode**, directly below **Gems found**, lets Sniper run beyond 5/5.
++Its preference is saved. With it off, Sniper stops at five obtained entries.
++The normal click, 20-second wait, return to Emerald Corner (241,107) and restart
++sequence stays the same. **Stop/F10 works in both modes**. Opening daily history
++stops Sniper, just like opening the existing history window. The session's
++Gems found/Time spent remain separate from the persistent daily `/5` counter.
++
++Gem Spy stays observation-only with its own histories and duplicate handling;
++its sightings do not count as obtained Sniper gems. The existing sighting
++history keeps its Spotted/Source/Match score columns and screenshot links.
++See [CHANGELOG-v35.md](CHANGELOG-v35.md).
+ 
+ **Edit route → Run route** switches saved routes. Default stays protected;
+ **Save as…** creates variants such as Busy zones, with their own removed points
+@@ -10,7 +28,7 @@
+ 
+ ## Start
+ 
+-Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v34**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
++Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v35**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
+ 
+ The EXE bundles its own code. To run edited Python files, use RUN_LOONG_LENS.bat; editing adjacent source does not alter the EXE. The launcher activates an existing instance, so exit that instance before changing launchers.
+ 
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,4 +1,4 @@
+-# Verification — Loong Lens v34
++# Verification — Loong Lens v35
+ 
+ The app targets Windows 10 (2004+) / Windows 11 and BlueStacks at default map
+ zoom. Local algorithm checks use pinned Python dependencies. The release
+@@ -84,12 +84,12 @@
+ removed targets are absent from that loop and never selected for inspection.
+ 
+ The Windows workflow builds a new windowed one-file EXE, verifies all embedded
+-icon images, and checks frozen assets, the v34 GUI label and actual native input.
+-Fresh reports identify version 34. The complete folder includes the EXE,
++icon images, and checks frozen assets, the v35 GUI label and actual native input.
++Fresh reports identify version 35. The complete folder includes the EXE,
+ source, assets, OCR models, launchers, tools, tests and validation reports.
+ Packaging extracts the completed 7z and verifies every payload file by SHA256.
+ 
+-The v33/v34 timings come from sequential runs on the same Windows machine with
++The v34/v35 timings come from sequential runs on the same Windows machine with
+ simulated input/loading/detection and real atlas processing. Processing time,
+ modeled waits, per-view timings and movement counts are reported separately.
+ They are not measured live BlueStacks times. Live animation, loading, gesture
+@@ -165,7 +165,7 @@
+ collection wait, stop at quota and Reset checks preserving the daily count.
+ The existing Spy integration, native client-border/confinement/F10, route
+ editor/profile, frozen GUI/resource/input and archive hash checks are retained.
+-The full-route v33/v34 comparison uses the same atlas fixture and excludes gem
++The full-route v34/v35 comparison uses the same atlas fixture and excludes gem
+ collection; it is a simulated timing comparison, not a live BlueStacks result.
+ 
+ Sighting-map timer checks cover the new 3,615-second lifetime, hour-aware
+@@ -187,3 +187,29 @@
+ archive checks. The v33/v34 full-route benchmark uses the same atlas simulation.
+ It does not measure this player's game client, the latest inline screenshot,
+ or a live BlueStacks run. Private videos are not included in the archive.
++
++
++## v35 durable obtained flags and Endless mode
++
++Storage checks cover recovery from photo history with a missing older ledger,
++checked-by-default finds, uncheck/recheck across independent connections and
++restart, idempotent UI/photo replays, deleted photos/history, entries within
++the photo cooldown, and 16:00 day boundaries. A child process commits a find
++and exits immediately with os._exit, without running UI or shutdown callbacks;
++a new process connection still reads the find, metadata and count.
++
++Production-runner checks cover Endless starts at 4/5, 5/5 and 6/5, continuing
++after collection/home return, F10 staying stopped, turning Endless off to
++restore normal quota, and unchecking a fifth find during collection. Existing
++fifth-find-across-reset, exact return, no sixth find in normal mode, map and
++cursor protections remain covered. The repeat-loop fixture uses the same two
++OpenCV threads as the application to keep virtual-clock joins deterministic.
++
++Windows Sniper integration launches the actual Tk app twice on the same
++isolated profile. It toggles Obtained off/on/off, retains the original photo,
++reopens the app to restore 4/5 and Endless enabled, checks Obtained again,
++then scans beyond 5/5 until F10. Turning Endless off restores the start guard.
++Native source/frozen GUI checks verify the checkbox position under Gems found
++and the daily-history UI. Packaging requires the new native report fields.
++The full Windows suite, native input, source/frozen resources and complete 7z
++round-trip checks are required. This is not a live BlueStacks game test.
+--- a/LoongLens/desktop_entry.py
++++ b/LoongLens/desktop_entry.py
+@@ -81,7 +81,7 @@
+                     icons = [user.GetClassLongPtrW(wrapper, field) for field in (-14, -34)]
+                 assert any(icons), 'The native window has no configured icon'
+             widgets = descendants(self)
+-            assert any(isinstance(item,ttk.Label) and item.cget('text')=='LOONG LENS · v34' for item in widgets)
++            assert any(isinstance(item,ttk.Label) and item.cget('text')=='LOONG LENS · v35' for item in widgets)
+             notebook = next(item for item in widgets if isinstance(item, ttk.Notebook))
+             assert [notebook.tab(tab, 'text') for tab in notebook.tabs()] == ['Map Tweaker', 'Gem Sniper', 'Gem Spy']
+             assert not any(isinstance(item,ttk.Checkbutton) and item.cget('text')=='Enable live clicking' for item in widgets)
+@@ -110,6 +110,14 @@
+             assert panel.stats_text.get()=='Time spent: 0:00\nGems found: 0'
+             assert panel.seen_text.get().endswith('/5') and panel.seen_label.winfo_exists()
+             assert panel.progress.cget('maximum')==len(panel.runner.views)
++            assert panel.endless_button.cget('text')=='Endless mode'
++            self.update_idletasks()
++            stats_label=next(w for w in descendants(panel.parent) if isinstance(w,ttk.Label) and str(w.cget('textvariable'))==str(panel.stats_text))
++            assert panel.endless_button.winfo_rooty()>=stats_label.winfo_rooty()+stats_label.winfo_height()
++            panel.show_daily_gems();self.update_idletasks()
++            assert panel.daily_gems.window.title()=='Daily gems — Gem Sniper'
++            assert panel.daily_gems.tree.heading('obtained','text')=='Obtained'
++            panel.daily_gems.window.destroy()
+             recent=tuple(dict(number=n,elapsed=t,gems=0) for n,t in ((4,461),(3,456),(2,451)))
+             panel.events.put(dict(kind='pass_complete',passes=4,stats=recent[0],recent_passes=recent));panel.drain()
+             assert 'Last 3 runs: #4 7:41 · #3 7:36 · #2 7:31' in panel.pass_text.get()
+@@ -221,10 +229,10 @@
+                 gui_check()
+             else:
+                 check_native_input()
+-            result = {'passed': True, 'mode': sys.argv[1], 'version': 34}
++            result = {'passed': True, 'mode': sys.argv[1], 'version': 35}
+             status = 0
+         except Exception:
+-            result = {'passed': False, 'mode': sys.argv[1], 'version': 34, 'error': traceback.format_exc()}
++            result = {'passed': False, 'mode': sys.argv[1], 'version': 35, 'error': traceback.format_exc()}
+             status = 1
+         path.write_text(json.dumps(result, indent=2), encoding='utf-8')
+         return status
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -77,7 +77,7 @@
+     folder.mkdir(parents=True, exist_ok=True)
+     logging.basicConfig(filename=folder / 'loonglens.log', level=logging.INFO,
+                         format='%(asctime)s %(levelname)s %(message)s')
+-    logging.getLogger('loonglens').info('Loong Lens v34 executable=%s source=%s',sys.executable,Path(__file__).resolve())
++    logging.getLogger('loonglens').info('Loong Lens v35 executable=%s source=%s',sys.executable,Path(__file__).resolve())
+     settings_path = folder / 'settings.json'
+     coordinates_path = folder / 'coordinates.csv'
+     settings = {}
+@@ -163,7 +163,7 @@
+             apply_theme(self.root)
+             brand = ttk.Frame(self.root, padding=(20, 12))
+             brand.pack(fill='x')
+-            ttk.Label(brand, text='LOONG LENS · v34', style='Brand.TLabel').pack(side='left')
++            ttk.Label(brand, text='LOONG LENS · v35', style='Brand.TLabel').pack(side='left')
+             ttk.Label(brand, text='Loong Haven companion', style='Muted.TLabel', font=(FONT, 9)).pack(side='right')
+             self.notebook = ttk.Notebook(self.root)
+             self.notebook.pack(fill='both', expand=True)
+@@ -226,7 +226,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Gem Spy v34; persistent observations and recovery'
++            details['version']='Gem Spy v35; persistent observations and recovery'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+--- a/LoongLens/patrol_live.py
++++ b/LoongLens/patrol_live.py
+@@ -657,16 +657,18 @@
+             self.checked.add(index);self.send('checked',index=index,count=len(self.checked))
+             if found is not None:
+                 now=self.clock();event=None;seen_id='patrol:'+uuid.uuid4().hex;seen_at=self.wall()
++                seen_event=dict(event_id=seen_id,seen_at=seen_at,screen_x=found.center[0],
++                    screen_y=found.center[1],score=found.score,test_mode=False,capture_status='cooldown',
++                    zone=view.near_zone,game_x=math.floor(view.x),game_y=math.floor(view.y),
++                    capture_note='Camera view: selected spawn area, not the gem tile.',
++                    camera_location=dict(zone=view.near_zone,x=math.floor(view.x),y=math.floor(view.y)))
+                 if now-self.cooldown['last']>=20:
+                     self.cooldown['last']=now
+-                    event=dict(event_id=seen_id,seen_at=seen_at,screen_x=found.center[0],
+-                        screen_y=found.center[1],score=found.score,test_mode=False,capture_status='pending',
+-                        zone=view.near_zone,game_x=math.floor(view.x),game_y=math.floor(view.y),
+-                        capture_note='Camera view: selected spawn area, not the gem tile.',
+-                        camera_location=dict(zone=view.near_zone,x=math.floor(view.x),y=math.floor(view.y)))
++                    event=dict(seen_event,capture_status='pending')
++                    seen_event=event
+                 sound=now-self.cooldown.get('sound',-float('inf'))>=30
+                 if sound:self.cooldown['sound']=now
+-                self.send('found',event=event,view=view,sound=sound,seen_id=seen_id,seen_at=seen_at)
++                self.send('found',event=event,view=view,sound=sound,seen_id=seen_id,seen_at=seen_at,seen_event=seen_event)
+                 if self.settings.approach_gem:
+                     from camera_patrol import gem_click
+                     if event is not None:
+@@ -742,9 +744,12 @@
+         self.passes=0;self.last_pass=None;self.recent_passes=[];self.loop_session=False
+         # Gem Sniper supplies its persistent daily policy. Standalone scanner
+         # diagnostics can omit it and retain their caller-controlled stop mode.
+-        self.quota=quota;self.wall=wall
++        self.quota=quota;self.wall=wall;self.endless=threading.Event()
+     @property
+     def running(self):return self.thread is not None and self.thread.is_alive()
++    def set_endless(self,enabled):
++        if enabled:self.endless.set()
++        else:self.endless.clear()
+     def stop(self):self.cancel.set()
+     def reset_checks(self):
+         if self.running:return False
+@@ -762,23 +767,24 @@
+         self.loop_session=self.loop_session or repeat
+         self.cancel.clear()
+         self.stats.start();self.pass_stats.start()
+-        found=False;clicked=False;goal_reached=False
++        found=False;clicked=False;goal_reached=False;goal_stamp=None
+         def report(event):
+-            nonlocal found,clicked,goal_reached
++            nonlocal found,clicked,goal_reached,goal_stamp
+             if event['kind']=='found':
+                 if self.quota is not None:
+-                    self.quota.mark(event['seen_id'],event['seen_at'])
++                    self.quota.mark(event['seen_id'],event['seen_at'],event.get('seen_event') or event.get('event'))
++                    goal_stamp=event['seen_at']
+                     goal_reached=self.quota.count(event['seen_at'])>=self.quota.limit
+                 self.stats.found();self.pass_stats.found();found=True
+             elif event['kind']=='gem_clicked':clicked=True
+             self.emit(event)
+         def work():
+-            nonlocal found,clicked,goal_reached
++            nonlocal found,clicked,goal_reached,goal_stamp
+             message='Stopped.'
+             try:
+                 if self.cancel.is_set():raise PatrolStopped('Stopped.')
+-                if self.quota is not None and self.quota.count(self.wall())>=self.quota.limit:
+-                    message='5/5 gems seen for this game day. Stopped until the 16:00 Sofia reset.'
++                if self.quota is not None and not self.endless.is_set() and self.quota.count(self.wall())>=self.quota.limit:
++                    message='5/5 gems marked obtained for this game day. Stopped until the 16:00 Sofia reset.'
+                     return
+                 if self.detector is None:self.detector=GemDetector(threshold=settings.threshold)
+                 self.detector.threshold=settings.threshold
+@@ -789,10 +795,10 @@
+                     self.locator=Calibrator(user_dir(),wide=True);self.title=TitleDetector()
+                 with self.backend_factory(self.cancel) as backend:
+                     while True:
+-                        if self.quota is not None and self.quota.count(self.wall())>=self.quota.limit:
+-                            message='5/5 gems seen for this game day. Stopped until the 16:00 Sofia reset.'
++                        if self.quota is not None and not self.endless.is_set() and self.quota.count(self.wall())>=self.quota.limit:
++                            message='5/5 gems marked obtained for this game day. Stopped until the 16:00 Sofia reset.'
+                             break
+-                        found=False;clicked=False;goal_reached=False
++                        found=False;clicked=False;goal_reached=False;goal_stamp=None
+                         patrol=LivePatrol(self.views,settings,self.cancel,report,self.checked,self.cooldown,
+                             self.detector,self.locator,self.title,clock=self.stats.clock,wall=self.wall,skipped=self.skipped,navigation=self.navigation)
+                         patrol.check();message=patrol.run(backend,auto)
+@@ -809,7 +815,8 @@
+                             backend.wait(self.quota.collection_seconds);patrol.check()
+                             patrol.return_home(backend,self.quota.home)
+                             self.checked.clear();self.skipped.clear();self.pass_stats.reset()
+-                            if goal_reached or self.quota.count(self.wall())>=self.quota.limit:
++                            if not self.endless.is_set() and (self.quota.count(self.wall())>=self.quota.limit or
++                                    goal_reached and self.quota.count(goal_stamp)>=self.quota.limit):
+                                 message='5/5 goal reached. Returned to Emerald Corner; sniping stopped.'
+                                 break
+                             self.pass_stats.start()
+--- a/LoongLens/patrol_live_panel.py
++++ b/LoongLens/patrol_live_panel.py
+@@ -21,7 +21,7 @@
+ class LivePatrolPanel:
+     def __init__(self,parent,data,services,on_active=lambda active:None):
+         self.parent=parent;self.root=parent.winfo_toplevel();self.services=services;self.on_active=on_active
+-        self.key=tk.StringVar(value='F8')
++        self.key=tk.StringVar(value='F8');self.endless=tk.BooleanVar(value=False)
+         self.status=tk.StringVar(value='Preparing live controls…')
+         self.location=tk.StringVar(value='Fixed path starts at Emerald Corner. Route #26, #51 and #72 are excluded.')
+         self.count=tk.StringVar(value='Preparing grouped camera checks…')
+@@ -35,7 +35,7 @@
+         try:
+             config=json.loads(self.path.read_text('utf-8'))
+             self.settings,key,migrated=load_live_config(config)
+-            self.key.set(key)
++            self.key.set(key);self.endless.set(bool(config.get('endless_mode',False)))
+             if migrated:self.status.set('Updated Open map to the top-right minimap.')
+         except (OSError,ValueError,KeyError,TypeError):self.settings=LiveSettings()
+         self.settings=replace(self.settings,approach_gem=True)
+@@ -51,6 +51,10 @@
+             self.routes=None;views=self.base_views;warning=f'Using Default; saved route list needs attention: {exc}'
+         self.runner=LiveRunner(views,WindowsBackend,self.events.put,
+                                quota=SniperQuota(self.services.sighting_history.path))
++        self.runner.set_endless(self.endless.get())
++        from sniper_history_panel import DailyGemsControls
++        self.daily_gems=DailyGemsControls(self.root,self.runner.quota,self.refresh_seen)
++        self.services.sighting_controls.on_daily=self.show_daily_gems
+         self.update_count()
+         # Patrol captures already have their map location and bypass player OCR.
+         self.capture_store=SightingCapture(user_dir(),reader=object())
+@@ -64,7 +68,8 @@
+         title=ttk.Frame(body);title.pack(fill='x')
+         ttk.Label(title,text='Gem Sniper',style='Title.TLabel').pack(side='left')
+         self.seen_label=ttk.Label(title,textvariable=self.seen_text,style='Title.TLabel')
+-        self.seen_label.pack(side='right')
++        self.seen_label.pack(side='right');self.seen_label.configure(cursor='hand2')
++        self.seen_label.bind('<Button-1>',lambda _:self.show_daily_gems())
+         ttk.Label(body,text='Find gems, collect, and return to Emerald Corner.',style='Muted.TLabel',wraplength=470).pack(anchor='w',pady=(3,14))
+         controls=card(body, 'SNIPING CONTROLS')
+         line=row(controls)
+@@ -91,6 +96,9 @@
+         ttk.Label(status,textvariable=self.count,style='CardMuted.TLabel').pack(anchor='w')
+         ttk.Separator(status).pack(fill='x',pady=9)
+         ttk.Label(status,textvariable=self.stats_text,style='Stats.TLabel').pack(anchor='w')
++        self.endless_button=ttk.Checkbutton(status,text='Endless mode',variable=self.endless,
++            style='Card.TCheckbutton',command=self.change_endless)
++        self.endless_button.pack(anchor='w',pady=(4,0))
+         ttk.Label(status,textvariable=self.pass_text,style='CardMuted.TLabel',wraplength=450).pack(anchor='w')
+         ttk.Label(status,textvariable=self.performance,style='CardMuted.TLabel',wraplength=450).pack(anchor='w')
+         self.progress=ttk.Progressbar(status,maximum=len(self.runner.views))
+@@ -102,13 +110,23 @@
+         ttk.Button(actions,text='Reset checks',command=self.reset).pack(side='right')
+         footer=ttk.Frame(body)
+         footer.pack(side='bottom',fill='x',pady=(10,0))
+-        ttk.Label(footer,text='Runs until 5/5 for the game day or F10.\nOn a gem: click, wait 20s, return to Emerald Corner (241,107), restart.\nKeep BlueStacks visible. Configure map buttons in Sniper settings.',
++        ttk.Label(footer,text='Click the /5 counter to edit obtained gems. Endless mode bypasses 5/5.\nOn a gem: click, wait 20s, return to Emerald Corner (241,107), restart.\nKeep BlueStacks visible. Configure map buttons in Sniper settings.',
+                   style='Muted.TLabel',font=(FONT,9),wraplength=470).pack(anchor='w')
+         viewport=tk.Frame(body,bg=CARD,height=220)
+         viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
+         self.preview=tk.Label(viewport,bg=CARD,fg=MUTED,text='Your latest camera check will appear here.')
+         self.preview.pack(fill='both',expand=True)
+         self.update_count();self.buttons()
++
++    def refresh_seen(self):
++        self.seen_refresh=0.;self.seen_text.set(f'{self.services.sighting_history.sniper_seen()}/5')
++
++    def show_daily_gems(self):
++        if self.busy:self.runner.stop()
++        self.daily_gems.show()
++
++    def change_endless(self):
++        self.runner.set_endless(self.endless.get());self.save_config()
+ 
+     def show_history(self):
+         if self.busy:self.runner.stop()
+@@ -227,8 +245,8 @@
+ 
+     def start(self,repeat=False):
+         if self.keys is None or self.busy or self.editing or self.switching:return
+-        if self.services.sighting_history.sniper_seen()>=5:
+-            self.status.set('5/5 gems seen for this game day. Stopped until the 16:00 Sofia reset.');return
++        if not self.endless.get() and self.services.sighting_history.sniper_seen()>=5:
++            self.status.set('5/5 gems marked obtained for this game day. Stopped until the 16:00 Sofia reset.');return
+         if not self.services.acquire('sniper'):
+             self.status.set('Stop Gem Spy before starting Gem Sniper.');return
+         self.runner.cooldown['last']=max(self.runner.cooldown['last'],self.services.last_sighting)
+@@ -238,6 +256,7 @@
+             {'Conservative':.84,'Balanced':.77,'Sensitive':.70}[self.services.mode.get()],self.services.mask_hud.get(),True)
+         
+         self.on_active(True);self.busy=True;self.buttons()
++        self.runner.set_endless(self.endless.get())
+         if not self.runner.start(settings,auto=True,repeat=True):
+             self.busy=False;self.services.release('sniper');self.on_active(False);self.buttons()
+ 
+@@ -301,7 +320,9 @@
+                 if event['event'] is not None:
+                     self.services.pending_sightings.append(event['event'])
+                     self.services.last_sighting=self.runner.cooldown['last']
+-                else:self.status.set('Gem found — clicking it. Photo saving is within the 20-second cooldown.')
++                else:
++                    if event.get('seen_event'):self.services.pending_sightings.append(event['seen_event'])
++                    self.status.set('Gem found — clicking it. Photo saving is within the 20-second cooldown.')
+             elif kind=='capture':
+                 captured_at=event.get('captured_at',__import__('time').time())
+                 self.futures.append((self.save_pool.submit(self.capture_store.save,event['event'],event['frame'],captured_at),event['event']))
+@@ -325,7 +346,7 @@
+             self.drain()
+             self.stats_text.set(self.runner.stats.text())
+             if time.time()>=self.seen_refresh:
+-                self.seen_text.set(f'{self.services.sighting_history.sniper_seen()}/5');self.seen_refresh=time.time()+1
++                self.refresh_seen();self.seen_refresh=time.time()+1;self.daily_gems.refresh()
+         except Exception:
+             import logging
+             self.runner.stop();logging.exception('Live patrol panel update failed')
+@@ -335,7 +356,7 @@
+     def save_config(self):
+         try:
+             tmp=self.path.with_suffix('.tmp')
+-            tmp.write_text(json.dumps(dict(version=LIVE_SETTINGS_VERSION,settings=asdict(self.settings),key=self.key.get()),indent=2),'utf-8')
++            tmp.write_text(json.dumps(dict(version=LIVE_SETTINGS_VERSION,settings=asdict(self.settings),key=self.key.get(),endless_mode=self.endless.get()),indent=2),'utf-8')
+             tmp.replace(self.path)
+         except OSError:
+             import logging
+@@ -397,3 +418,4 @@
+         if self.runner.thread is not None:self.runner.thread.join(timeout=3)
+         self.drain();self.save_pool.shutdown(wait=True);self.drain()
+         self.capture_store.close();self.save_config()
++        if self.daily_gems.window is not None:self.daily_gems.window.destroy()
+--- a/LoongLens/sighting_history.py
++++ b/LoongLens/sighting_history.py
+@@ -100,8 +100,8 @@
+             if name not in columns:
+                 self.connection.execute(f'ALTER TABLE sightings ADD COLUMN {name} {definition}')
+         self.connection.execute('CREATE INDEX IF NOT EXISTS sighting_time ON sightings(seen_at DESC,id DESC)')
+-        self.connection.execute('CREATE TABLE IF NOT EXISTS sniper_seen_events(event_id TEXT PRIMARY KEY,seen_at REAL NOT NULL)')
+-        self.connection.execute('CREATE INDEX IF NOT EXISTS sniper_seen_time ON sniper_seen_events(seen_at)')
++        from sniper_counter import initialise_counter
++        initialise_counter(self.connection)
+         self.connection.commit()
+         self._marker_cache_key = None
+         self._marker_cache = []
+@@ -128,9 +128,9 @@
+                 [(row[0],row[1]) for row in values if row[0].startswith('patrol:') and not row[5]])
+ 
+     def sniper_seen(self,now=None):
+-        from sniper_counter import game_day_window
+-        start,end=game_day_window(now)
+-        return self.connection.execute('SELECT COUNT(*) FROM sniper_seen_events WHERE seen_at>=? AND seen_at<?',(start,end)).fetchone()[0]
++        from sniper_counter import SniperQuota
++        if not hasattr(self,'_quota'):self._quota=SniperQuota(self.path)
++        return self._quota.count(now)
+ 
+     def mark_sniper_seen(self,event_id,stamp):
+         with self.connection:self.connection.execute('INSERT OR IGNORE INTO sniper_seen_events VALUES(?,?)',(event_id,stamp))
+--- a/LoongLens/sighting_panel.py
++++ b/LoongLens/sighting_panel.py
+@@ -97,6 +97,7 @@
+         ttk.Button(row, text='Open screenshot', command=self.open_screenshot).pack(side='left', padx=(0,8))
+         ttk.Button(row, text='Edit location', command=self.edit_location).pack(side='left')
+         ttk.Button(row, text='Remove selected', command=self.remove).pack(side='left', padx=8)
++        if getattr(self,'on_daily',None):ttk.Button(row,text='Daily gems',command=self.on_daily).pack(side='left',padx=8)
+         ttk.Button(row, text='Close', command=window.destroy).pack(side='right')
+         self.refresh()
+         self.day_job = self.root.after(30_000, self.check_day)
+--- a/LoongLens/sniper_counter.py
++++ b/LoongLens/sniper_counter.py
+@@ -1,4 +1,4 @@
+-"""The user's game day starts at 16:00 in Europe/Sofia, not midnight."""
++"""Durable obtained-gem ledger; the game day starts at 16:00 Europe/Sofia."""
+ from datetime import datetime,time,timedelta
+ from zoneinfo import ZoneInfo
+ import time as clock
+@@ -17,12 +17,20 @@
+     return start,end
+ 
+ 
++def initialise_counter(db):
++    # Leave the original two-column ledger compatible with earlier packages.
++    db.execute('CREATE TABLE IF NOT EXISTS sniper_seen_events(event_id TEXT PRIMARY KEY,seen_at REAL NOT NULL)')
++    db.execute('CREATE INDEX IF NOT EXISTS sniper_seen_time ON sniper_seen_events(seen_at)')
++    db.execute('CREATE TABLE IF NOT EXISTS sniper_obtained(event_id TEXT PRIMARY KEY,obtained INTEGER NOT NULL CHECK(obtained IN (0,1)))')
++    if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sightings'").fetchone():
++        # Older versions may have saved the photo/history but not the daily
++        # ledger. Recover those IDs without changing times or manual choices.
++        db.execute("""INSERT OR IGNORE INTO sniper_seen_events(event_id,seen_at)
++            SELECT event_id,seen_at FROM sightings WHERE event_id LIKE 'patrol:%' AND test_mode=0""")
++
++
+ class SniperQuota:
+-    """Use the existing seen ledger from either the UI or patrol thread.
+-
+-    Each operation owns its SQLite connection. The Tk-owned history connection
+-    must never be passed to the worker. Event IDs keep both writers idempotent.
+-    """
++    """Each operation commits through its own connection, never a Tk connection."""
+     limit=5
+     collection_seconds=20.
+     home=(241.,107.)
+@@ -31,15 +39,44 @@
+         self.path=Path(path)
+         self.path.parent.mkdir(parents=True,exist_ok=True)
+         with closing(sqlite3.connect(self.path)) as db:
+-            with db:
+-                db.execute('CREATE TABLE IF NOT EXISTS sniper_seen_events(event_id TEXT PRIMARY KEY,seen_at REAL NOT NULL)')
+-                db.execute('CREATE INDEX IF NOT EXISTS sniper_seen_time ON sniper_seen_events(seen_at)')
++            with db:initialise_counter(db)
+ 
+-    def count(self,now):
++    def count(self,now=None):
+         start,end=game_day_window(now)
+         with closing(sqlite3.connect(self.path)) as db:
+-            return db.execute('SELECT COUNT(*) FROM sniper_seen_events WHERE seen_at>=? AND seen_at<?',(start,end)).fetchone()[0]
++            return db.execute('''SELECT COUNT(*) FROM sniper_seen_events e
++                LEFT JOIN sniper_obtained o ON o.event_id=e.event_id
++                WHERE e.seen_at>=? AND e.seen_at<? AND COALESCE(o.obtained,1)=1''',(start,end)).fetchone()[0]
+ 
+-    def mark(self,event_id,stamp):
++    def mark(self,event_id,stamp,event=None):
++        if event is not None:
++            if event['event_id']!=event_id or event['seen_at']!=stamp:raise ValueError('Sighting identity does not match its ledger entry.')
++            from sighting_history import SightingHistory
++            history=SightingHistory(self.path)
++            try:history.record([event])
++            finally:history.close()
++        else:
++            with closing(sqlite3.connect(self.path)) as db:
++                with db:db.execute('INSERT OR IGNORE INTO sniper_seen_events VALUES(?,?)',(event_id,stamp))
++
++    def set_obtained(self,event_id,value):
+         with closing(sqlite3.connect(self.path)) as db:
+-            with db:db.execute('INSERT OR IGNORE INTO sniper_seen_events VALUES(?,?)',(event_id,stamp))
++            with db:
++                if not db.execute('SELECT 1 FROM sniper_seen_events WHERE event_id=?',(event_id,)).fetchone():
++                    raise ValueError('This daily gem entry no longer exists.')
++                db.execute('''INSERT INTO sniper_obtained VALUES(?,?)
++                    ON CONFLICT(event_id) DO UPDATE SET obtained=excluded.obtained''',(event_id,bool(value)))
++
++    def entries(self,today_only=True,now=None):
++        with closing(sqlite3.connect(self.path)) as db:
++            db.row_factory=sqlite3.Row
++            has_history=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sightings'").fetchone()
++            details='s.zone,s.game_x,s.game_y,s.screenshot_path,s.score' if has_history else 'NULL AS zone,NULL AS game_x,NULL AS game_y,NULL AS screenshot_path,NULL AS score'
++            query=f'''SELECT e.event_id,e.seen_at,COALESCE(o.obtained,1) AS obtained,{details}
++                FROM sniper_seen_events e LEFT JOIN sniper_obtained o ON o.event_id=e.event_id'''
++            if has_history:query+=' LEFT JOIN sightings s ON s.event_id=e.event_id'
++            parameters=()
++            if today_only:
++                query+=' WHERE e.seen_at>=? AND e.seen_at<?';parameters=game_day_window(now)
++            query+=' ORDER BY e.seen_at DESC,e.event_id'
++            return [dict(row,obtained=bool(row['obtained'])) for row in db.execute(query,parameters)]
+--- /dev/null
++++ b/LoongLens/sniper_history_panel.py
+@@ -0,0 +1,103 @@
++"""Daily Gem Sniper finds and user-correctable obtained flags."""
++from datetime import datetime
++import os
++from pathlib import Path
++import sqlite3
++import tkinter as tk
++from tkinter import ttk,messagebox
++
++
++class DailyGemsControls:
++    def __init__(self,root,quota,on_change):
++        self.root=root;self.quota=quota;self.on_change=on_change
++        self.window=None;self.tree=None;self.rows={}
++        self.scope=tk.StringVar(root,value='today');self.summary=tk.StringVar(root)
++        self.obtained=tk.BooleanVar(root,value=True);self.check=None
++
++    def show(self):
++        if self.window is not None and self.window.winfo_exists():self.window.lift();return
++        window=self.window=tk.Toplevel(self.root);window.title('Daily gems — Gem Sniper')
++        window.transient(self.root);window.geometry('980x510');window.minsize(760,380)
++        window.bind('<Destroy>',self.destroyed)
++        body=ttk.Frame(window,padding=18);body.pack(fill='both',expand=True)
++        ttk.Label(body,text='Daily gems',font=('Segoe UI',14,'bold')).pack(anchor='w')
++        ttk.Label(body,textvariable=self.summary,style='Muted.TLabel').pack(anchor='w',pady=(5,8))
++        filters=ttk.Frame(body);filters.pack(fill='x')
++        ttk.Label(filters,text='Untick Obtained if you missed a gem. The sighting and screenshot stay saved.',
++                  style='Muted.TLabel').pack(side='left')
++        for text,value in (('Today only','today'),('Show all','all')):
++            ttk.Radiobutton(filters,text=text,variable=self.scope,value=value,command=self.refresh).pack(side='right',padx=5)
++        table=ttk.Frame(body);table.pack(fill='both',expand=True,pady=10)
++        self.tree=ttk.Treeview(table,columns=('obtained','time','location','source','score'),show='headings',selectmode='browse')
++        for name,label,width in [('obtained','Obtained',80),('time','Spotted',150),('location','Location',260),('source','Source',230),('score','Match score',85)]:
++            self.tree.heading(name,text=label);self.tree.column(name,width=width,minwidth=65,anchor='center' if name=='obtained' else 'w')
++        scroll=ttk.Scrollbar(table,orient='vertical',command=self.tree.yview);self.tree.configure(yscrollcommand=scroll.set)
++        self.tree.pack(side='left',fill='both',expand=True);scroll.pack(side='right',fill='y')
++        self.tree.bind('<ButtonRelease-1>',self.click);self.tree.bind('<<TreeviewSelect>>',self.select)
++        self.tree.bind('<space>',self.toggle_selected)
++        actions=ttk.Frame(body);actions.pack(fill='x')
++        self.check=ttk.Checkbutton(actions,text='Obtained',variable=self.obtained,command=self.change_selected,state='disabled')
++        self.check.pack(side='left')
++        ttk.Button(actions,text='Open screenshot',command=self.open_screenshot).pack(side='left',padx=12)
++        ttk.Button(actions,text='Close',command=window.destroy).pack(side='right')
++        self.refresh()
++
++    def destroyed(self,event):
++        if event.widget==self.window:self.window=self.tree=self.check=None;self.rows={}
++
++    def refresh(self):
++        if self.tree is None or not self.tree.winfo_exists():return
++        entries=self.quota.entries(today_only=self.scope.get()=='today');self.rows={r['event_id']:r for r in entries}
++        self.summary.set(f'Game day resets at 16:00 Sofia · Obtained: {self.quota.count()}/5 · '+
++                         f"{'Today' if self.scope.get()=='today' else 'All dates'} sightings: {len(entries)}")
++        existing=set(self.tree.get_children());wanted=set(self.rows)
++        for key in existing-wanted:self.tree.delete(key)
++        for index,row in enumerate(entries):
++            key=row['event_id'];location=row['zone'] or 'Location unavailable'
++            if row['game_x'] is not None and row['game_y'] is not None:location+=f" ({row['game_x']},{row['game_y']})"
++            values=('☑' if row['obtained'] else '☐',datetime.fromtimestamp(row['seen_at']).strftime('%d/%m/%y %H:%M'),
++                    location,'Gem Sniper · Open screenshot' if row['screenshot_path'] else 'Gem Sniper · No screenshot',
++                    '' if row['score'] is None else f"{row['score']:.3f}")
++            if key in existing:self.tree.item(key,values=values)
++            else:self.tree.insert('',index,iid=key,values=values)
++            self.tree.move(key,'',index)
++        self.select()
++
++    def selected(self):
++        selection=self.tree.selection() if self.tree is not None else ()
++        return self.rows.get(selection[0]) if selection else None
++
++    def select(self,event=None):
++        row=self.selected()
++        if self.check is not None:self.check.configure(state='normal' if row else 'disabled')
++        if row:self.obtained.set(row['obtained'])
++
++    def change(self,key,value):
++        try:self.quota.set_obtained(key,value)
++        except (ValueError,sqlite3.Error) as exc:messagebox.showerror('Could not update obtained gem',str(exc),parent=self.window)
++        self.refresh();self.on_change()
++
++    def change_selected(self):
++        row=self.selected()
++        if row:self.change(row['event_id'],self.obtained.get())
++
++    def toggle_selected(self,event=None):
++        row=self.selected()
++        if row:self.change(row['event_id'],not row['obtained'])
++        return 'break'
++
++    def click(self,event):
++        key=self.tree.identify_row(event.y);column=self.tree.identify_column(event.x)
++        if key and column=='#1':self.change(key,not self.rows[key]['obtained'])
++        elif key and column=='#4':self.tree.selection_set(key);self.open_screenshot()
++
++    def open_screenshot(self):
++        row=self.selected()
++        if not row:return
++        if not row['screenshot_path']:
++            messagebox.showinfo('Gem screenshot','No screenshot is available for this entry.',parent=self.window);return
++        path=Path(row['screenshot_path']).resolve();folder=(self.quota.path.parent/'screenshots').resolve()
++        try:
++            if path.suffix.lower()!='.png' or not path.is_relative_to(folder) or not path.is_file():raise OSError('The saved screenshot is unavailable.')
++            os.startfile(str(path))
++        except OSError as exc:messagebox.showerror('Gem screenshot',str(exc),parent=self.window)
+--- /dev/null
++++ b/LoongLens/tests/test_obtained_endless.py
+@@ -0,0 +1,122 @@
++"""Daily obtained choices, crash persistence and quota-free continuous scanning."""
++from pathlib import Path
++import subprocess
++import sys
++import pytest
++from sniper_counter import SniperQuota
++from sighting_history import SightingHistory
++from test_sniper_counter import event,at
++from test_sniper_collection_cycle import collecting_runner,run
++
++
++def test_old_photo_history_recovers_missing_daily_ledger_and_defaults_to_obtained(tmp_path):
++    path=tmp_path/'sightings.sqlite3';history=SightingHistory(path)
++    history.record([event('patrol:older',at(20,17)),event('spy:ignored',at(20,17)),event('test:ignored',at(20,17),True)])
++    history.connection.execute('DELETE FROM sniper_seen_events');history.connection.commit();history.close()
++    restored=SightingHistory(path);quota=SniperQuota(path)
++    assert restored.sniper_seen(at(21,1))==quota.count(at(21,1))==1
++    rows=quota.entries(now=at(21,1))
++    assert len(rows)==1 and rows[0]['event_id']=='patrol:older' and rows[0]['obtained']
++    restored.close()
++
++
++def test_unchecked_choice_survives_replay_photo_updates_and_app_restart(tmp_path):
++    path=tmp_path/'sightings.sqlite3';history=SightingHistory(path);quota=SniperQuota(path)
++    first=event('patrol:one',at(20,17));history.record([first])
++    quota.set_obtained(first['event_id'],False)
++    history.mark_sniper_seen(first['event_id'],first['seen_at'])
++    history.record([dict(first,capture_status='ready',screenshot_path='original.png')]);history.close()
++    history=SightingHistory(path);quota=SniperQuota(path)
++    assert history.sniper_seen(at(21,1))==quota.count(at(21,1))==0
++    assert len(history.list())==1 and history.list()[0].screenshot_path=='original.png'
++    assert not quota.entries(now=at(21,1))[0]['obtained']
++    quota.set_obtained(first['event_id'],True)
++    assert quota.count(at(21,1))==1
++    history.remove(history.list()[0].id);history.close()
++    assert SniperQuota(path).count(at(21,1))==1
++    assert SniperQuota(path).entries(now=at(21,1))[0]['screenshot_path'] is None
++
++
++def test_worker_commits_find_before_ui_and_survives_forced_process_exit(tmp_path):
++    path=tmp_path/'sightings.sqlite3';stamp=at(20,17)
++    code='''import json,os,sys
++from sniper_counter import SniperQuota
++path,stamp=sys.argv[1],float(sys.argv[2])
++event=dict(event_id='patrol:crash',seen_at=stamp,screen_x=100,screen_y=200,score=.95,test_mode=False,
++           capture_status='pending',zone='Emerald Corner',game_x=241,game_y=107)
++SniperQuota(path).mark(event['event_id'],stamp,event)
++os._exit(0)
++'''
++    subprocess.run([sys.executable,'-c',code,str(path),str(stamp)],check=True,cwd=Path(__file__).resolve().parents[1])
++    restored=SightingHistory(path);restored.recover_pending()
++    assert restored.sniper_seen(at(21,1))==1
++    row=restored.list()[0]
++    assert row.zone=='Emerald Corner' and row.capture_status=='interrupted'
++    assert SniperQuota(path).entries(now=at(21,1))[0]['obtained']
++    restored.close()
++
++
++def test_photo_cooldown_find_is_editable_even_without_a_screenshot(tmp_path):
++    runner,backend,events,quota,_,_=collecting_runner(tmp_path,stop_at=lambda e:e['kind']=='gem_clicked')
++    runner.cooldown['last']=0
++    run(runner)
++    found=next(e for e in events if e['kind']=='found')
++    assert found['event'] is None and not any(e['kind']=='capture' for e in events)
++    rows=quota.entries(now=runner.wall())
++    assert len(rows)==1 and rows[0]['zone'] and rows[0]['score']==.95
++    quota.set_obtained(rows[0]['event_id'],False)
++    assert quota.count(runner.wall())==0
++
++
++@pytest.mark.parametrize('existing',[4,5,6])
++def test_endless_continues_past_five_and_f10_stays_stopped(tmp_path,existing):
++    runner,backend,events,quota,_,_=collecting_runner(tmp_path,existing=existing,
++        stop_at=lambda e:e['kind']=='gem_clicked' and runner.stats.snapshot()['gems']==2)
++    runner.set_endless(True);run(runner)
++    assert quota.count(runner.wall())==existing+2
++    assert sum(e['kind']=='gem_clicked' for e in events)==2
++    assert sum(e['kind']=='returned_home' for e in events)==1
++    assert any(e['kind']=='pass_started' for e in events)
++    assert runner.cancel.is_set() and not runner.running
++
++
++def test_turning_endless_off_restores_goal_after_current_collection(tmp_path):
++    runner,backend,events,quota,_,_=collecting_runner(tmp_path,existing=5)
++    emit=runner.emit
++    def report(e):
++        if e['kind']=='gem_clicked':runner.set_endless(False)
++        emit(e)
++    runner.emit=report;runner.set_endless(True);run(runner)
++    assert quota.count(runner.wall())==6
++    assert sum(e['kind']=='returned_home' for e in events)==1
++    assert not any(e['kind']=='pass_started' for e in events)
++    assert '5/5' in events[-1]['message']
++
++
++def test_unchecking_fifth_during_collection_allows_next_pass(tmp_path):
++    runner,backend,events,quota,_,_=collecting_runner(tmp_path,existing=4,
++        stop_at=lambda e:e['kind']=='gem_clicked' and runner.stats.snapshot()['gems']==2)
++    emit=runner.emit
++    def report(e):
++        if e['kind']=='found' and runner.stats.snapshot()['gems']==1:quota.set_obtained(e['seen_id'],False)
++        emit(e)
++    runner.emit=report;run(runner)
++    assert any(e['kind']=='pass_started' for e in events)
++    assert sum(e['kind']=='gem_clicked' for e in events)==2
++    assert quota.count(runner.wall())==5
++
++
++def test_edits_follow_1600_day_boundaries_without_erasing_old_choices(tmp_path):
++    quota=SniperQuota(tmp_path/'sightings.sqlite3')
++    quota.mark('patrol:old',at(20,15,59));quota.mark('patrol:today',at(20,16))
++    quota.set_obtained('patrol:old',False)
++    assert quota.count(at(20,15,59))==0 and quota.count(at(20,16))==1
++    assert [e['event_id'] for e in quota.entries(now=at(20,16))]==['patrol:today']
++    assert len(quota.entries(today_only=False))==2
++    assert quota.count(at(21,16))==0
++
++
++def test_unknown_entry_cannot_create_an_obtained_count(tmp_path):
++    quota=SniperQuota(tmp_path/'sightings.sqlite3')
++    with pytest.raises(ValueError):quota.set_obtained('not-a-find',True)
++    assert not quota.entries(today_only=False)
+--- a/LoongLens/tests/test_repeat_sniping.py
++++ b/LoongLens/tests/test_repeat_sniping.py
+@@ -1,7 +1,18 @@
+ """Continuous passes must stop on F10, finds and errors, including at boundaries."""
+ import contextlib
++import cv2
++import pytest
+ from patrol_live import LiveRunner,LiveSettings
+ from test_live_patrol import setup
++
++
++@pytest.fixture(scope='module',autouse=True)
++def application_opencv_thread_budget():
++    # Match loong_lens.main(): unbounded OpenCV pools can exceed a worker's
++    # five-second join budget even with a completely virtual game clock.
++    previous=cv2.getNumThreads();cv2.setNumThreads(2)
++    try:yield
++    finally:cv2.setNumThreads(previous)
+ 
+ 
+ def runner_for(engine,backend,emit):
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,10 +4,10 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+-         'sniper_counter.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
++         'sniper_counter.py', 'sniper_history_panel.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
+          'win_overlay.py', 'sxs_atlas_tracker.py', 'atlas_metadata.json',
+          'loong_haven_default_atlas.png', 'loong_title_template.png',
+          'loong_haven_map_data.json', 'loong_haven_ingredients.json',
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v34 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v35 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -29,8 +29,12 @@
+     for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check'):
+         report=ROOT/(mode+'.json')
+         data=json.loads(report.read_text('utf-8-sig'))
+-        if data.get('passed') is not True or data.get('version')!=34:
++        if data.get('passed') is not True or data.get('version')!=35:
+             raise SystemExit(f'{mode} did not pass')
++        if mode=='sniper-ui-check':
++            for key in ('restart_restored_obtained_choice','restart_restored_endless_preference',
++                        'endless_continued_beyond_five','f10_stayed_stopped_in_endless','disabling_endless_restored_quota'):
++                if data.get(key) is not True:raise SystemExit(f'Missing native daily/endless validation: {key}')
+         reports.append(report)
+     tests=ROOT/'tests-result.txt'
+     result=re.findall(r'(\d+) passed(?:, (\d+) skipped)?',tests.read_text('utf-8-sig'))
+@@ -38,19 +42,19 @@
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v33','v34'):
++    for version in ('v34','v35'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
+         comparisons[version]=data;reports.append(path)
+-    baseline=comparisons['v33'];latest=comparisons['v34']
++    baseline=comparisons['v34'];latest=comparisons['v35']
+     if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
+         raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+     if latest['held_strokes']>=30 or latest['held_moves']>latest['held_strokes']*5:
+         raise SystemExit('The centre-start route comparison exceeded its movement bounds.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v34-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v35-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+@@ -60,17 +64,22 @@
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=34,baseline=33,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=35,baseline=34,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                   speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v34.txt').write_text(
+-            'Loong Lens v34 - dim camera outline confirmation\n\n'
++        (app/'START-HERE-v35.txt').write_text(
++            'Loong Lens v35 - saved obtained gems and Endless mode\n\n'
++            'Click the /5 counter or History > Daily gems to tick/untick Obtained.\n'
++            'Obtained defaults to checked; unchecking subtracts it without deleting history/photos.\n'
++            'The counter and choices are saved immediately and survive app restarts.\n'
++            'Endless mode is below Gems found and continues beyond 5/5 until Stop/F10.\n'
++            'The Endless preference is saved. Normal mode stops at five obtained entries.\n'
+             'Sniper clicks each confirmed gem, waits 20s, returns to Emerald Corner (241,107), then restarts.\n'
+             'The top-right counter and Today only use 16:00 Europe/Sofia game-day reset.\n'
+             'Teal sighting dots last 1 hour and 15 seconds from their original spotted time.\n'
+-            'The counter survives route resets and app restarts. At 5/5 it finishes collection/return and stops.\n'
++            'The counter survives route resets and app restarts. In normal mode at 5/5 it finishes collection/return and stops.\n'
+             'F10 interrupts collection waits and return input immediately; it never auto-restarts.\n'
+             'Late map movement triggers settling and recalculation instead of an immediate stop.\n'
+             'Stable views keep the existing capture check and have no extra fixed wait.\n'
+@@ -89,7 +98,7 @@
+             'No padding or broad right-hand exclusion strip is added.\n'
+             'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
+             'Hide portal icons in the game map as you requested.\n'
+-            'The header shows v34; settings and personal routes remain in LocalAppData.\n'
++            'The header shows v35; settings and personal routes remain in LocalAppData.\n'
+             'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
+             'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
+             'It observes repeatedly, never clicks a gem, and continues after a find.\n'
+--- a/LoongLens/tools/ui_sniper_smoke.py
++++ b/LoongLens/tools/ui_sniper_smoke.py
+@@ -5,6 +5,7 @@
+ import os
+ from pathlib import Path
+ import sys
++import subprocess
+ import tempfile
+ import time
+ import traceback
+@@ -22,10 +23,12 @@
+ 
+ def main():
+     if sys.platform!='win32':raise SystemExit('Run this native UI check on Windows.')
+-    temporary=tempfile.TemporaryDirectory(prefix='loonglens-sniper-ui-')
++    resume=len(sys.argv)>1 and sys.argv[1]=='--resume'
++    temporary=SimpleNamespace(name=sys.argv[2],cleanup=lambda:None) if resume else tempfile.TemporaryDirectory(prefix='loonglens-sniper-ui-')
+     previous_local=os.environ.get('LOCALAPPDATA');os.environ['LOCALAPPDATA']=temporary.name
+     original_tk=tk.Tk;original_init=patrol_live_panel.LivePatrolPanel.__init__
+-    panels={};errors=[];results=[];state={}
++    panels={};errors=[];results=[json.loads((ROOT/'sniper-ui-check.json').read_text())] if resume else []
++    state={'missed_id':sys.argv[3]} if resume else {};phase=[1 if resume else 0]
+     def remember(panel,*a,**kw):original_init(panel,*a,**kw);panels['sniper']=panel
+     patrol_live_panel.LivePatrolPanel.__init__=remember
+ 
+@@ -45,7 +48,17 @@
+         def begin(self):
+             panel=panels['sniper'];panel.services.sound.set(False)
+             now=time.time()
+-            for i in range(4):panel.services.sighting_history.mark_sniper_seen(f'patrol:earlier-{i}',now-60)
++            if phase[0]==0:
++                assert panel.seen_text.get()=='0/5' and not panel.endless.get()
++                for i in range(4):panel.services.sighting_history.mark_sniper_seen(f'patrol:earlier-{i}',now-60)
++            else:
++                assert panel.seen_text.get()=='4/5' and panel.endless.get() and panel.runner.endless.is_set()
++                panel.show_daily_gems();self.update_idletasks()
++                daily=panel.daily_gems;key=state['missed_id']
++                assert not daily.rows[key]['obtained']
++                daily.tree.selection_set(key);daily.select();daily.check.invoke()
++                assert daily.rows[key]['obtained'] and panel.seen_text.get()=='5/5'
++                daily.window.destroy()
+             views=(replace(panel.base_views[0],x=241.,y=107.),)
+             panel.apply_route(views)
+             clock=Clock();backend=SceneBackend(views,clock)
+@@ -63,7 +76,10 @@
+             runner.detector=GemDetector();runner.locator=Locator(backend)
+             runner.title=SimpleNamespace(score=lambda f:float(f[0,0,0]))
+             recorded=[];emit=runner.emit
+-            def report(event):recorded.append(event);emit(event)
++            def report(event):
++                recorded.append(event);emit(event)
++                if phase[0]==1 and event['kind']=='gem_clicked' and runner.stats.snapshot()['gems']==2:
++                    panel.emergency()
+             runner.emit=report
+             clicks=[];click=backend.click
+             def record(point):clicks.append((point,clock.now,backend.open));click(point)
+@@ -80,7 +96,21 @@
+             panel.services.flush_sightings();panel.seen_refresh=0
+             panel.seen_text.set(f'{panel.services.sighting_history.sniper_seen()}/5')
+             events=state['events'];clicks=state['clicks'];backend=state['backend']
+-            assert panel.services.owner is None and panel.seen_text.get()=='5/5'
++            if phase[0]==1:
++                assert panel.services.owner is None and panel.seen_text.get()=='7/5'
++                assert runner.cancel.is_set() and not runner.running
++                assert sum(e['kind']=='gem_clicked' for e in events)==2
++                assert sum(e['kind']=='returned_home' for e in events)==1
++                assert sum(e['kind']=='pass_started' for e in events)==1
++                panel.endless_button.invoke()
++                assert not panel.endless.get() and not runner.endless.is_set()
++                count=len(clicks);panel.snipe.invoke()
++                assert len(clicks)==count and panel.services.owner is None and '5/5' in panel.status.get()
++                results[0].update(restart_restored_obtained_choice=True,restart_restored_endless_preference=True,
++                    endless_continued_beyond_five=True,f10_stayed_stopped_in_endless=True,
++                    disabling_endless_restored_quota=True,daily_count_after_endless=7)
++                self.exit_app();return
++            assert panel.services.owner is None and panel.seen_text.get()=='5/5' 
+             assert '5/5' in panel.status.get() and 'Returned' in panel.status.get(),panel.status.get()
+             assert sum(e['kind']=='gem_clicked' for e in events)==1
+             assert sum(e['kind']=='returned_home' for e in events)==1
+@@ -98,22 +128,46 @@
+             assert panel.services.sighting_history.sniper_seen()==5
+             count=len(clicks);panel.snipe.invoke()
+             assert panel.services.owner is None and len(clicks)==count and '5/5' in panel.status.get()
+-            results.append(dict(passed=True,version=34,collection_seconds=20,return_world=[241,107],
++            results.append(dict(passed=True,version=35,collection_seconds=20,return_world=[241,107],
+                                 daily_count=5,stopped_at_goal=True,source_screenshot_saved=True,
+                                 dim_camera_selected_once_per_visit=True,
+                                 reset_kept_daily_counter=True,scope='Native Tk and detector; simulated game input and waits'))
++            panel.show_daily_gems();self.update_idletasks()
++            daily=panel.daily_gems
++            assert len(daily.rows)==5 and all(r['obtained'] for r in daily.rows.values())
++            key=next(k for k,r in daily.rows.items() if r['screenshot_path'])
++            original=daily.rows[key]['screenshot_path'];daily.tree.selection_set(key);daily.select()
++            assert daily.check.instate(['!disabled']) and daily.obtained.get()
++            daily.check.invoke()
++            assert panel.seen_text.get()=='4/5' and not daily.rows[key]['obtained']
++            assert Path(original).is_file() and len(panel.services.sighting_history.list())==1
++            daily.check.invoke()
++            assert panel.seen_text.get()=='5/5'
++            daily.tree.event_generate('<space>');self.update()
++            # Direct handler also covers cases where Tk focus is on the button.
++            if daily.rows[key]['obtained']:daily.toggle_selected()
++            assert panel.seen_text.get()=='4/5' and not daily.rows[key]['obtained']
++            state['missed_id']=key;daily.window.destroy()
++            panel.endless_button.invoke()
++            assert panel.endless.get() and runner.endless.is_set()
+             self.exit_app()
+     tk.Tk=Window
+-    try:loong_lens.main([],default_tab='live')
++    try:
++        loong_lens.main([],default_tab='live')
++        if not resume:
++            assert results and not errors,errors
++            (ROOT/'sniper-ui-check.json').write_text(json.dumps(results[0]),'utf-8')
++            subprocess.run([sys.executable,str(Path(__file__).resolve()),'--resume',temporary.name,state['missed_id']],check=True,cwd=ROOT)
++            results[0]=json.loads((ROOT/'sniper-ui-check.json').read_text())
+     finally:
+         tk.Tk=original_tk;patrol_live_panel.LivePatrolPanel.__init__=original_init
+         logging.shutdown()
+         if previous_local is None:os.environ.pop('LOCALAPPDATA',None)
+         else:os.environ['LOCALAPPDATA']=previous_local
+         temporary.cleanup()
+-    assert results and not errors,errors
++    assert results and results[0].get('restart_restored_obtained_choice') and results[0].get('endless_continued_beyond_five') and not errors,errors
+     (ROOT/'sniper-ui-check.json').write_text(json.dumps(results[0],indent=2)+'\n','utf-8')
+-    print('Native Sniper UI: real detection, photo, twenty-second wait, exact home return, daily stop and reset persistence passed.')
++    print('Native Sniper UI: daily checkbox, screenshot retention, app restart, saved endless preference, beyond-five loop, F10 and normal quota restoration passed.')
+ 
+ 
+ if __name__=='__main__':main()
+--- a/LoongLens/tools/ui_spy_smoke.py
++++ b/LoongLens/tools/ui_spy_smoke.py
+@@ -117,7 +117,7 @@
+             assert runner.cancel.is_set() and sniper.services.owner is None
+             assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
+             assert len(spy.history.encounters())==2
+-            completed.append(dict(passed=True,version=34,unique_gems=2,screenshots=2,
++            completed.append(dict(passed=True,version=35,unique_gems=2,screenshots=2,
+                                   passes=2,recovery_kept_progress=True,f10_stays_stopped=True))
+             next(w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit').invoke()
+     tk.Tk=Window
