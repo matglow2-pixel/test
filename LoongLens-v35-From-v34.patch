@@ -97,7 +97,7 @@
  collection; it is a simulated timing comparison, not a live BlueStacks result.
  
  Sighting-map timer checks cover the new 3,615-second lifetime, hour-aware
-@@ -187,3 +187,29 @@
+@@ -187,3 +187,30 @@
  archive checks. The v33/v34 full-route benchmark uses the same atlas simulation.
  It does not measure this player's game client, the latest inline screenshot,
  or a live BlueStacks run. Private videos are not included in the archive.
@@ -117,7 +117,8 @@
 +restore normal quota, and unchecking a fifth find during collection. Existing
 +fifth-find-across-reset, exact return, no sixth find in normal mode, map and
 +cursor protections remain covered. The repeat-loop fixture uses the same two
-+OpenCV threads as the application to keep virtual-clock joins deterministic.
++OpenCV threads as the application and a 15-second bounded join, with cleanup
++on timeout, to avoid failing valid virtual-clock loops on a busy test host.
 +
 +Windows Sniper integration launches the actual Tk app twice on the same
 +isolated profile. It toggles Obtained off/on/off, retains the original photo,
@@ -775,7 +776,7 @@
 +    assert not quota.entries(today_only=False)
 --- a/LoongLens/tests/test_repeat_sniping.py
 +++ b/LoongLens/tests/test_repeat_sniping.py
-@@ -1,7 +1,18 @@
+@@ -1,7 +1,25 @@
  """Continuous passes must stop on F10, finds and errors, including at boundaries."""
  import contextlib
 +import cv2
@@ -787,13 +788,103 @@
 +@pytest.fixture(scope='module',autouse=True)
 +def application_opencv_thread_budget():
 +    # Match loong_lens.main(): unbounded OpenCV pools can exceed a worker's
-+    # five-second join budget even with a completely virtual game clock.
++    # worker join budget even with a completely virtual game clock.
 +    previous=cv2.getNumThreads();cv2.setNumThreads(2)
 +    try:yield
 +    finally:cv2.setNumThreads(previous)
++
++
++def finish(runner):
++    runner.thread.join(15)
++    if runner.running:
++        runner.stop();runner.thread.join(3)
++        pytest.fail('Virtual-clock route worker exceeded its join budget')
  
  
  def runner_for(engine,backend,emit):
+@@ -18,7 +36,7 @@
+         if event['kind']=='pass_complete' and event['passes']==2:runner.stop()
+     runner=runner_for(engine,backend,emit)
+     assert runner.start(LiveSettings(approach_gem=False),repeat=True)
+-    runner.thread.join(5)
++    finish(runner)
+     assert not runner.running and runner.cancel.is_set()
+     assert runner.passes==2
+     assert [e['index'] for e in events if e['kind']=='view']==[0,1,0,1]
+@@ -33,7 +51,7 @@
+     engine.views=engine.views[:1]
+     runner=runner_for(engine,backend,events.append)
+     assert runner.start(LiveSettings(approach_gem=False),repeat=True)
+-    runner.thread.join(5)
++    finish(runner)
+     assert not runner.running and runner.passes==1
+     assert runner.stats.snapshot()['gems']==1
+     assert not any(e['kind']=='pass_started' for e in events)
+@@ -50,7 +68,7 @@
+             runner.cooldown['last']=backend.clock.now
+     runner=runner_for(engine,backend,emit)
+     assert runner.start(LiveSettings(approach_gem=False),repeat=True)
+-    runner.thread.join(5)
++    finish(runner)
+     assert not runner.running and runner.passes==1 and runner.checked=={0}
+     assert runner.stats.snapshot()['gems']==1
+     assert next(e for e in events if e['kind']=='found')['event'] is None
+@@ -61,7 +79,7 @@
+     engine,backend,events=setup();backend.break_back=True
+     runner=runner_for(engine,backend,events.append)
+     assert runner.start(LiveSettings(),repeat=True)
+-    runner.thread.join(5)
++    finish(runner)
+     assert not runner.running and runner.passes==0 and runner.checked==set()
+     assert not any(e['kind']=='pass_started' for e in events)
+     elapsed=runner.stats.snapshot()['elapsed'];backend.clock.now+=30
+@@ -72,7 +90,7 @@
+     engine,backend,events=setup()
+     runner=runner_for(engine,backend,events.append)
+     assert runner.start(LiveSettings())
+-    runner.thread.join(5)
++    finish(runner)
+     assert not runner.running and runner.passes==1
+     assert not runner.start(LiveSettings())
+     def emit(event):
+@@ -80,7 +98,7 @@
+         if event['kind']=='pass_complete':runner.stop()
+     runner.emit=emit
+     assert runner.start(LiveSettings(),repeat=True)
+-    runner.thread.join(5)
++    finish(runner)
+     assert not runner.running and runner.passes==2 and runner.checked=={0,1}
+ 
+ 
+@@ -90,7 +108,7 @@
+         events.append(event)
+         if event['kind']=='pass_complete' and event['passes']>=4:runner.stop()
+     runner=runner_for(engine,backend,emit)
+-    assert runner.start(LiveSettings(approach_gem=False),repeat=True);runner.thread.join(5)
++    assert runner.start(LiveSettings(approach_gem=False),repeat=True);finish(runner)
+     assert not runner.running and runner.passes==4
+     completed=[e for e in events if e['kind']=='pass_complete']
+     assert [p['number'] for p in runner.recent_passes]==[4,3,2]
+@@ -100,8 +118,8 @@
+     assert all(e['stats']['elapsed']<total/2 for e in completed)
+     # Resuming an already-completed loop pass must retain the total and finds.
+     runner.stats.found();backend.clock.now+=30
+-    assert runner.start(LiveSettings(approach_gem=False),repeat=True);runner.thread.join(5)
+-    if runner.running:runner.stop();runner.thread.join(5)
++    assert runner.start(LiveSettings(approach_gem=False),repeat=True);finish(runner)
++    if runner.running:runner.stop();finish(runner)
+     assert runner.stats.snapshot()['elapsed']>=total+30
+     assert runner.stats.snapshot()['gems']==1
+     assert runner.reset_checks()
+@@ -118,7 +136,7 @@
+             runner.stats.found()  # A previously recorded find in this session.
+             engine.detector.detect=lambda *a,**kw:[__import__('types').SimpleNamespace(center=(200,400),score=.95,width=20)]
+     runner=runner_for(engine,backend,emit)
+-    assert runner.start(LiveSettings(approach_gem=True),repeat=True);runner.thread.join(5)
++    assert runner.start(LiveSettings(approach_gem=True),repeat=True);finish(runner)
+     assert not runner.running and runner.passes==1 and runner.checked=={0}
+     assert runner.stats.snapshot()['gems']==2
+     assert runner.stats.snapshot()['elapsed']>runner.last_pass['elapsed']
 --- a/LoongLens/tools/build_release.py
 +++ b/LoongLens/tools/build_release.py
 @@ -4,10 +4,10 @@
@@ -934,7 +1025,7 @@
              views=(replace(panel.base_views[0],x=241.,y=107.),)
              panel.apply_route(views)
              clock=Clock();backend=SceneBackend(views,clock)
-@@ -63,7 +76,10 @@
+@@ -63,10 +76,16 @@
              runner.detector=GemDetector();runner.locator=Locator(backend)
              runner.title=SimpleNamespace(score=lambda f:float(f[0,0,0]))
              recorded=[];emit=runner.emit
@@ -945,12 +1036,18 @@
 +                    panel.emergency()
              runner.emit=report
              clicks=[];click=backend.click
-             def record(point):clicks.append((point,clock.now,backend.open));click(point)
-@@ -80,7 +96,21 @@
+-            def record(point):clicks.append((point,clock.now,backend.open));click(point)
++            def record(point):
++                # JSON restores coordinate pairs as lists. Windows input accepts
++                # either sequence; the simulated backend compares tuple buttons.
++                point=tuple(point);clicks.append((point,clock.now,backend.open));click(point)
+             backend.click=record
+             state.update(clock=clock,backend=backend,events=recorded,clicks=clicks)
+             panel.snipe.invoke()
+@@ -80,6 +99,20 @@
              panel.services.flush_sightings();panel.seen_refresh=0
              panel.seen_text.set(f'{panel.services.sighting_history.sniper_seen()}/5')
              events=state['events'];clicks=state['clicks'];backend=state['backend']
--            assert panel.services.owner is None and panel.seen_text.get()=='5/5'
 +            if phase[0]==1:
 +                assert panel.services.owner is None and panel.seen_text.get()=='7/5',dict(owner=panel.services.owner,counter=panel.seen_text.get(),status=panel.status.get(),stats=runner.stats.snapshot(),events=[(e['kind'],e.get('message')) for e in events if e['kind'] in ('status','found','gem_clicked','returned_home','finished')])
 +                assert runner.cancel.is_set() and not runner.running
@@ -961,15 +1058,14 @@
 +                assert not panel.endless.get() and not runner.endless.is_set()
 +                count=len(clicks);panel.snipe.invoke()
 +                assert len(clicks)==count and panel.services.owner is None and '5/5' in panel.status.get()
-+                results[0].update(restart_restored_obtained_choice=True,restart_restored_endless_preference=True,
++                results[0].update(restart_restored_obtained_choice=True,restart_restored_endless_preference=True,fresh_process_restart=True,
 +                    endless_continued_beyond_five=True,f10_stayed_stopped_in_endless=True,
 +                    disabling_endless_restored_quota=True,daily_count_after_endless=7)
 +                self.exit_app();return
-+            assert panel.services.owner is None and panel.seen_text.get()=='5/5' 
+             assert panel.services.owner is None and panel.seen_text.get()=='5/5'
              assert '5/5' in panel.status.get() and 'Returned' in panel.status.get(),panel.status.get()
              assert sum(e['kind']=='gem_clicked' for e in events)==1
-             assert sum(e['kind']=='returned_home' for e in events)==1
-@@ -98,22 +128,46 @@
+@@ -98,22 +131,46 @@
              assert panel.services.sighting_history.sniper_seen()==5
              count=len(clicks);panel.snipe.invoke()
              assert panel.services.owner is None and len(clicks)==count and '5/5' in panel.status.get()
