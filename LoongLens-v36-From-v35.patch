@@ -12,7 +12,7 @@
 +- Existing obtained choices, daily counter, 16:00 Sofia reset, saved settings/routes, histories, 20-second collection and Emerald Corner return are retained.
 +- Live recognition, map navigation, detector and route data are unchanged from v35.
 +
-+Windows validation includes source and frozen layouts at 1000×760, 1200×820 and 1440×940, sidebar navigation, preview aspect ratio, native Spy/import and Sniper persistence/endless checks, input delivery, the full test suite and full-route timing comparison. Game input in diagnostics is simulated; live BlueStacks performance is not measured.
++Windows validation includes source and frozen layouts at 1000×820, 1200×860 and 1440×940, sidebar navigation, preview aspect ratio, native Spy/import and Sniper persistence/endless checks, input delivery, the full test suite and full-route timing comparison. Game input in diagnostics is simulated; live BlueStacks performance is not measured.
 --- a/LoongLens/README.md
 +++ b/LoongLens/README.md
 @@ -1,6 +1,8 @@
@@ -30,7 +30,7 @@
 @@ -1,3 +1,9 @@
 +# v36 dashboard validation
 +
-+Native Windows and frozen EXE checks cover all three sidebar pages at 1000×760, 1200×820 and 1440×940. They verify navigation selection, complete widget bounds, daily-count access, Endless placement, the loop checkbox, right-side preview proportions and bottom action placement. Actual window captures are included in validation.
++Native Windows and frozen EXE checks cover all three sidebar pages at 1000×820, 1200×860 and 1440×940. They verify navigation selection, complete widget bounds, daily-count access, Endless placement, the loop checkbox, right-side preview proportions and bottom action placement. Actual window captures are included in validation.
 +
 +The complete v35 Spy and Sniper checks are retained: real detector/storage, asynchronous three-image map import and reload, route-editor map reuse, app restart on the same profile, Obtained edits, beyond-five scanning and F10. The full pytest suite, native Windows input, embedded icon and source resources must pass before packaging. The full 76-view route is compared with v35; live game input is simulated in diagnostics.
 +
@@ -72,7 +72,7 @@
 +        for i,button in enumerate(self.buttons):button.configure(style='Selected.Nav.TButton' if i==selected else 'Nav.TButton')
 --- a/LoongLens/desktop_entry.py
 +++ b/LoongLens/desktop_entry.py
-@@ -52,11 +52,31 @@
+@@ -52,11 +52,35 @@
          def __init__(self, *args, **kwargs):
              super().__init__(*args, **kwargs)
              def failed(kind, value, trace):
@@ -102,11 +102,15 @@
 +                            item.winfo_rootx()+item.winfo_width()<=self.winfo_rootx()+self.winfo_width() and
 +                            item.winfo_rooty()+item.winfo_height()<=self.winfo_rooty()+self.winfo_height())
 +                        if not good:issues.append((size,notebook.tab(tab,'text'),text,item.winfo_geometry(),item.winfo_reqwidth(),item.winfo_reqheight()))
++            notebook.select(1);self.update()
++            panel=patrols[0]
++            for control in (panel.snipe,panel.repeat,panel.stop_button,panel.reset_button,panel.endless_button,panel.key_box,panel.route_box,panel.edit_button,panel.settings_button,panel.history_button):
++                assert control.winfo_ismapped(),(size,str(control), 'control hidden')
 +            assert not issues,issues
  
          def check(self):
              assert self.title() == 'Loong Lens'
-@@ -73,6 +93,7 @@
+@@ -73,6 +97,7 @@
                  user.GetAncestor.restype = wintypes.HWND
                  user.SendMessageW.argtypes = (wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
                  user.SendMessageW.restype = ctypes.c_ssize_t
@@ -114,7 +118,7 @@
                  wrapper = user.GetAncestor(self.winfo_id(), 2)
                  icons = [user.SendMessageW(wrapper, 0x7F, kind, 0) for kind in (0, 1, 2)]
                  if not any(icons):
-@@ -81,7 +102,7 @@
+@@ -81,7 +106,7 @@
                      icons = [user.GetClassLongPtrW(wrapper, field) for field in (-14, -34)]
                  assert any(icons), 'The native window has no configured icon'
              widgets = descendants(self)
@@ -123,12 +127,12 @@
              notebook = next(item for item in widgets if isinstance(item, ttk.Notebook))
              assert [notebook.tab(tab, 'text') for tab in notebook.tabs()] == ['Map Tweaker', 'Gem Sniper', 'Gem Spy']
              assert not any(isinstance(item,ttk.Checkbutton) and item.cget('text')=='Enable live clicking' for item in widgets)
-@@ -106,15 +127,16 @@
+@@ -106,15 +131,16 @@
              assert [v.route_label for v in panel.runner.views if not v.route_parent]==[v.route_label for v in panel.base_views if v.route_label in retained]
              assert not panel.snipe.instate(['disabled']) and not panel.repeat.instate(['disabled'])
              assert 'Check one' not in buttons and 'Start loop' not in buttons
 -            assert 'Snipe' in buttons and 'Loop Sniping' in buttons
-+            assert 'Start sniping' in buttons and panel.repeat.cget('text')=='Loop sniping'
++            assert 'Start sniping' in buttons and panel.repeat.cget('text').strip()=='Loop sniping'
              assert panel.stats_text.get()=='Time spent: 0:00\nGems found: 0'
              assert panel.seen_text.get().endswith('/5') and panel.seen_label.winfo_exists()
              assert panel.progress.cget('maximum')==len(panel.runner.views)
@@ -145,7 +149,7 @@
              assert panel.daily_gems.window.title()=='Daily gems — Gem Sniper'
              assert panel.daily_gems.tree.heading('obtained','text')=='Obtained'
              panel.daily_gems.window.destroy()
-@@ -124,7 +146,7 @@
+@@ -124,7 +150,7 @@
              assert len(spies)==1 and not spies[0].runner.running
              spy=spies[0]
              assert spy.map_preview.base.width>=2000
@@ -154,7 +158,7 @@
              assert spy.map_preview.window.title()=='Gem sightings heatmap'
              assert spy.map_preview.viewer.fitted
              old=spy.map_preview.viewer.zoom;spy.map_preview.zoom_in.invoke()
-@@ -146,10 +168,10 @@
+@@ -146,10 +172,10 @@
              spy.runner.start=original_start;panel.services.mode.set(old_mode);panel.runner.views=old_views
              spy.runner.cancel.clear();panel.emergency()
              assert spy.runner.cancel.is_set(),'F10 dispatch did not stop Spy'
@@ -167,7 +171,7 @@
              assert spy.history_window.notebook.select()==str(spy.history_window.pages['Hourly'])
              spy.history_window.close()
              # Independent diagnostic data checks exclusive history UI rendering
-@@ -164,27 +186,50 @@
+@@ -164,27 +190,56 @@
              diagnostic.observe(view,1,base,clear=True)
              diagnostic.observe(view,2,base+100,[dict(screen_x=285.,screen_y=514.5,score=.95)],True)
              diagnostic.observe(view,3,base+200,[dict(screen_x=286.,screen_y=514.5,score=.96)],True)
@@ -188,7 +192,8 @@
 -                        assert item.winfo_rootx() >= self.winfo_rootx(), item.cget('text')
 -                        assert item.winfo_rootx()+item.winfo_width() <= self.winfo_rootx()+self.winfo_width(), item.cget('text')
 -                        assert item.winfo_rooty()+item.winfo_height() <= self.winfo_rooty()+self.winfo_height(), item.cget('text')
-+            for size in ('1000x760','1200x820','1440x940'):
++            panel.performance.set('Last view: 2.8s · Map/load 1.6s · Inspect 1.2s')
++            for size in ('1000x820','1200x860','1440x940'):
 +                self.geometry(size)
 +                self.update()
 +                self.check_layout(notebook,size)
@@ -219,8 +224,13 @@
 +            assert panel.preview.winfo_rootx()>panel.status_card.winfo_rootx()+panel.status_card.winfo_width()
 +            assert panel.stop_button.winfo_rooty()>panel.status_card.winfo_rooty()+panel.status_card.winfo_height()
 +            assert panel.loop_mode.get()
++            starts=[];original_start=panel.runner.start
++            panel.runner.start=lambda *a,**kw:starts.append(kw) or False
 +            panel.repeat.invoke();assert not panel.loop_mode.get()
++            panel.snipe.invoke();assert starts[-1]['repeat'] is False and not panel.busy
 +            panel.repeat.invoke();assert panel.loop_mode.get()
++            panel.snipe.invoke();assert starts[-1]['repeat'] is True and not panel.busy
++            panel.runner.start=original_start
              assert 'Edit route' in buttons
              panel.routes=RouteProfiles(panel.base_views,profile_folder.name)
              panel.routes.save_copy('GUI route',panel.runner.views);panel.refresh_routes()
@@ -230,7 +240,7 @@
              assert panel.editor is not None and panel.editing
              editor=panel.editor
              assert len(editor.views)==len(panel.runner.views) and editor.canvas.find_all()
-@@ -236,10 +281,10 @@
+@@ -236,10 +291,10 @@
                  gui_check()
              else:
                  check_native_input()
@@ -254,7 +264,7 @@
      settings_path = folder / 'settings.json'
      coordinates_path = folder / 'coordinates.csv'
      settings = {}
-@@ -97,9 +97,11 @@
+@@ -97,9 +97,13 @@
              # The running window uses the optimized transparent art. The EXE
              # keeps its separate white badge for Explorer/desktop display.
              self.root.iconbitmap(str(Path(__file__).resolve().parent / 'LoongLens-Original-Optimized.ico'))
@@ -262,14 +272,16 @@
 -            self.root.minsize(540, 820)
 -            self.root.configure(bg='#101620')
 +            width=max(1000,min(1440,self.root.winfo_screenwidth()-60))
-+            height=max(760,min(940,self.root.winfo_screenheight()-100))
-+            self.root.geometry(f'{width}x{height}')
-+            self.root.minsize(1000,760)
++            height=max(820,min(940,self.root.winfo_screenheight()-100))
++            left=max(0,(self.root.winfo_screenwidth()-width)//2)
++            top=max(0,(self.root.winfo_screenheight()-height-40)//2)
++            self.root.geometry(f'{width}x{height}+{left}+{top}')
++            self.root.minsize(1000,820)
 +            self.root.configure(bg='#0c1622')
              self.root.protocol('WM_DELETE_WINDOW', self.close)
              self.closed = False
              self.paused = False
-@@ -161,25 +163,28 @@
+@@ -161,25 +165,28 @@
          def build_ui(self):
              from ui_theme import FONT, apply_theme, heading, card, row
              apply_theme(self.root)
@@ -313,7 +325,7 @@
              for tier, label, detail, color in [('gems', 'Gems', '86 possible spawn locations', '#f486dd'),
                      ('ingredients', 'Ingredients', 'Beans, bamboo shoots and crabs', '#a9e887')]:
                  line = row(layers)
-@@ -187,7 +192,7 @@
+@@ -187,7 +194,7 @@
                  ttk.Checkbutton(line, text=label, style='Card.TCheckbutton', variable=self.layers[tier], command=self.changed).pack(side='left')
                  ttk.Label(line, text=detail, style='CardMuted.TLabel').pack(side='right')
              ttk.Label(layers, textvariable=self.count, style='CardMuted.TLabel', wraplength=450).pack(anchor='w', pady=(5, 0))
@@ -322,7 +334,7 @@
              actions = row(timers)
              ttk.Button(actions, text='Mark collected', command=self.pickups.show_collect).pack(side='left')
              ttk.Button(actions, text='Pickup history', command=self.pickups.show_history).pack(side='left', padx=8)
-@@ -195,7 +200,7 @@
+@@ -195,7 +202,7 @@
              ttk.Checkbutton(line, text='Pickup timers', style='Card.TCheckbutton', variable=self.show_timers, command=self.changed).pack(side='left')
              ttk.Checkbutton(line, text='Sighting timers (1h 15s)', style='Card.TCheckbutton', variable=self.show_sighting_timers, command=self.changed).pack(side='right')
              ttk.Label(timers, textvariable=self.pickups.summary, style='CardMuted.TLabel').pack(anchor='w')
@@ -331,7 +343,7 @@
              ttk.Checkbutton(appearance, text='Shade ingredient areas', style='Card.TCheckbutton', variable=self.fill, command=self.changed).pack(anchor='w')
              for label, variable, low, high in [('Dot size', self.size, 3, 9), ('Opacity', self.opacity, .3, 1.)]:
                  line = row(appearance)
-@@ -207,7 +212,11 @@
+@@ -207,7 +214,11 @@
              self.pause_button.pack(side='left')
              ttk.Button(actions, text='Re-align', command=self.worker.request_scan).pack(side='left', padx=6)
              ttk.Button(actions, text='Save debug', command=self.save_debug).pack(side='left')
@@ -344,7 +356,7 @@
              ttk.Label(body, text='Dots are candidate locations; teal = recent sightings.\nOpen Loong Haven at default zoom to show the overlay.', style='Muted.TLabel', font=(FONT, 9)).pack(anchor='w')
  
          def enabled_layers(self):
-@@ -226,7 +235,7 @@
+@@ -226,7 +237,7 @@
              details['panel_info']=self.info.get()
              details['overlay_created']=bool(self.overlay.hwnd)
              details['overlay_capture_excluded']=self.overlay.excluded_from_capture
@@ -440,7 +452,7 @@
 +        self.snipe=ttk.Button(actions,text='Start sniping',image=play,compound='left',style='Primary.TButton',command=self.start,padding=(20,13))
 +        self.snipe.pack(side='left')
 +        loop=ttk.Frame(actions,style='Card.TFrame');loop.pack(side='left',padx=18)
-+        self.repeat=ttk.Checkbutton(loop,text='Loop sniping',variable=self.loop_mode,style='Card.TCheckbutton')
++        self.repeat=ttk.Checkbutton(loop,text='  Loop sniping',variable=self.loop_mode,style='Switch.TCheckbutton')
 +        self.repeat.pack(anchor='w')
 +        ttk.Label(loop,text='Repeat full routes · F10 stops',style='CardMuted.TLabel').pack(anchor='w')
 +        reset_icon=line_image(actions,'reset',20);self.ui_images.append(reset_icon)
@@ -775,6 +787,35 @@
          manifest={p.relative_to(app).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
                    for p in sorted(app.rglob('*')) if p.is_file()}
          (app/'PACKAGE-SHA256.json').write_text(json.dumps(manifest,indent=2)+'\n','utf-8')
+--- /dev/null
++++ b/LoongLens/tools/set_validation_display.py
+@@ -0,0 +1,26 @@
++"""Try a larger desktop on the disposable Windows CI runner for UI captures."""
++import ctypes
++from ctypes import wintypes as w
++
++class Mode(ctypes.Structure):
++    _fields_=[('device',w.WCHAR*32),('spec',w.WORD),('driver',w.WORD),('size',w.WORD),('extra',w.WORD),('fields',w.DWORD),
++      ('x',w.LONG),('y',w.LONG),('orientation',w.DWORD),('fixed_output',w.DWORD),('color',w.SHORT),('duplex',w.SHORT),
++      ('yres',w.SHORT),('tt',w.SHORT),('collate',w.SHORT),('form',w.WCHAR*32),('logpixels',w.WORD),
++      ('bits',w.DWORD),('width',w.DWORD),('height',w.DWORD),('flags',w.DWORD),('frequency',w.DWORD),
++      ('icm_method',w.DWORD),('icm_intent',w.DWORD),('media',w.DWORD),('dither',w.DWORD),('reserved1',w.DWORD),
++      ('reserved2',w.DWORD),('pan_width',w.DWORD),('pan_height',w.DWORD)]
++
++def main():
++    user=ctypes.WinDLL('user32');assert ctypes.sizeof(Mode)==220
++    user.EnumDisplaySettingsW.argtypes=(w.LPCWSTR,w.DWORD,ctypes.POINTER(Mode));user.EnumDisplaySettingsW.restype=w.BOOL
++    user.ChangeDisplaySettingsW.argtypes=(ctypes.POINTER(Mode),w.DWORD);user.ChangeDisplaySettingsW.restype=w.LONG
++    mode=Mode(size=ctypes.sizeof(Mode))
++    if not user.EnumDisplaySettingsW(None,0xffffffff,ctypes.byref(mode)):
++        print('Display mode not available; native window checks still run.');return
++    print(f'Initial validation desktop: {mode.width} x {mode.height}')
++    mode.width=1920;mode.height=1080;mode.fields=0x180000
++    result=user.ChangeDisplaySettingsW(ctypes.byref(mode),0)
++    current=Mode(size=ctypes.sizeof(Mode));user.EnumDisplaySettingsW(None,0xffffffff,ctypes.byref(current))
++    print(f'Display change result: {result}; current {current.width} x {current.height}')
++
++if __name__=='__main__':main()
 --- a/LoongLens/tools/ui_sniper_smoke.py
 +++ b/LoongLens/tools/ui_sniper_smoke.py
 @@ -131,7 +131,7 @@
@@ -882,7 +923,18 @@
      style.configure('Status.TLabel', background=CARD, font=(FONT, 11, 'bold'))
      style.configure('Alert.TLabel', background=CARD, foreground='#f486dd')
      style.configure('Stats.TLabel', background=CARD, font=(FONT, 11, 'bold'))
-@@ -53,6 +58,16 @@
+@@ -38,8 +43,8 @@
+     for prefix, bg in (('', BG), ('Card.', CARD)):
+         style.configure(prefix+'TCheckbutton', background=bg, padding=(0, 4))
+         style.map(prefix+'TCheckbutton', background=[('active', bg)], foreground=[('disabled', '#718195')])
+-    style.configure('TEntry', fieldbackground='#233348', foreground=TEXT, insertcolor=TEXT, padding=5)
+-    style.configure('TCombobox', fieldbackground='#233348', background='#28394d', foreground=TEXT, padding=4)
++    style.configure('TEntry', fieldbackground='#233348', foreground=TEXT, insertcolor=TEXT, padding=5, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER)
++    style.configure('TCombobox', fieldbackground='#233348', background='#28394d', foreground=TEXT, padding=4, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, arrowcolor=MUTED)
+     style.map('TCombobox', fieldbackground=[('readonly', '#233348')], foreground=[('readonly', TEXT)],
+               selectbackground=[('readonly', '#233348')], selectforeground=[('readonly', TEXT)])
+     root.option_add('*TCombobox*Listbox.background', '#233348')
+@@ -53,6 +58,31 @@
      style.map('TNotebook.Tab', background=[('selected', '#26384b')], foreground=[('selected', TEXT)])
      style.configure('Horizontal.TProgressbar', background=ACCENT, troughcolor='#28394d', borderwidth=0, lightcolor=ACCENT, darkcolor=ACCENT)
      style.configure('TSeparator', background='#2a394b')
@@ -893,13 +945,28 @@
 +    style.map('Nav.TButton', background=[('active','#142b3d')], foreground=[('active',TEXT)])
 +    style.configure('Selected.Nav.TButton', background='#123044', foreground=TEXT, font=(FONT,11,'bold'))
 +    style.map('Selected.Nav.TButton', background=[('active','#173b50')])
++    from PIL import Image,ImageDraw,ImageTk
++    switches=[]
++    for enabled in (False,True):
++        switch=Image.new('RGBA',(144,84));pen=ImageDraw.Draw(switch)
++        pen.rounded_rectangle((2,2,141,81),radius=40,fill=ACCENT if enabled else '#283c4e',outline='#68839c',width=3)
++        x=100 if enabled else 43
++        pen.ellipse((x-32,10,x+32,74),fill='#0b3440' if enabled else '#edf4fb')
++        switches.append(ImageTk.PhotoImage(switch.resize((48,28),Image.Resampling.LANCZOS),master=root))
++    root._loop_switch_images=switches
++    style.element_create('LoopSwitch.indicator','image',switches[0],('selected',switches[1]))
++    style.layout('Switch.TCheckbutton', [('Checkbutton.padding',{'sticky':'nswe','children':[
++        ('LoopSwitch.indicator',{'side':'left','sticky':'w'}),
++        ('Checkbutton.focus',{'side':'left','sticky':'w','children':[('Checkbutton.label',{'sticky':'w'})]})]})])
++    style.configure('Switch.TCheckbutton',background=CARD,foreground=TEXT,padding=(0,3),font=(FONT,10,'bold'))
++    style.map('Switch.TCheckbutton',background=[('active',CARD)],foreground=[('disabled','#718195')])
 +    # Only the main notebook hides its tab strip. History notebooks retain tabs.
 +    style.layout('Sidebar.TNotebook.Tab', [])
-+    style.configure('Sidebar.TNotebook', background=BG, borderwidth=0, tabmargins=0)
++    style.configure('Sidebar.TNotebook', background=BG, borderwidth=0, tabmargins=0, bordercolor=BG, lightcolor=BG, darkcolor=BG)
      return style
  
  
-@@ -62,7 +77,7 @@
+@@ -62,7 +92,7 @@
  
  
  def card(parent, title=None):

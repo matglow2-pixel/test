@@ -28,6 +28,9 @@ jobs:
       - name: Install pinned dependencies and build tools
         working-directory: source/LoongLens
         run: python -m pip install -r requirements.txt pytest==8.4.2 pyinstaller==6.16.0 pefile==2023.2.7 py7zr==1.0.0
+      - name: Size the disposable Windows validation desktop
+        working-directory: source/LoongLens
+        run: python tools/set_validation_display.py
       - name: Verify native Spy UI with real detector and simulated route input
         working-directory: source/LoongLens
         run: python tools/ui_spy_smoke.py
@@ -92,7 +95,7 @@ jobs:
           BUILD_COMMIT: ${{ github.sha }}
         shell: pwsh
         run: |
-          gh release create windows-exe-v36 dist/LoongLens-v36-Full.7z dist/LoongLens-v36-Full.7z.sha256 --repo $env:GITHUB_REPOSITORY --target $env:BUILD_COMMIT --draft --prerelease --title "Loong Lens v36 - Sidebar dashboard" --notes "Full Windows EXE plus all source/assets. New sidebar navigation for Map Tweaker, Gem Sniper and Gem Spy; Sniper controls/status cards, four live statistics tiles, clickable Daily gems, right-hand portrait preview and bottom action bar. Uses the original transparent Loong Lens gem artwork throughout. Loop sniping starts enabled; Endless still bypasses 5/5. Obtained choices, restart persistence, all histories, heatmap/import, 16:00 Sofia reset, 20-second collection and Emerald Corner return are preserved. v35 recognition, navigation and route data are unchanged. Source/frozen UI checks cover 1000x760 through 1440x940, navigation, preview sizing, native input, Spy/import, Sniper restart/endless and full test suite. Game delivery in diagnostics is simulated."
+          gh release create windows-exe-v36 dist/LoongLens-v36-Full.7z dist/LoongLens-v36-Full.7z.sha256 --repo $env:GITHUB_REPOSITORY --target $env:BUILD_COMMIT --draft --prerelease --title "Loong Lens v36 - Sidebar dashboard" --notes "Full Windows EXE plus all source/assets. New sidebar navigation for Map Tweaker, Gem Sniper and Gem Spy; Sniper controls/status cards, four live statistics tiles, clickable Daily gems, right-hand portrait preview and bottom action bar. Uses the original transparent Loong Lens gem artwork throughout. Loop sniping starts enabled; Endless still bypasses 5/5. Obtained choices, restart persistence, all histories, heatmap/import, 16:00 Sofia reset, 20-second collection and Emerald Corner return are preserved. v35 recognition, navigation and route data are unchanged. Source/frozen UI checks cover 1000x820 through 1440x940, navigation, preview sizing, native input, Spy/import, Sniper restart/endless and full test suite. Game delivery in diagnostics is simulated."
           exit $LASTEXITCODE
       - uses: actions/upload-artifact@v4
         with:
