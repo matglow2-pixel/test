@@ -182,7 +182,7 @@
              assert spy.history_window.notebook.select()==str(spy.history_window.pages['Hourly'])
              spy.history_window.close()
              # Independent diagnostic data checks exclusive history UI rendering
-@@ -164,27 +200,56 @@
+@@ -164,27 +200,57 @@
              diagnostic.observe(view,1,base,clear=True)
              diagnostic.observe(view,2,base+100,[dict(screen_x=285.,screen_y=514.5,score=.95)],True)
              diagnostic.observe(view,3,base+200,[dict(screen_x=286.,screen_y=514.5,score=.96)],True)
@@ -215,6 +215,7 @@
 +            self.update()
 +            for i,tab in enumerate(notebook.tabs()):
 +                notebook.select(tab);self.update()
++                if i==2:spy.map_preview.thumbnail();self.update()
 +                wrapper=user.GetAncestor(self.winfo_id(),2)
 +                picture=capture_window(int(wrapper))
 +                picture.save(screenshots/('v36-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
@@ -251,7 +252,7 @@
              assert panel.editor is not None and panel.editing
              editor=panel.editor
              assert len(editor.views)==len(panel.runner.views) and editor.canvas.find_all()
-@@ -236,10 +301,10 @@
+@@ -236,10 +302,10 @@
                  gui_check()
              else:
                  check_native_input()
@@ -670,7 +671,7 @@
 +        self.start_button=ttk.Button(actions,text='Start / Resume',style='Primary.TButton',command=self.start,padding=(22,13));self.start_button.pack(side='left')
 +        self.stop_button=ttk.Button(actions,text='Stop  F10',style='Stop.TButton',command=self.stop,padding=(20,13));self.stop_button.pack(side='right')
 +        ttk.Label(footer,text='One entry per continuing gem. Automatic recovery keeps progress. Stop / F10 always stays stopped.',style='Muted.TLabel',font=(FONT,9)).pack(anchor='w',pady=(10,0))
-+        middle=ttk.Frame(body);middle.pack(fill='both',expand=True)
++        middle=ttk.Frame(body,height=440);middle.pack(fill='both',expand=True);middle.grid_propagate(False)
 +        middle.columnconfigure(0,weight=0,minsize=300);middle.columnconfigure(1,weight=1);middle.rowconfigure(0,weight=1)
 +        stack=ttk.Frame(middle);stack.grid(row=0,column=0,sticky='nsew',padx=(0,16));stack.pack_propagate(False)
 +        controls=card(stack,'Spy controls')
@@ -867,16 +868,33 @@
              self.report_callback_exception=failed
              self.after(1800,self.begin);self.after(120000,self.destroy)
          def begin(self):
-@@ -107,7 +114,7 @@
+@@ -91,7 +98,7 @@
+         def first_done(self):
+             spy=panels['spy'];sniper=panels['sniper'];runner=state['runner'];backend=state['backend']
+             if runner.running:self.after(100,self.first_done);return
+-            spy.drain();self.update_idletasks()
++            spy.drain();self.update()
+             assert sniper.services.owner is None and runner.snapshot()['gems']==2
+             assert sniper.seen_text.get()=='1/5','Sniper counter did not update or counted Spy observations'
+             assert runner.detector.threshold==.70,'Spy did not use Sniper detection preferences'
+@@ -106,8 +113,14 @@
+                 preview=spy.map_preview;preview.refresh()
                  assert preview.snapshot.total==2 and preview.snapshot.mapped==2
                  assert preview.base.size==(3486,3486)
-                 preview.preview.event_generate('<ButtonPress-1>');preview.preview.event_generate('<ButtonRelease-1>');self.update_idletasks()
+-                preview.preview.event_generate('<ButtonPress-1>');preview.preview.event_generate('<ButtonRelease-1>');self.update_idletasks()
 -                assert preview.window is not None and preview.window.title()=='Gem sightings heatmap'
++                self.update()
++                chain=[];widget=preview.preview
++                while widget is not None:
++                    chain.append((str(widget),widget.winfo_geometry(),widget.winfo_ismapped()));widget=widget.master
++                assert preview.preview.winfo_ismapped(),chain
++                x=preview.preview.winfo_width()//2;y=preview.preview.winfo_height()//2
++                preview.preview.event_generate('<ButtonPress-1>',x=x,y=y);preview.preview.event_generate('<ButtonRelease-1>',x=x,y=y);self.update()
 +                assert preview.window is not None and preview.window.title()=='Gem sightings heatmap', dict(mapped=preview.preview.winfo_ismapped(),geometry=preview.preview.winfo_geometry(),parent=preview.frame.winfo_geometry(),root=self.geometry(),selected=state['notebook'].index(state['notebook'].select()))
                  viewer=preview.viewer;initial=viewer.zoom
                  preview.zoom_in.invoke();self.update_idletasks();assert viewer.zoom>initial
                  viewer.canvas.focus_force();self.update()
-@@ -166,7 +173,7 @@
+@@ -166,7 +179,7 @@
              assert runner.cancel.is_set() and sniper.services.owner is None
              assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
              assert len(spy.history.encounters())==2
