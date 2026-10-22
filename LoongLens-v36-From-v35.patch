@@ -92,7 +92,7 @@
 +
 +        def check_layout(self,notebook,size):
 +            for tab in notebook.tabs():
-+                notebook.select(tab);self.update_idletasks()
++                notebook.select(tab);self.update()
 +                for item in descendants(self.nametowidget(tab)):
 +                    if isinstance(item,(ttk.Button,ttk.Label,ttk.Checkbutton,ttk.Combobox)) and item.winfo_ismapped():
 +                        text=str(item.cget('text'))
@@ -122,7 +122,7 @@
              notebook = next(item for item in widgets if isinstance(item, ttk.Notebook))
              assert [notebook.tab(tab, 'text') for tab in notebook.tabs()] == ['Map Tweaker', 'Gem Sniper', 'Gem Spy']
              assert not any(isinstance(item,ttk.Checkbutton) and item.cget('text')=='Enable live clicking' for item in widgets)
-@@ -106,14 +126,15 @@
+@@ -106,15 +126,16 @@
              assert [v.route_label for v in panel.runner.views if not v.route_parent]==[v.route_label for v in panel.base_views if v.route_label in retained]
              assert not panel.snipe.instate(['disabled']) and not panel.repeat.instate(['disabled'])
              assert 'Check one' not in buttons and 'Start loop' not in buttons
@@ -132,34 +132,67 @@
              assert panel.seen_text.get().endswith('/5') and panel.seen_label.winfo_exists()
              assert panel.progress.cget('maximum')==len(panel.runner.views)
              assert panel.endless_button.cget('text')=='Endless mode'
-             self.update_idletasks()
+-            self.update_idletasks()
 -            stats_label=next(w for w in descendants(panel.parent) if isinstance(w,ttk.Label) and str(w.cget('textvariable'))==str(panel.stats_text))
 -            assert panel.endless_button.winfo_rooty()>=stats_label.winfo_rooty()+stats_label.winfo_height()
+-            panel.show_daily_gems();self.update_idletasks()
++            self.update()
 +            gems_tile=panel.metric_frames[0]
 +            assert panel.endless_button.winfo_rooty()>=gems_tile.winfo_rooty()+gems_tile.winfo_height()
 +            assert panel.gems_value.get()=='0' and panel.elapsed_value.get()=='00:00'
-             panel.show_daily_gems();self.update_idletasks()
++            panel.show_daily_gems();self.update()
              assert panel.daily_gems.window.title()=='Daily gems — Gem Sniper'
              assert panel.daily_gems.tree.heading('obtained','text')=='Obtained'
-@@ -170,16 +191,39 @@
+             panel.daily_gems.window.destroy()
+@@ -124,7 +145,7 @@
+             assert len(spies)==1 and not spies[0].runner.running
+             spy=spies[0]
+             assert spy.map_preview.base.width>=2000
+-            spy.map_preview.show();self.update_idletasks()
++            spy.map_preview.show();self.update()
+             assert spy.map_preview.window.title()=='Gem sightings heatmap'
+             assert spy.map_preview.viewer.fitted
+             old=spy.map_preview.viewer.zoom;spy.map_preview.zoom_in.invoke()
+@@ -146,10 +167,10 @@
+             spy.runner.start=original_start;panel.services.mode.set(old_mode);panel.runner.views=old_views
+             spy.runner.cancel.clear();panel.emergency()
+             assert spy.runner.cancel.is_set(),'F10 dispatch did not stop Spy'
+-            spy.history_window.show('Sightings');self.update_idletasks()
++            spy.history_window.show('Sightings');self.update()
+             assert spy.history_window.window.title()=='Gem Spy history'
+             assert spy.history_window.tables['Sightings'].cget('columns')
+-            spy.history_window.show('Hourly');self.update_idletasks()
++            spy.history_window.show('Hourly');self.update()
+             assert spy.history_window.notebook.select()==str(spy.history_window.pages['Hourly'])
+             spy.history_window.close()
+             # Independent diagnostic data checks exclusive history UI rendering
+@@ -164,27 +185,50 @@
+             diagnostic.observe(view,1,base,clear=True)
+             diagnostic.observe(view,2,base+100,[dict(screen_x=285.,screen_y=514.5,score=.95)],True)
+             diagnostic.observe(view,3,base+200,[dict(screen_x=286.,screen_y=514.5,score=.96)],True)
+-            win=spy_panel.SpyHistoryWindow(self,diagnostic,panel.services);win.show('Hourly');self.update_idletasks()
++            win=spy_panel.SpyHistoryWindow(self,diagnostic,panel.services);win.show('Hourly');self.update()
+             assert len(win.tables['Sightings'].get_children())==1
+             assert sum(int(win.tables['Hourly'].item(k,'values')[3]) for k in win.tables['Hourly'].get_children())==1
              win.close();diagnostic.close()
              # Visit every page at the minimum supported size. Primary controls
              # must remain visible without resizing or scrolling.
 -            self.geometry('540x820')
 -            for tab in notebook.tabs():
 -                notebook.select(tab)
-+            for size in ('1000x760','1200x820','1440x940'):
-+                self.geometry(size)
-                 self.update_idletasks()
+-                self.update_idletasks()
 -                for item in descendants(self.nametowidget(tab)):
 -                    if isinstance(item, (ttk.Button,ttk.Label,ttk.Checkbutton,ttk.Combobox)) and item.winfo_ismapped():
 -                        assert item.winfo_height() >= item.winfo_reqheight(), item.cget('text')
 -                        assert item.winfo_rootx() >= self.winfo_rootx(), item.cget('text')
 -                        assert item.winfo_rootx()+item.winfo_width() <= self.winfo_rootx()+self.winfo_width(), item.cget('text')
 -                        assert item.winfo_rooty()+item.winfo_height() <= self.winfo_rooty()+self.winfo_height(), item.cget('text')
++            for size in ('1000x760','1200x820','1440x940'):
++                self.geometry(size)
++                self.update()
 +                self.check_layout(notebook,size)
 +            self.geometry('1440x940')
-+            self.update_idletasks()
++            self.update()
 +            from PIL import ImageGrab
 +            screenshots=Path(__file__).resolve().parent/'artifacts';screenshots.mkdir(exist_ok=True)
 +            self.update()
@@ -168,18 +201,18 @@
 +                wrapper=user.GetAncestor(self.winfo_id(),2)
 +                picture=ImageGrab.grab(window=int(wrapper))
 +                picture.save(screenshots/('v36-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
-+            notebook.select(1);self.update_idletasks()
++            notebook.select(1);self.update()
 +            # Sidebar commands select the existing pages, preserving controllers.
 +            nav=[w for w in descendants(self) if isinstance(w,ttk.Button) and str(w.cget('style')).endswith('Nav.TButton')]
 +            assert len(nav)==3
 +            for i,button in enumerate(nav):
-+                button.invoke();self.update_idletasks();assert notebook.index(notebook.select())==i
++                button.invoke();self.update();assert notebook.index(notebook.select())==i
 +                assert str(button.cget('style'))=='Selected.Nav.TButton'
-+            notebook.select(1);self.update_idletasks()
++            notebook.select(1);self.update()
 +            # The portrait preview uses available height and keeps its aspect.
 +            import numpy as np
 +            frame=np.zeros((1029,570,3),np.uint8);frame[:]=(70,130,100)
-+            panel.show_frame(frame);self.update_idletasks();panel.render_preview()
++            panel.show_frame(frame);self.update();panel.render_preview()
 +            assert abs(panel.photo.width()/panel.photo.height()-570/1029)<.01
 +            assert panel.photo.width()<=panel.preview.winfo_width() and panel.photo.height()<=panel.preview.winfo_height()
 +            assert panel.preview.winfo_rootx()>panel.status_card.winfo_rootx()+panel.status_card.winfo_width()
@@ -190,6 +223,12 @@
              assert 'Edit route' in buttons
              panel.routes=RouteProfiles(panel.base_views,profile_folder.name)
              panel.routes.save_copy('GUI route',panel.runner.views);panel.refresh_routes()
+             panel.show_route_editor()
+-            self.update_idletasks()
++            self.update()
+             assert panel.editor is not None and panel.editing
+             editor=panel.editor
+             assert len(editor.views)==len(panel.runner.views) and editor.canvas.find_all()
 @@ -236,10 +280,10 @@
                  gui_check()
              else:
@@ -448,7 +487,7 @@
 +            numeric_font=tkfont.Font(root=self.root,family=FONT,size=18,weight='bold');self.metric_fonts.append(numeric_font)
 +            value_label=ttk.Label(line,textvariable=value,style='Metric.TLabel',font=numeric_font);value_label.pack(side='left')
 +            def fit_metric(event=None,tile=tile,value=value,font=numeric_font):
-+                available=max(35,tile.winfo_width()-52)
++                available=max(35,tile.winfo_width()-58)
 +                for size in range(20,10,-1):
 +                    font.configure(size=size)
 +                    if font.measure(value.get())<=available:break
