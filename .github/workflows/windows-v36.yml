@@ -31,15 +31,15 @@ jobs:
       - name: Size the disposable Windows validation desktop
         working-directory: source/LoongLens
         run: python tools/set_validation_display.py
+      - name: Verify source GUI layout and shared controls on Windows
+        working-directory: source/LoongLens
+        run: python desktop_entry.py --gui-check-report source-gui-check.json
       - name: Verify native Spy UI with real detector and simulated route input
         working-directory: source/LoongLens
         run: python tools/ui_spy_smoke.py
       - name: Verify native daily collection UI and persistent quota
         working-directory: source/LoongLens
         run: python tools/ui_sniper_smoke.py
-      - name: Verify source GUI layout and shared controls on Windows
-        working-directory: source/LoongLens
-        run: python desktop_entry.py --gui-check-report source-gui-check.json
       - name: Verify native client borders and cursor confinement before building
         working-directory: source/LoongLens
         run: python desktop_entry.py --input-check-report source-input-check.json

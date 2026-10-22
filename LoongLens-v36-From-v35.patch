@@ -851,7 +851,32 @@
                                  reset_kept_daily_counter=True,scope='Native Tk and detector; simulated game input and waits'))
 --- a/LoongLens/tools/ui_spy_smoke.py
 +++ b/LoongLens/tools/ui_spy_smoke.py
-@@ -166,7 +166,7 @@
+@@ -42,7 +42,14 @@
+         def __init__(self,*a,**kw):
+             super().__init__(*a,**kw)
+             def failed(kind,value,trace):
+-                error=''.join(traceback.format_exception(kind,value,trace));errors.append(error);print(error,flush=True);self.exit_app()
++                error=''.join(traceback.format_exception(kind,value,trace));errors.append(error);print(error,flush=True)
++                from window_capture import capture_window
++                import ctypes
++                from ctypes import wintypes
++                user=ctypes.WinDLL('user32');user.GetAncestor.argtypes=(wintypes.HWND,wintypes.UINT);user.GetAncestor.restype=wintypes.HWND
++                out=ROOT/'artifacts';out.mkdir(exist_ok=True)
++                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v36-spy-ui-failure.png')
++                self.exit_app()
+             self.report_callback_exception=failed
+             self.after(1800,self.begin);self.after(120000,self.destroy)
+         def begin(self):
+@@ -107,7 +114,7 @@
+                 assert preview.snapshot.total==2 and preview.snapshot.mapped==2
+                 assert preview.base.size==(3486,3486)
+                 preview.preview.event_generate('<ButtonPress-1>');preview.preview.event_generate('<ButtonRelease-1>');self.update_idletasks()
+-                assert preview.window is not None and preview.window.title()=='Gem sightings heatmap'
++                assert preview.window is not None and preview.window.title()=='Gem sightings heatmap', dict(mapped=preview.preview.winfo_ismapped(),geometry=preview.preview.winfo_geometry(),parent=preview.frame.winfo_geometry(),root=self.geometry(),selected=state['notebook'].index(state['notebook'].select()))
+                 viewer=preview.viewer;initial=viewer.zoom
+                 preview.zoom_in.invoke();self.update_idletasks();assert viewer.zoom>initial
+                 viewer.canvas.focus_force();self.update()
+@@ -166,7 +173,7 @@
              assert runner.cancel.is_set() and sniper.services.owner is None
              assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
              assert len(spy.history.encounters())==2
