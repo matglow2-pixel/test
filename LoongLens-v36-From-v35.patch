@@ -702,10 +702,10 @@
          from gem_heatmap_panel import HeatmapPreview
          self.map_preview=HeatmapPreview(viewport,self.root,self.services.sighting_history,user_dir())
 +        def wrap(event):
-+            for panel in (controls,state):
-+                for widget in panel.winfo_children():
-+                    if isinstance(widget,ttk.Label):widget.configure(wraplength=max(180,panel.winfo_width()-36))
-+        stack.bind('<Configure>',wrap)
++            width=max(180,event.width-36)
++            for widget in event.widget.winfo_children():
++                if isinstance(widget,ttk.Label) and int(widget.cget('wraplength'))!=width:widget.configure(wraplength=width)
++        controls.bind('<Configure>',wrap);state.bind('<Configure>',wrap)
  
      def start(self):
          if self.runner.running:return
