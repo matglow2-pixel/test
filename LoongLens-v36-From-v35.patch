@@ -1,0 +1,848 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v36.md
+@@ -0,0 +1,12 @@
++# Loong Lens v36 — sidebar dashboard
++
++- Replaces the top tab strip with a left sidebar for Map Tweaker, Gem Sniper and Gem Spy.
++- Gem Sniper now has separate controls and run-status cards, four statistics tiles, a clickable Daily gems card, a portrait preview on the right and a bottom action bar.
++- Uses the existing transparent Loong Lens gem artwork for the brand, daily count and gem statistics. No generic diamond or substitute gem icons.
++- Loop sniping is a checkbox beside Start sniping. It starts enabled, preserving continuous scanning. Turning it off finishes a route without automatically repeating an empty pass. Endless mode continues beyond the daily quota; Stop/F10 remains immediate.
++- Live preview fits its available space, preserves aspect ratio and redraws from the original frame on resize.
++- Map Tweaker and Gem Spy use matching cards, spacing and sidebar navigation. Spy retains its clickable all-history heatmap and original-image import.
++- Existing obtained choices, daily counter, 16:00 Sofia reset, saved settings/routes, histories, 20-second collection and Emerald Corner return are retained.
++- Live recognition, map navigation, detector and route data are unchanged from v35.
++
++Windows validation includes source and frozen layouts at 1000×760, 1200×820 and 1440×940, sidebar navigation, preview aspect ratio, native Spy/import and Sniper persistence/endless checks, input delivery, the full test suite and full-route timing comparison. Game input in diagnostics is simulated; live BlueStacks performance is not measured.
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,6 +1,8 @@
++> v36 adds the sidebar dashboard, portrait live preview, separate controls/status cards and bottom action bar. All gem artwork comes from the existing transparent Loong Lens icon. Click Daily gems to edit Obtained; Endless mode remains beneath Gems found. Loop sniping starts enabled and controls repetition of completed routes. See CHANGELOG-v36.md.
++
+ # Loong Lens
+ 
+-**v35 adds the Gem Spy map/heatmap, saves the daily obtained count and adds Endless mode.** Click the `/5`
++**v36 adds the Gem Spy map/heatmap, saves the daily obtained count and adds Endless mode.** Click the `/5`
+ counter or **History → Daily gems** to open the daily ledger. Every Gem Sniper
+ find starts with **Obtained** checked. Untick missed gems to subtract them;
+ retick to add them back. Sightings and screenshots stay saved. The daily count
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,3 +1,9 @@
++# v36 dashboard validation
++
++Native Windows and frozen EXE checks cover all three sidebar pages at 1000×760, 1200×820 and 1440×940. They verify navigation selection, complete widget bounds, daily-count access, Endless placement, the loop checkbox, right-side preview proportions and bottom action placement. Actual window captures are included in validation.
++
++The complete v35 Spy and Sniper checks are retained: real detector/storage, asynchronous three-image map import and reload, route-editor map reuse, app restart on the same profile, Obtained edits, beyond-five scanning and F10. The full pytest suite, native Windows input, embedded icon and source resources must pass before packaging. The full 76-view route is compared with v35; live game input is simulated in diagnostics.
++
+ # Verification — Loong Lens v35
+ 
+ The app targets Windows 10 (2004+) / Windows 11 and BlueStacks at default map
+--- /dev/null
++++ b/LoongLens/dashboard_shell.py
+@@ -0,0 +1,30 @@
++"""Sidebar navigation backed by the existing notebook pages and controllers."""
++from tkinter import ttk
++from ui_assets import gem_image,line_image
++
++
++class Sidebar:
++    def __init__(self,parent,notebook,on_exit):
++        self.notebook=notebook;self.images=[];self.buttons=[]
++        self.frame=ttk.Frame(parent,style='Sidebar.TFrame',width=206,padding=(10,22,10,12))
++        self.frame.pack(side='left',fill='y');self.frame.pack_propagate(False)
++        brand=ttk.Frame(self.frame,style='Sidebar.TFrame');brand.pack(fill='x',padx=8)
++        art=gem_image(self.frame,38);self.images.append(art)
++        ttk.Label(brand,image=art,style='Sidebar.TLabel').pack(side='left',padx=(0,7))
++        ttk.Label(brand,text='Loong Lens',style='Logo.TLabel').pack(side='left')
++        ttk.Label(self.frame,text='v36',style='Sidebar.TLabel').pack(anchor='w',padx=55,pady=(4,0))
++        ttk.Label(self.frame,text='Loong Haven companion',style='Sidebar.TLabel').pack(anchor='w',padx=12,pady=(12,20))
++        ttk.Separator(self.frame).pack(fill='x',padx=6,pady=(0,12))
++        for index,(title,kind) in enumerate((('Map Tweaker','map'),('Gem Sniper','target'),('Gem Spy','gem'))):
++            icon=gem_image(self.frame,26) if kind=='gem' else line_image(self.frame,kind,26)
++            self.images.append(icon)
++            button=ttk.Button(self.frame,text='  '+title,image=icon,compound='left',style='Nav.TButton',
++                command=lambda i=index:self.notebook.select(i))
++            button.pack(fill='x',pady=3);self.buttons.append(button)
++        ttk.Button(self.frame,text='Exit',command=on_exit).pack(side='bottom',fill='x',padx=8)
++        ttk.Label(self.frame,text='F10 · Emergency stop',style='Sidebar.TLabel').pack(side='bottom',anchor='w',padx=10,pady=14)
++        self.notebook.bind('<<NotebookTabChanged>>',self.changed,add='+')
++
++    def changed(self,event=None):
++        selected=self.notebook.index(self.notebook.select())
++        for i,button in enumerate(self.buttons):button.configure(style='Selected.Nav.TButton' if i==selected else 'Nav.TButton')
+--- a/LoongLens/desktop_entry.py
++++ b/LoongLens/desktop_entry.py
+@@ -52,11 +52,26 @@
+         def __init__(self, *args, **kwargs):
+             super().__init__(*args, **kwargs)
+             def failed(kind, value, trace):
+-                failures.append(''.join(traceback.format_exception(kind, value, trace)))
+-                self.destroy()
++                error=''.join(traceback.format_exception(kind,value,trace));failures.append(error);print(error,flush=True)
++                button=next((w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit'),None)
++                if button is None:self.destroy()
++                else:button.invoke()
+             self.report_callback_exception = failed
+             self.after(2000, self.check)
+             self.after(30000, self.destroy)
++
++        def check_layout(self,notebook,size):
++            for tab in notebook.tabs():
++                notebook.select(tab);self.update_idletasks()
++                for item in descendants(self.nametowidget(tab)):
++                    if isinstance(item,(ttk.Button,ttk.Label,ttk.Checkbutton,ttk.Combobox)) and item.winfo_ismapped():
++                        text=str(item.cget('text'))
++                        detail=(size,text,item.winfo_geometry(),item.winfo_reqwidth(),item.winfo_reqheight())
++                        assert item.winfo_height()>=item.winfo_reqheight(),detail
++                        assert item.winfo_width()>=item.winfo_reqwidth(),detail
++                        assert item.winfo_rootx()>=self.winfo_rootx(),detail
++                        assert item.winfo_rootx()+item.winfo_width()<=self.winfo_rootx()+self.winfo_width(),detail
++                        assert item.winfo_rooty()+item.winfo_height()<=self.winfo_rooty()+self.winfo_height(),detail
+ 
+         def check(self):
+             assert self.title() == 'Loong Lens'
+@@ -81,7 +96,7 @@
+                     icons = [user.GetClassLongPtrW(wrapper, field) for field in (-14, -34)]
+                 assert any(icons), 'The native window has no configured icon'
+             widgets = descendants(self)
+-            assert any(isinstance(item,ttk.Label) and item.cget('text')=='LOONG LENS · v35' for item in widgets)
++            assert any(isinstance(item,ttk.Label) and item.cget('text')=='Loong Lens' for item in widgets)
+             notebook = next(item for item in widgets if isinstance(item, ttk.Notebook))
+             assert [notebook.tab(tab, 'text') for tab in notebook.tabs()] == ['Map Tweaker', 'Gem Sniper', 'Gem Spy']
+             assert not any(isinstance(item,ttk.Checkbutton) and item.cget('text')=='Enable live clicking' for item in widgets)
+@@ -106,14 +121,15 @@
+             assert [v.route_label for v in panel.runner.views if not v.route_parent]==[v.route_label for v in panel.base_views if v.route_label in retained]
+             assert not panel.snipe.instate(['disabled']) and not panel.repeat.instate(['disabled'])
+             assert 'Check one' not in buttons and 'Start loop' not in buttons
+-            assert 'Snipe' in buttons and 'Loop Sniping' in buttons
++            assert 'Start sniping' in buttons and panel.repeat.cget('text')=='Loop sniping'
+             assert panel.stats_text.get()=='Time spent: 0:00\nGems found: 0'
+             assert panel.seen_text.get().endswith('/5') and panel.seen_label.winfo_exists()
+             assert panel.progress.cget('maximum')==len(panel.runner.views)
+             assert panel.endless_button.cget('text')=='Endless mode'
+             self.update_idletasks()
+-            stats_label=next(w for w in descendants(panel.parent) if isinstance(w,ttk.Label) and str(w.cget('textvariable'))==str(panel.stats_text))
+-            assert panel.endless_button.winfo_rooty()>=stats_label.winfo_rooty()+stats_label.winfo_height()
++            gems_tile=panel.metric_frames[0]
++            assert panel.endless_button.winfo_rooty()>=gems_tile.winfo_rooty()+gems_tile.winfo_height()
++            assert panel.gems_value.get()=='0' and panel.elapsed_value.get()=='00:00'
+             panel.show_daily_gems();self.update_idletasks()
+             assert panel.daily_gems.window.title()=='Daily gems — Gem Sniper'
+             assert panel.daily_gems.tree.heading('obtained','text')=='Obtained'
+@@ -170,16 +186,39 @@
+             win.close();diagnostic.close()
+             # Visit every page at the minimum supported size. Primary controls
+             # must remain visible without resizing or scrolling.
+-            self.geometry('540x820')
+-            for tab in notebook.tabs():
+-                notebook.select(tab)
++            for size in ('1000x760','1200x820','1440x940'):
++                self.geometry(size)
+                 self.update_idletasks()
+-                for item in descendants(self.nametowidget(tab)):
+-                    if isinstance(item, (ttk.Button,ttk.Label,ttk.Checkbutton,ttk.Combobox)) and item.winfo_ismapped():
+-                        assert item.winfo_height() >= item.winfo_reqheight(), item.cget('text')
+-                        assert item.winfo_rootx() >= self.winfo_rootx(), item.cget('text')
+-                        assert item.winfo_rootx()+item.winfo_width() <= self.winfo_rootx()+self.winfo_width(), item.cget('text')
+-                        assert item.winfo_rooty()+item.winfo_height() <= self.winfo_rooty()+self.winfo_height(), item.cget('text')
++                self.check_layout(notebook,size)
++            self.geometry('1440x940')
++            self.update_idletasks()
++            from PIL import ImageGrab
++            screenshots=Path(__file__).resolve().parent/'artifacts';screenshots.mkdir(exist_ok=True)
++            self.update()
++            for i,tab in enumerate(notebook.tabs()):
++                notebook.select(tab);self.update()
++                wrapper=user.GetAncestor(self.winfo_id(),2)
++                picture=ImageGrab.grab(window=int(wrapper))
++                picture.save(screenshots/('v36-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
++            notebook.select(1);self.update_idletasks()
++            # Sidebar commands select the existing pages, preserving controllers.
++            nav=[w for w in descendants(self) if isinstance(w,ttk.Button) and str(w.cget('style')).endswith('Nav.TButton')]
++            assert len(nav)==3
++            for i,button in enumerate(nav):
++                button.invoke();self.update_idletasks();assert notebook.index(notebook.select())==i
++                assert str(button.cget('style'))=='Selected.Nav.TButton'
++            notebook.select(1);self.update_idletasks()
++            # The portrait preview uses available height and keeps its aspect.
++            import numpy as np
++            frame=np.zeros((1029,570,3),np.uint8);frame[:]=(70,130,100)
++            panel.show_frame(frame);self.update_idletasks();panel.render_preview()
++            assert abs(panel.photo.width()/panel.photo.height()-570/1029)<.01
++            assert panel.photo.width()<=panel.preview.winfo_width() and panel.photo.height()<=panel.preview.winfo_height()
++            assert panel.preview.winfo_rootx()>panel.status_card.winfo_rootx()+panel.status_card.winfo_width()
++            assert panel.stop_button.winfo_rooty()>panel.status_card.winfo_rooty()+panel.status_card.winfo_height()
++            assert panel.loop_mode.get()
++            panel.repeat.invoke();assert not panel.loop_mode.get()
++            panel.repeat.invoke();assert panel.loop_mode.get()
+             assert 'Edit route' in buttons
+             panel.routes=RouteProfiles(panel.base_views,profile_folder.name)
+             panel.routes.save_copy('GUI route',panel.runner.views);panel.refresh_routes()
+@@ -236,10 +275,10 @@
+                 gui_check()
+             else:
+                 check_native_input()
+-            result = {'passed': True, 'mode': sys.argv[1], 'version': 35}
++            result = {'passed': True, 'mode': sys.argv[1], 'version': 36}
+             status = 0
+         except Exception:
+-            result = {'passed': False, 'mode': sys.argv[1], 'version': 35, 'error': traceback.format_exc()}
++            result = {'passed': False, 'mode': sys.argv[1], 'version': 36, 'error': traceback.format_exc()}
+             status = 1
+         path.write_text(json.dumps(result, indent=2), encoding='utf-8')
+         return status
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -77,7 +77,7 @@
+     folder.mkdir(parents=True, exist_ok=True)
+     logging.basicConfig(filename=folder / 'loonglens.log', level=logging.INFO,
+                         format='%(asctime)s %(levelname)s %(message)s')
+-    logging.getLogger('loonglens').info('Loong Lens v35 executable=%s source=%s',sys.executable,Path(__file__).resolve())
++    logging.getLogger('loonglens').info('Loong Lens v36 executable=%s source=%s',sys.executable,Path(__file__).resolve())
+     settings_path = folder / 'settings.json'
+     coordinates_path = folder / 'coordinates.csv'
+     settings = {}
+@@ -97,9 +97,11 @@
+             # The running window uses the optimized transparent art. The EXE
+             # keeps its separate white badge for Explorer/desktop display.
+             self.root.iconbitmap(str(Path(__file__).resolve().parent / 'LoongLens-Original-Optimized.ico'))
+-            self.root.geometry('560x860')
+-            self.root.minsize(540, 820)
+-            self.root.configure(bg='#101620')
++            width=max(1000,min(1440,self.root.winfo_screenwidth()-60))
++            height=max(760,min(940,self.root.winfo_screenheight()-100))
++            self.root.geometry(f'{width}x{height}')
++            self.root.minsize(1000,760)
++            self.root.configure(bg='#0c1622')
+             self.root.protocol('WM_DELETE_WINDOW', self.close)
+             self.closed = False
+             self.paused = False
+@@ -161,25 +163,28 @@
+         def build_ui(self):
+             from ui_theme import FONT, apply_theme, heading, card, row
+             apply_theme(self.root)
+-            brand = ttk.Frame(self.root, padding=(20, 12))
+-            brand.pack(fill='x')
+-            ttk.Label(brand, text='LOONG LENS · v35', style='Brand.TLabel').pack(side='left')
+-            ttk.Label(brand, text='Loong Haven companion', style='Muted.TLabel', font=(FONT, 9)).pack(side='right')
+-            self.notebook = ttk.Notebook(self.root)
+-            self.notebook.pack(fill='both', expand=True)
+-            self.map_tab = ttk.Frame(self.notebook)
+-            self.spy_tab = ttk.Frame(self.notebook)
+-            self.live_tab = ttk.Frame(self.notebook)
+-            self.notebook.add(self.map_tab, text='Map Tweaker')
+-            self.notebook.add(self.live_tab, text='Gem Sniper')
+-            self.notebook.add(self.spy_tab, text='Gem Spy')
++            from dashboard_shell import Sidebar
++            shell=ttk.Frame(self.root);shell.pack(fill='both',expand=True)
++            # Keep notebook semantics for page controllers, keyboard navigation
++            # and diagnostics; its visible navigation lives in the sidebar.
++            self.notebook=ttk.Notebook(shell,style='Sidebar.TNotebook')
++            self.sidebar=Sidebar(shell,self.notebook,self.close)
++            ttk.Separator(shell,orient='vertical').pack(side='left',fill='y')
++            self.notebook.pack(side='left',fill='both',expand=True)
++            self.map_tab=ttk.Frame(self.notebook);self.live_tab=ttk.Frame(self.notebook);self.spy_tab=ttk.Frame(self.notebook)
++            self.notebook.add(self.map_tab,text='Map Tweaker')
++            self.notebook.add(self.live_tab,text='Gem Sniper')
++            self.notebook.add(self.spy_tab,text='Gem Spy')
+             body = ttk.Frame(self.map_tab, padding=(20, 18))
+             body.pack(fill='both', expand=True)
+-            heading(body, 'Your map, at a glance', 'Spawn locations, gathering areas and recent gem sightings.')
+-            status = card(body)
++            heading(body, 'Map Tweaker', 'Spawn locations, gathering areas and recent gem sightings.')
++            columns=ttk.Frame(body);columns.pack(fill='both',expand=True)
++            left=ttk.Frame(columns);left.pack(side='left',fill='both',expand=True,padx=(0,16))
++            right=ttk.Frame(columns);right.pack(side='left',fill='both',expand=True)
++            status = card(left,'Live alignment')
+             ttk.Label(status, textvariable=self.state, style='Status.TLabel', wraplength=450).pack(anchor='w')
+             ttk.Label(status, textvariable=self.info, style='CardMuted.TLabel', wraplength=450).pack(anchor='w', pady=(5, 0))
+-            layers = card(body, 'SHOW ON MAP')
++            layers = card(left, 'Show on map')
+             for tier, label, detail, color in [('gems', 'Gems', '86 possible spawn locations', '#f486dd'),
+                     ('ingredients', 'Ingredients', 'Beans, bamboo shoots and crabs', '#a9e887')]:
+                 line = row(layers)
+@@ -187,7 +192,7 @@
+                 ttk.Checkbutton(line, text=label, style='Card.TCheckbutton', variable=self.layers[tier], command=self.changed).pack(side='left')
+                 ttk.Label(line, text=detail, style='CardMuted.TLabel').pack(side='right')
+             ttk.Label(layers, textvariable=self.count, style='CardMuted.TLabel', wraplength=450).pack(anchor='w', pady=(5, 0))
+-            timers = card(body, 'HISTORY & TIMERS')
++            timers = card(right, 'History & timers')
+             actions = row(timers)
+             ttk.Button(actions, text='Mark collected', command=self.pickups.show_collect).pack(side='left')
+             ttk.Button(actions, text='Pickup history', command=self.pickups.show_history).pack(side='left', padx=8)
+@@ -195,7 +200,7 @@
+             ttk.Checkbutton(line, text='Pickup timers', style='Card.TCheckbutton', variable=self.show_timers, command=self.changed).pack(side='left')
+             ttk.Checkbutton(line, text='Sighting timers (1h 15s)', style='Card.TCheckbutton', variable=self.show_sighting_timers, command=self.changed).pack(side='right')
+             ttk.Label(timers, textvariable=self.pickups.summary, style='CardMuted.TLabel').pack(anchor='w')
+-            appearance = card(body, 'APPEARANCE')
++            appearance = card(right, 'Appearance')
+             ttk.Checkbutton(appearance, text='Shade ingredient areas', style='Card.TCheckbutton', variable=self.fill, command=self.changed).pack(anchor='w')
+             for label, variable, low, high in [('Dot size', self.size, 3, 9), ('Opacity', self.opacity, .3, 1.)]:
+                 line = row(appearance)
+@@ -207,7 +212,11 @@
+             self.pause_button.pack(side='left')
+             ttk.Button(actions, text='Re-align', command=self.worker.request_scan).pack(side='left', padx=6)
+             ttk.Button(actions, text='Save debug', command=self.save_debug).pack(side='left')
+-            ttk.Button(actions, text='Exit', command=self.close).pack(side='right')
++            def wrap_map(event):
++                for panel in (status,layers,timers,appearance):
++                    for widget in panel.winfo_children():
++                        if isinstance(widget,ttk.Label):widget.configure(wraplength=max(150,panel.winfo_width()-36))
++            body.bind('<Configure>',wrap_map)
+             ttk.Label(body, text='Dots are candidate locations; teal = recent sightings.\nOpen Loong Haven at default zoom to show the overlay.', style='Muted.TLabel', font=(FONT, 9)).pack(anchor='w')
+ 
+         def enabled_layers(self):
+@@ -226,7 +235,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Gem Spy v35; persistent observations and recovery'
++            details['version']='Gem Spy v36; persistent observations and recovery'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+--- a/LoongLens/patrol_live_panel.py
++++ b/LoongLens/patrol_live_panel.py
+@@ -63,60 +63,120 @@
+         if warning:self.status.set(warning)
+ 
+     def build_ui(self):
+-        from ui_theme import FONT, heading, card, row, CARD, MUTED
+-        body=ttk.Frame(self.parent,padding=(20,18));body.pack(fill='both',expand=True)
+-        title=ttk.Frame(body);title.pack(fill='x')
+-        ttk.Label(title,text='Gem Sniper',style='Title.TLabel').pack(side='left')
+-        self.seen_label=ttk.Label(title,textvariable=self.seen_text,style='Title.TLabel')
+-        self.seen_label.pack(side='right');self.seen_label.configure(cursor='hand2')
+-        self.seen_label.bind('<Button-1>',lambda _:self.show_daily_gems())
+-        ttk.Label(body,text='Find gems, collect, and return to Emerald Corner.',style='Muted.TLabel',wraplength=470).pack(anchor='w',pady=(3,14))
+-        controls=card(body, 'SNIPING CONTROLS')
+-        line=row(controls)
+-        ttk.Label(line,text='Ready when you are',style='Card.TLabel').pack(side='left')
+-        self.edit_button=ttk.Button(line,text='Edit route',command=self.show_route_editor,padding=(10,5));self.edit_button.pack(side='left',padx=10)
+-        ttk.Label(line,text='F10 · emergency stop',style='CardTitle.TLabel').pack(side='right')
+-        line=row(controls)
+-        ttk.Label(line,text='Snipe key',style='CardMuted.TLabel').pack(side='left')
+-        box=self.key_box=ttk.Combobox(line,textvariable=self.key,values=('F6','F7','F8','F9'),state='readonly',width=5)
+-        box.pack(side='left',padx=8);box.bind('<<ComboboxSelected>>',self.change_key)
+-        ttk.Button(line,text='Sniper settings',command=self.show_settings,padding=(10,7)).pack(side='right')
+-        self.history_button=ttk.Button(line,text='History',command=self.show_history,padding=(10,7))
+-        self.history_button.pack(side='right',padx=(0,6))
+-        line=row(controls)
+-        ttk.Label(line,text='Route',style='CardMuted.TLabel').pack(side='left')
+-        self.route_box=ttk.Combobox(line,textvariable=self.route_name,state='readonly',width=28)
+-        self.route_box.pack(side='left',fill='x',expand=True,padx=8)
+-        self.route_box.bind('<<ComboboxSelected>>',self.change_route)
+-        self.copy_route_button=ttk.Button(line,text='Save copy…',command=self.copy_route,padding=(10,5))
+-        self.copy_route_button.pack(side='right');self.refresh_routes()
+-        status=card(body)
+-        ttk.Label(status,textvariable=self.status,style='Status.TLabel',wraplength=450).pack(anchor='w')
+-        ttk.Label(status,textvariable=self.location,style='CardMuted.TLabel',wraplength=450).pack(anchor='w',pady=(5,7))
+-        ttk.Label(status,textvariable=self.count,style='CardMuted.TLabel').pack(anchor='w')
+-        ttk.Separator(status).pack(fill='x',pady=9)
+-        ttk.Label(status,textvariable=self.stats_text,style='Stats.TLabel').pack(anchor='w')
+-        self.endless_button=ttk.Checkbutton(status,text='Endless mode',variable=self.endless,
+-            style='Card.TCheckbutton',command=self.change_endless)
+-        self.endless_button.pack(anchor='w',pady=(4,0))
+-        ttk.Label(status,textvariable=self.pass_text,style='CardMuted.TLabel',wraplength=450).pack(anchor='w')
+-        ttk.Label(status,textvariable=self.performance,style='CardMuted.TLabel',wraplength=450).pack(anchor='w')
+-        self.progress=ttk.Progressbar(status,maximum=len(self.runner.views))
+-        self.progress.pack(fill='x',pady=(9,0))
+-        actions=ttk.Frame(body);actions.pack(fill='x',pady=(0,10))
+-        self.snipe=ttk.Button(actions,text='Snipe',style='Primary.TButton',command=lambda:self.start(False));self.snipe.pack(side='left')
+-        self.repeat=ttk.Button(actions,text='Loop Sniping',command=lambda:self.start(True));self.repeat.pack(side='left',padx=6)
+-        ttk.Button(actions,text='Stop (F10)',style='Stop.TButton',command=self.stop).pack(side='left')
+-        ttk.Button(actions,text='Reset checks',command=self.reset).pack(side='right')
+-        footer=ttk.Frame(body)
+-        footer.pack(side='bottom',fill='x',pady=(10,0))
+-        ttk.Label(footer,text='Click the /5 counter to edit obtained gems. Endless mode bypasses 5/5.\nOn a gem: click, wait 20s, return to Emerald Corner (241,107), restart.\nKeep BlueStacks visible. Configure map buttons in Sniper settings.',
+-                  style='Muted.TLabel',font=(FONT,9),wraplength=470).pack(anchor='w')
+-        viewport=tk.Frame(body,bg=CARD,height=220)
+-        viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
+-        self.preview=tk.Label(viewport,bg=CARD,fg=MUTED,text='Your latest camera check will appear here.')
++        from ui_theme import FONT,CARD,MUTED,card,row
++        from ui_assets import gem_image,line_image
++        self.ui_images=[]
++        self.loop_mode=tk.BooleanVar(value=True)
++        self.gems_value=tk.StringVar(value='0');self.elapsed_value=tk.StringVar(value='00:00')
++        self.views_value=tk.StringVar();self.spots_value=tk.StringVar();self.progress_value=tk.StringVar();self.skip_value=tk.StringVar()
++        self.run_state=tk.StringVar(value='Ready')
++        body=ttk.Frame(self.parent,padding=(22,20));body.pack(fill='both',expand=True)
++        self.body=body
++        header=ttk.Frame(body);header.pack(fill='x',pady=(0,18))
++        intro=ttk.Frame(header);intro.pack(side='left',fill='x',expand=True)
++        ttk.Label(intro,text='Gem Sniper',style='Title.TLabel').pack(anchor='w')
++        ttk.Label(intro,text='Find gems, collect, and return to Emerald Corner.',style='Muted.TLabel').pack(anchor='w',pady=(4,0))
++        quota=ttk.Frame(header,style='Panel.TFrame',padding=(16,10));quota.pack(side='right',padx=(12,0))
++        art=gem_image(quota,36);self.ui_images.append(art)
++        ttk.Label(quota,image=art,style='Card.TLabel').pack(side='left',padx=(0,10))
++        ttk.Label(quota,text='Daily gems',style='Card.TLabel').pack(side='left',padx=(0,16))
++        self.seen_label=ttk.Label(quota,textvariable=self.seen_text,style='Quota.TLabel',cursor='hand2')
++        self.seen_label.pack(side='left')
++        for w in (quota,*quota.winfo_children()):w.bind('<Button-1>',lambda _:self.show_daily_gems())
++        # Action bar remains visible while the middle area grows with the window.
++        footer=ttk.Frame(body);footer.pack(side='bottom',fill='x',pady=(12,0))
++        ttk.Label(footer,text='Click Daily gems to edit obtained finds. Keep BlueStacks visible. On a gem: collect, wait 20s, return to Emerald Corner.',
++                  style='Muted.TLabel',font=(FONT,9),wraplength=1100).pack(anchor='w',pady=(9,0),side='bottom')
++        actions=ttk.Frame(footer,style='Panel.TFrame',padding=12);actions.pack(fill='x')
++        play=line_image(actions,'play',20,'#073334');self.ui_images.append(play)
++        self.snipe=ttk.Button(actions,text='Start sniping',image=play,compound='left',style='Primary.TButton',command=self.start,padding=(20,13))
++        self.snipe.pack(side='left')
++        loop=ttk.Frame(actions,style='Card.TFrame');loop.pack(side='left',padx=18)
++        self.repeat=ttk.Checkbutton(loop,text='Loop sniping',variable=self.loop_mode,style='Card.TCheckbutton')
++        self.repeat.pack(anchor='w')
++        ttk.Label(loop,text='Repeat full routes · F10 stops',style='CardMuted.TLabel').pack(anchor='w')
++        reset_icon=line_image(actions,'reset',20);self.ui_images.append(reset_icon)
++        self.reset_button=ttk.Button(actions,text='Reset checks',image=reset_icon,compound='left',command=self.reset,padding=(14,13))
++        self.reset_button.pack(side='right')
++        stop_icon=line_image(actions,'stop',18,'#ffb9c9');self.ui_images.append(stop_icon)
++        self.stop_button=ttk.Button(actions,text='Stop  F10',image=stop_icon,compound='left',style='Stop.TButton',command=self.stop,padding=(20,13))
++        self.stop_button.pack(side='right',padx=(0,14))
++        middle=ttk.Frame(body);middle.pack(fill='both',expand=True)
++        middle.columnconfigure(0,weight=3);middle.columnconfigure(1,weight=1,minsize=210);middle.rowconfigure(0,weight=1)
++        stack=ttk.Frame(middle);stack.grid(row=0,column=0,sticky='nsew',padx=(0,16))
++        self.controls=controls=card(stack,'Sniping controls')
++        controls.columnconfigure(0,weight=1)
++        fields=ttk.Frame(controls,style='Card.TFrame');fields.pack(side='left',fill='both',expand=True)
++        line=row(fields)
++        ttk.Label(line,text='Snipe key',style='Card.TLabel',width=9).pack(side='left')
++        self.key_box=ttk.Combobox(line,textvariable=self.key,values=('F6','F7','F8','F9'),state='readonly',width=5)
++        self.key_box.pack(side='left',padx=(0,14));self.key_box.bind('<<ComboboxSelected>>',self.change_key)
++        self.edit_button=ttk.Button(line,text='Edit route',command=self.show_route_editor,padding=(12,7));self.edit_button.pack(side='left')
++        line=row(fields);line.pack_configure(pady=(12,0))
++        ttk.Label(line,text='Route',style='Card.TLabel',width=9).pack(side='left')
++        self.route_box=ttk.Combobox(line,textvariable=self.route_name,state='readonly',width=15)
++        self.route_box.pack(side='left',fill='x',expand=True);self.route_box.bind('<<ComboboxSelected>>',self.change_route)
++        tools=ttk.Frame(controls,style='Card.TFrame',padding=(12,0,0,0));tools.pack(side='right',fill='y')
++        icon=line_image(tools,'history',18);self.ui_images.append(icon)
++        self.history_button=ttk.Button(tools,text='History',image=icon,compound='left',command=self.show_history,padding=(9,6));self.history_button.pack(fill='x')
++        icon=line_image(tools,'settings',18);self.ui_images.append(icon)
++        self.settings_button=ttk.Button(tools,text='Settings',image=icon,compound='left',command=self.show_settings,padding=(9,6));self.settings_button.pack(fill='x',pady=5)
++        self.copy_route_button=ttk.Button(tools,text='Save copy…',command=self.copy_route,padding=(9,5));self.copy_route_button.pack(fill='x')
++        self.refresh_routes()
++        self.status_card=status=card(stack,'Run status');status.pack_configure(fill='both',expand=True)
++        ttk.Label(status,textvariable=self.status,style='Status.TLabel',wraplength=600).pack(anchor='w')
++        self.location_label=ttk.Label(status,textvariable=self.location,style='CardMuted.TLabel',wraplength=600)
++        self.location_label.pack(anchor='w',pady=(7,10))
++        metrics=ttk.Frame(status,style='Card.TFrame');metrics.pack(fill='x')
++        self.metric_frames=[]
++        for index,(label,value,kind) in enumerate((('Gems found',self.gems_value,'gem'),('Time spent',self.elapsed_value,'clock'),('Views checked',self.views_value,'map'),('Spawn spots',self.spots_value,'target'))):
++            metrics.columnconfigure(index,weight=1,uniform='metrics')
++            tile=ttk.Frame(metrics,style='Panel.TFrame',padding=(9,8));tile.grid(row=0,column=index,sticky='nsew',padx=(0,8 if index<3 else 0));self.metric_frames.append(tile)
++            ttk.Label(tile,text=label,style='CardMuted.TLabel').pack(anchor='w')
++            line=row(tile)
++            icon=gem_image(tile,26) if kind=='gem' else line_image(tile,kind,22)
++            self.ui_images.append(icon);ttk.Label(line,image=icon,style='Card.TLabel').pack(side='left',padx=(0,5))
++            ttk.Label(line,textvariable=value,style='Metric.TLabel').pack(side='left')
++        self.endless_button=ttk.Checkbutton(status,text='Endless mode',variable=self.endless,style='Card.TCheckbutton',command=self.change_endless)
++        self.endless_button.pack(anchor='w',pady=(6,2))
++        line=row(status)
++        ttk.Label(line,text='Progress (views checked)',style='CardMuted.TLabel').pack(side='left')
++        ttk.Label(line,textvariable=self.progress_value,style='CardMuted.TLabel').pack(side='right')
++        self.progress=ttk.Progressbar(status,maximum=len(self.runner.views));self.progress.pack(fill='x',pady=(5,7))
++        ttk.Label(status,textvariable=self.skip_value,style='CardMuted.TLabel').pack(anchor='w')
++        ttk.Label(status,textvariable=self.performance,style='CardMuted.TLabel',wraplength=600).pack(anchor='w',pady=(3,0))
++        ttk.Label(status,textvariable=self.pass_text,style='CardMuted.TLabel',wraplength=600).pack(anchor='w',pady=(3,0))
++        preview_card=ttk.Frame(middle,style='Panel.TFrame',padding=14)
++        preview_card.grid(row=0,column=1,sticky='nsew')
++        ttk.Label(preview_card,text='Live preview',style='CardTitle.TLabel').pack(anchor='w',pady=(0,10))
++        ttk.Label(preview_card,textvariable=self.location,style='CardMuted.TLabel',wraplength=260).pack(side='bottom',anchor='w',pady=(12,0))
++        viewport=tk.Frame(preview_card,bg='#09121b');viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
++        self.preview=tk.Label(viewport,bg='#09121b',fg=MUTED,text='Your latest camera check\nwill appear here.',wraplength=185)
+         self.preview.pack(fill='both',expand=True)
+-        self.update_count();self.buttons()
++        # Keep the full-resolution frame so resizing the preview never stretches
++        # a previous thumbnail or adds work to map navigation.
++        self.preview_image=None;self.preview_job=None
++        self.preview.bind('<Configure>',self.resize_preview)
++        def wrap(event):
++            for widget in (self.location_label,):widget.configure(wraplength=max(180,event.width-34))
++            for widget in status.winfo_children():
++                if isinstance(widget,ttk.Label):widget.configure(wraplength=max(180,event.width-34))
++        status.bind('<Configure>',wrap)
++        self.update_count();self.update_stats();self.buttons()
++
++    def update_stats(self):
++        values=self.runner.stats.snapshot();minutes,seconds=divmod(int(values['elapsed']),60)
++        self.gems_value.set(str(values['gems']));self.elapsed_value.set(f'{minutes:02d}:{seconds:02d}')
++
++    def resize_preview(self,event=None):
++        if self.closed or self.preview_job is not None:return
++        self.preview_job=self.root.after(80,self.render_preview)
++
++    def render_preview(self):
++        self.preview_job=None
++        if self.closed or self.preview_image is None:return
++        image=self.preview_image.copy();image.thumbnail((max(1,self.preview.winfo_width()-12),max(1,self.preview.winfo_height()-12)),Image.Resampling.LANCZOS)
++        self.photo=ImageTk.PhotoImage(image,master=self.preview);self.preview.configure(image=self.photo,text='')
+ 
+     def refresh_seen(self):
+         self.seen_refresh=0.;self.seen_text.set(f'{self.services.sighting_history.sniper_seen()}/5')
+@@ -126,7 +186,9 @@
+         self.daily_gems.show()
+ 
+     def change_endless(self):
+-        self.runner.set_endless(self.endless.get());self.save_config()
++        self.runner.set_endless(self.endless.get())
++        if self.endless.get():self.loop_mode.set(True)
++        self.save_config()
+ 
+     def show_history(self):
+         if self.busy:self.runner.stop()
+@@ -243,7 +305,7 @@
+         if getattr(self,'spy_stop',None):self.spy_stop()
+         self.events.put(dict(kind='panic'))
+ 
+-    def start(self,repeat=False):
++    def start(self,repeat=None):
+         if self.keys is None or self.busy or self.editing or self.switching:return
+         if not self.endless.get() and self.services.sighting_history.sniper_seen()>=5:
+             self.status.set('5/5 gems marked obtained for this game day. Stopped until the 16:00 Sofia reset.');return
+@@ -257,7 +319,7 @@
+         
+         self.on_active(True);self.busy=True;self.buttons()
+         self.runner.set_endless(self.endless.get())
+-        if not self.runner.start(settings,auto=True,repeat=True):
++        if not self.runner.start(settings,auto=True,repeat=(self.loop_mode.get() or self.endless.get()) if repeat is None else repeat):
+             self.busy=False;self.services.release('sniper');self.on_active(False);self.buttons()
+ 
+     def stop(self,silent=False):
+@@ -269,7 +331,7 @@
+             self.status.set('Stop patrol before resetting its checked locations.');return
+         if not self.runner.reset_checks():
+             self.status.set('Wait for sniping to stop before resetting checks.');return
+-        self.pass_text.set('');self.performance.set('');self.stats_text.set(self.runner.stats.text());self.update_count()
++        self.pass_text.set('');self.performance.set('');self.stats_text.set(self.runner.stats.text());self.update_stats();self.update_count()
+         self.status.set('Checks reset.')
+ 
+     def update_count(self):
+@@ -280,12 +342,16 @@
+         if hasattr(self,'progress'):self.progress.configure(value=len(checked),maximum=len(views))
+         all_spots=set().union(*(view.cells for view in self.base_views))
+         self.count.set(f'Processed: {len(self.runner.checked)} / {len(views)} views · Locked skips: {len(self.runner.skipped)}\nSpawn spots processed: {len(covered)} / {len(total)} · Omitted: {len(all_spots-total)}')
++        if hasattr(self,'views_value'):
++            self.views_value.set(f'{len(checked)} / {len(views)}');self.spots_value.set(f'{len(covered)} / {len(total)}')
++            self.progress_value.set(f'{len(checked)} / {len(views)}')
++            self.skip_value.set(f'Locked skips: {len(self.runner.skipped)}  ·  Omitted: {len(all_spots-total)}')
+ 
+     def show_frame(self,frame,boxes=()):
+         image=Image.fromarray(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB));pen=ImageDraw.Draw(image)
+         for box in boxes:pen.rectangle((box.x,box.y,box.x+box.width,box.y+box.height),outline='#f45bd0',width=3)
+-        image.thumbnail((440,max(80,min(240,self.preview.winfo_height()-8))));self.photo=ImageTk.PhotoImage(image)
+-        self.preview.configure(image=self.photo,text='')
++        self.preview_image=image
++        self.render_preview()
+ 
+     def drain(self):
+         while True:
+@@ -293,7 +359,7 @@
+             except queue.Empty:break
+             kind=event['kind']
+             if kind=='advance':
+-                if not self.closed:self.start(False)
++                if not self.closed:self.start()
+             elif kind=='panic':self.status.set('F10 emergency stop.')
+             elif kind=='status':self.status.set(event['message'])
+             elif kind=='view':
+@@ -344,7 +410,7 @@
+         if self.closed:return
+         try:
+             self.drain()
+-            self.stats_text.set(self.runner.stats.text())
++            self.stats_text.set(self.runner.stats.text());self.update_stats()
+             if time.time()>=self.seen_refresh:
+                 self.refresh_seen();self.seen_refresh=time.time()+1;self.daily_gems.refresh()
+         except Exception:
+@@ -414,6 +480,7 @@
+         if self.closed:return
+         self.closed=True;self.runner.stop()
+         if self.job is not None:self.root.after_cancel(self.job);self.job=None
++        if self.preview_job is not None:self.root.after_cancel(self.preview_job);self.preview_job=None
+         if self.keys is not None:self.keys.close();self.keys=None
+         if self.runner.thread is not None:self.runner.thread.join(timeout=3)
+         self.drain();self.save_pool.shutdown(wait=True);self.drain()
+--- a/LoongLens/spy_panel.py
++++ b/LoongLens/spy_panel.py
+@@ -113,26 +113,36 @@
+ 
+     def build_ui(self):
+         from ui_theme import heading,card,row,CARD,MUTED,FONT
+-        body=ttk.Frame(self.parent,padding=(20,18));body.pack(fill='both',expand=True)
++        body=ttk.Frame(self.parent,padding=(22,20));body.pack(fill='both',expand=True)
+         heading(body,'Gem Spy','Observe, record and continue. Your character stays where it is.')
+-        controls=card(body,'SPY CONTROLS');line=row(controls)
+-        self.start_button=ttk.Button(line,text='Start / Resume',style='Primary.TButton',command=self.start);self.start_button.pack(side='left')
+-        self.stop_button=ttk.Button(line,text='Stop (F10)',style='Stop.TButton',command=self.stop);self.stop_button.pack(side='left',padx=6)
++        footer=ttk.Frame(body);footer.pack(side='bottom',fill='x',pady=(14,0))
++        actions=ttk.Frame(footer,style='Panel.TFrame',padding=12);actions.pack(fill='x')
++        self.start_button=ttk.Button(actions,text='Start / Resume',style='Primary.TButton',command=self.start,padding=(22,13));self.start_button.pack(side='left')
++        self.stop_button=ttk.Button(actions,text='Stop  F10',style='Stop.TButton',command=self.stop,padding=(20,13));self.stop_button.pack(side='right')
++        ttk.Label(footer,text='One entry per continuing gem. Automatic recovery keeps progress. Stop / F10 always stays stopped.',style='Muted.TLabel',font=(FONT,9)).pack(anchor='w',pady=(10,0))
++        middle=ttk.Frame(body);middle.pack(fill='both',expand=True)
++        middle.columnconfigure(0,weight=1,minsize=300);middle.columnconfigure(1,weight=2);middle.rowconfigure(0,weight=1)
++        stack=ttk.Frame(middle);stack.grid(row=0,column=0,sticky='nsew',padx=(0,16))
++        controls=card(stack,'Spy controls')
++        ttk.Label(controls,textvariable=self.location,style='CardMuted.TLabel',wraplength=300).pack(anchor='w',pady=(0,12))
+         line=row(controls)
+         ttk.Button(line,text='Spy history',command=lambda:self.history_window.show('Sightings')).pack(side='left')
+         ttk.Button(line,text='Hourly history',command=lambda:self.history_window.show('Hourly')).pack(side='left',padx=6)
+-        ttk.Label(controls,textvariable=self.location,style='CardMuted.TLabel',wraplength=450).pack(anchor='w',pady=(8,0))
+-        state=card(body)
+-        ttk.Label(state,textvariable=self.status,style='Status.TLabel',wraplength=450).pack(anchor='w')
+-        ttk.Label(state,textvariable=self.progress_text,style='CardMuted.TLabel',wraplength=450).pack(anchor='w',pady=8)
+-        ttk.Label(state,textvariable=self.stats,style='Stats.TLabel').pack(anchor='w',pady=(0,8))
++        state=card(stack,'Run status');state.pack_configure(fill='both',expand=True)
++        ttk.Label(state,textvariable=self.status,style='Status.TLabel',wraplength=300).pack(anchor='w')
++        ttk.Label(state,textvariable=self.progress_text,style='CardMuted.TLabel',wraplength=300).pack(anchor='w',pady=14)
++        ttk.Label(state,textvariable=self.stats,style='Metric.TLabel').pack(anchor='w',pady=(0,16))
+         self.progress=ttk.Progressbar(state);self.progress.pack(fill='x')
+-        footer=ttk.Frame(body);footer.pack(side='bottom',fill='x',pady=(10,0))
+-        ttk.Label(footer,text='New gems get one history entry and screenshot. Existing gems are tracked across runs.\n'
+-                  'Automatic recovery keeps progress. Stop / F10 always stays stopped.',style='Muted.TLabel',font=(FONT,9),wraplength=470).pack(anchor='w')
+-        viewport=tk.Frame(body,bg=CARD,height=230);viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
++        map_card=ttk.Frame(middle,style='Panel.TFrame',padding=16);map_card.grid(row=0,column=1,sticky='nsew')
++        ttk.Label(map_card,text='Gem sightings map',style='CardTitle.TLabel').pack(anchor='w',pady=(0,12))
++        viewport=tk.Frame(map_card,bg=CARD);viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
+         from gem_heatmap_panel import HeatmapPreview
+         self.map_preview=HeatmapPreview(viewport,self.root,self.services.sighting_history,user_dir())
++        def wrap(event):
++            for panel in (controls,state):
++                for widget in panel.winfo_children():
++                    if isinstance(widget,ttk.Label):widget.configure(wraplength=max(180,panel.winfo_width()-36))
++        stack.bind('<Configure>',wrap)
+ 
+     def start(self):
+         if self.runner.running:return
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,8 +4,8 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+-         'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++         'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py', 'LoongLens-AppIcon-HD.png', 'ui_assets.py', 'dashboard_shell.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+          'sniper_counter.py', 'sniper_history_panel.py', 'gem_heatmap.py', 'gem_heatmap_panel.py', 'heatmap_map_import.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
+          'win_overlay.py', 'sxs_atlas_tracker.py', 'atlas_metadata.json',
+--- a/LoongLens/tools/build_windows_exe.py
++++ b/LoongLens/tools/build_windows_exe.py
+@@ -11,7 +11,7 @@
+         raise SystemExit('Build on Windows with 64-bit Python 3.12.')
+     assets = [
+         'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico',
+-        'launch_app.pyw', 'atlas_metadata.json', 'gem_sniping_route.json',
++        'LoongLens-AppIcon-HD.png', 'launch_app.pyw', 'atlas_metadata.json', 'gem_sniping_route.json',
+         'loong_haven_default_atlas.png', 'loong_title_template.png',
+         'loong_haven_map_data.json', 'loong_haven_ingredients.json',
+         'loong_haven_terrain.json',
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v35 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v36 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -29,7 +29,7 @@
+     for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check'):
+         report=ROOT/(mode+'.json')
+         data=json.loads(report.read_text('utf-8-sig'))
+-        if data.get('passed') is not True or data.get('version')!=35:
++        if data.get('passed') is not True or data.get('version')!=36:
+             raise SystemExit(f'{mode} did not pass')
+         if mode=='sniper-ui-check':
+             for key in ('restart_restored_obtained_choice','restart_restored_endless_preference',
+@@ -46,19 +46,19 @@
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v34','v35'):
++    for version in ('v35','v36'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
+         comparisons[version]=data;reports.append(path)
+-    baseline=comparisons['v34'];latest=comparisons['v35']
++    baseline=comparisons['v35'];latest=comparisons['v36']
+     if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
+         raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+     if latest['held_strokes']>=30 or latest['held_moves']>latest['held_strokes']*5:
+         raise SystemExit('The centre-start route comparison exceeded its movement bounds.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v35-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v36-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+@@ -68,13 +68,16 @@
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=35,baseline=34,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=36,baseline=35,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                   speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v35.txt').write_text(
+-            'Loong Lens v35 - saved obtained gems and Endless mode\n\n'
++        (app/'START-HERE-v36.txt').write_text(
++            'Loong Lens v36 - sidebar dashboard\n\n'
++            'New sidebar navigation, controls/status cards, live portrait preview and bottom action bar.\n'
++            'Uses the original transparent gem artwork throughout the interface.\n'
++            'Loop sniping repeats completed routes. Endless bypasses the daily quota.\n'
+             'Gem Spy now shows a clickable full map, opening an all-history heatmap with zoom/pan.\n'
+             'Use Import map images to merge your original screenshots at native detail.\n'
+             'The imported map also appears in Edit route; live recognition keeps the original atlas.\n'
+@@ -106,7 +109,7 @@
+             'No padding or broad right-hand exclusion strip is added.\n'
+             'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
+             'Hide portal icons in the game map as you requested.\n'
+-            'The header shows v35; settings and personal routes remain in LocalAppData.\n'
++            'The header shows v36; settings and personal routes remain in LocalAppData.\n'
+             'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
+             'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
+             'It observes repeatedly, never clicks a gem, and continues after a find.\n'
+@@ -136,6 +139,7 @@
+             'and validation reports are included under validation; live game speed is not measured.\n'
+             'Do not delete %LOCALAPPDATA%\\LoongLens; settings, screenshots and history stay there.\n',
+             'utf-8')
++        for image in sorted((ROOT/'artifacts').glob('v36-*.png')):shutil.copy2(image,validation/image.name)
+         manifest={p.relative_to(app).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in sorted(app.rglob('*')) if p.is_file()}
+         (app/'PACKAGE-SHA256.json').write_text(json.dumps(manifest,indent=2)+'\n','utf-8')
+--- a/LoongLens/tools/ui_sniper_smoke.py
++++ b/LoongLens/tools/ui_sniper_smoke.py
+@@ -131,7 +131,7 @@
+             assert panel.services.sighting_history.sniper_seen()==5
+             count=len(clicks);panel.snipe.invoke()
+             assert panel.services.owner is None and len(clicks)==count and '5/5' in panel.status.get()
+-            results.append(dict(passed=True,version=35,collection_seconds=20,return_world=[241,107],
++            results.append(dict(passed=True,version=36,collection_seconds=20,return_world=[241,107],
+                                 daily_count=5,stopped_at_goal=True,source_screenshot_saved=True,
+                                 dim_camera_selected_once_per_visit=True,
+                                 reset_kept_daily_counter=True,scope='Native Tk and detector; simulated game input and waits'))
+--- a/LoongLens/tools/ui_spy_smoke.py
++++ b/LoongLens/tools/ui_spy_smoke.py
+@@ -166,7 +166,7 @@
+             assert runner.cancel.is_set() and sniper.services.owner is None
+             assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
+             assert len(spy.history.encounters())==2
+-            completed.append(dict(passed=True,version=35,unique_gems=2,screenshots=2,
++            completed.append(dict(passed=True,version=36,unique_gems=2,screenshots=2,
+                                   passes=2,recovery_kept_progress=True,f10_stays_stopped=True,
+                                   heatmap_all_history=True,heatmap_zoom_pan=True,heatmap_viewport_bounded=True,
+                                   heatmap_three_part_import=True,heatmap_saved_map_reloaded=True,route_editor_uses_imported_map=True))
+--- /dev/null
++++ b/LoongLens/ui_assets.py
+@@ -0,0 +1,43 @@
++"""Application artwork and a small, consistent set of navigation line icons."""
++from PIL import Image,ImageDraw,ImageTk
++from resources import ROOT
++
++
++def gem_image(master,size=32):
++    # The supplied transparent app artwork, never a replacement diamond/emoji.
++    with Image.open(ROOT/'LoongLens-AppIcon-HD.png') as source:
++        image=source.convert('RGBA')
++    image=image.crop(image.getchannel('A').getbbox())
++    image.thumbnail((size,size),Image.Resampling.LANCZOS)
++    tile=Image.new('RGBA',(size,size));tile.alpha_composite(image,((size-image.width)//2,(size-image.height)//2))
++    return ImageTk.PhotoImage(tile,master=master)
++
++
++def line_image(master,kind,size=24,color='#a4bed9'):
++    scale=3;im=Image.new('RGBA',(32*scale,32*scale));draw=ImageDraw.Draw(im)
++    def line(points,width=1.8):draw.line([(round(x*scale),round(y*scale)) for x,y in points],fill=color,width=round(width*scale),joint='curve')
++    def oval(box):draw.ellipse(tuple(round(v*scale) for v in box),outline=color,width=round(1.8*scale))
++    if kind=='map':
++        line([(3,7),(11,3),(21,7),(29,3),(29,25),(21,29),(11,25),(3,29),(3,7)])
++        line([(11,3),(11,25)]);line([(21,7),(21,29)])
++    elif kind=='target':
++        oval((6,6,26,26));oval((12,12,20,20))
++        for p in ([(16,1),(16,9)],[(16,23),(16,31)],[(1,16),(9,16)],[(23,16),(31,16)]):line(p)
++    elif kind=='clock':
++        oval((3,3,29,29));line([(16,8),(16,16),(22,20)])
++    elif kind=='history':
++        draw.arc((5*scale,4*scale,29*scale,28*scale),205,525,fill=color,width=5)
++        line([(3,5),(3,13),(11,13)]);line([(17,9),(17,16),(22,19)])
++    elif kind=='settings':
++        oval((5,5,27,27));oval((12,12,20,20))
++        for p in ([(16,1),(16,6)],[(16,26),(16,31)],[(1,16),(6,16)],[(26,16),(31,16)]):line(p)
++    elif kind=='pin':
++        oval((8,3,24,19));oval((13,8,19,14));line([(9,17),(16,29),(23,17)])
++    elif kind=='reset':
++        draw.arc((4*scale,4*scale,28*scale,28*scale),45,330,fill=color,width=5)
++        line([(22,3),(29,8),(22,11)])
++    elif kind=='play':
++        draw.polygon([(10*scale,5*scale),(26*scale,16*scale),(10*scale,27*scale)],fill=color)
++    elif kind=='stop':
++        draw.rounded_rectangle((8*scale,8*scale,24*scale,24*scale),radius=2*scale,fill=color)
++    return ImageTk.PhotoImage(im.resize((size,size),Image.Resampling.LANCZOS),master=master)
+--- a/LoongLens/ui_theme.py
++++ b/LoongLens/ui_theme.py
+@@ -4,11 +4,12 @@
+ 
+ FONT = 'Segoe UI' if os.name == 'nt' else 'Helvetica'
+ 
+-BG = '#101620'
+-CARD = '#182332'
+-TEXT = '#e6edf6'
+-MUTED = '#9aacbf'
+-ACCENT = '#70dfca'
++BG = '#0c1622'
++CARD = '#111f2e'
++TEXT = '#f1f5fb'
++MUTED = '#a4bed9'
++ACCENT = '#56e5df'
++BORDER = '#263d53'
+ 
+ 
+ def apply_theme(root):
+@@ -18,12 +19,16 @@
+     style.configure('TFrame', background=BG)
+     style.configure('TLabel', background=BG)
+     style.configure('Muted.TLabel', foreground=MUTED)
+-    style.configure('Title.TLabel', font=(FONT, 22, 'bold'))
++    style.configure('Title.TLabel', font=(FONT, 28, 'bold'))
++    style.configure('Heading.TLabel', font=(FONT, 16, 'bold'))
+     style.configure('Brand.TLabel', font=(FONT, 12, 'bold'))
+     style.configure('Card.TFrame', background=CARD)
++    style.configure('Panel.TFrame', background=CARD, borderwidth=1, relief='solid', bordercolor=BORDER)
+     style.configure('Card.TLabel', background=CARD)
+     style.configure('CardMuted.TLabel', background=CARD, foreground=MUTED, font=(FONT, 9))
+-    style.configure('CardTitle.TLabel', background=CARD, foreground=ACCENT, font=(FONT, 10, 'bold'))
++    style.configure('CardTitle.TLabel', background=CARD, foreground=TEXT, font=(FONT, 13, 'bold'))
++    style.configure('Metric.TLabel', background=CARD, foreground=TEXT, font=(FONT, 16, 'bold'))
++    style.configure('Quota.TLabel', background=CARD, foreground=ACCENT, font=(FONT, 26, 'bold'))
+     style.configure('Status.TLabel', background=CARD, font=(FONT, 11, 'bold'))
+     style.configure('Alert.TLabel', background=CARD, foreground='#f486dd')
+     style.configure('Stats.TLabel', background=CARD, font=(FONT, 11, 'bold'))
+@@ -53,6 +58,16 @@
+     style.map('TNotebook.Tab', background=[('selected', '#26384b')], foreground=[('selected', TEXT)])
+     style.configure('Horizontal.TProgressbar', background=ACCENT, troughcolor='#28394d', borderwidth=0, lightcolor=ACCENT, darkcolor=ACCENT)
+     style.configure('TSeparator', background='#2a394b')
++    style.configure('Sidebar.TFrame', background='#0b1723')
++    style.configure('Sidebar.TLabel', background='#0b1723', foreground=MUTED)
++    style.configure('Logo.TLabel', background='#0b1723', foreground=TEXT, font=(FONT, 16, 'bold'))
++    style.configure('Nav.TButton', background='#0b1723', foreground=MUTED, anchor='w', padding=(16,16), borderwidth=0, font=(FONT,11))
++    style.map('Nav.TButton', background=[('active','#142b3d')], foreground=[('active',TEXT)])
++    style.configure('Selected.Nav.TButton', background='#123044', foreground=TEXT, font=(FONT,11,'bold'))
++    style.map('Selected.Nav.TButton', background=[('active','#173b50')])
++    # Only the main notebook hides its tab strip. History notebooks retain tabs.
++    style.layout('Sidebar.TNotebook.Tab', [])
++    style.configure('Sidebar.TNotebook', background=BG, borderwidth=0, tabmargins=0)
+     return style
+ 
+ 
+@@ -62,7 +77,7 @@
+ 
+ 
+ def card(parent, title=None):
+-    frame = ttk.Frame(parent, style='Card.TFrame', padding=12)
++    frame = ttk.Frame(parent, style='Panel.TFrame', padding=16)
+     frame.pack(fill='x', pady=(0, 8))
+     if title:
+         ttk.Label(frame, text=title, style='CardTitle.TLabel').pack(anchor='w', pady=(0, 7))
