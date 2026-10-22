@@ -325,7 +325,7 @@
 +    return Image.alpha_composite(base.convert('RGBA'),heat_layer(snapshot,base.size)).convert('RGB')
 --- /dev/null
 +++ b/LoongLens/gem_heatmap_panel.py
-@@ -0,0 +1,220 @@
+@@ -0,0 +1,224 @@
 +"""Clickable map overview and a viewport-rendered zoom/pan heatmap window."""
 +from concurrent.futures import ThreadPoolExecutor
 +from pathlib import Path
@@ -350,9 +350,10 @@
 +        self.item=self.canvas.create_image(0,0,anchor='nw')
 +        self.canvas.bind('<Configure>',self.configured)
 +        self.canvas.bind('<MouseWheel>',self.wheel)
++        self.canvas.bind('<Enter>',lambda e:self.canvas.focus_set())
 +        self.canvas.bind('<Button-4>',lambda e:self.zoom_at(1.25,e.x,e.y))
 +        self.canvas.bind('<Button-5>',lambda e:self.zoom_at(.8,e.x,e.y))
-+        self.canvas.bind('<ButtonPress-1>',lambda e:self.canvas.scan_mark(e.x,e.y))
++        self.canvas.bind('<ButtonPress-1>',self.begin_pan)
 +        self.canvas.bind('<B1-Motion>',lambda e:self.canvas.scan_dragto(e.x,e.y,gain=1))
 +        self.canvas.bind('<Double-Button-1>',lambda e:self.fit())
 +        self.canvas.bind('<Destroy>',self.destroyed)
@@ -405,6 +406,9 @@
 +        self.update_bounds();_,_,padx,pady,sw,sh=self.geometry()
 +        self.canvas.xview_moveto(max(0.,px*self.zoom+padx-x)/sw)
 +        self.canvas.yview_moveto(max(0.,py*self.zoom+pady-y)/sh);self.schedule()
++
++    def begin_pan(self,event):
++        self.canvas.focus_set();self.canvas.scan_mark(event.x,event.y)
 +
 +    def wheel(self,event):
 +        self.zoom_at(1.25 if event.delta>0 else .8,event.x,event.y);return 'break'
@@ -492,7 +496,7 @@
 +                  style='Muted.TLabel',wraplength=1040).pack(anchor='w',pady=(8,0))
 +        self.note=tk.StringVar(win,value=f'Original map resolution: {self.base.width} × {self.base.height}')
 +        ttk.Label(body,textvariable=self.note,style='Muted.TLabel',wraplength=1040).pack(anchor='w',pady=(4,0))
-+        win.update_idletasks();self.viewer.fit()
++        win.update_idletasks();self.viewer.fit();self.viewer.canvas.focus_set()
 +        if self.future is not None:self.import_button.configure(state='disabled')
 +
 +    def toggle_heat(self):
@@ -1880,7 +1884,7 @@
          def begin(self):
              sniper=panels['sniper'];spy=panels['spy'];services=sniper.services;services.sound.set(False)
              notebook=next(w for w in descendants(self) if isinstance(w,ttk.Notebook))
-@@ -95,6 +101,45 @@
+@@ -95,6 +101,46 @@
              assert len(list((Path(temporary.name)/'LoongLens/screenshots').glob('*.png')))==2
              standard=sniper.services.sighting_history.list()
              assert len(standard)==2 and all(row.source=='Gem Spy' and row.screenshot_path for row in standard)
@@ -1893,6 +1897,7 @@
 +                assert preview.window is not None and preview.window.title()=='Gem sightings heatmap'
 +                viewer=preview.viewer;initial=viewer.zoom
 +                preview.zoom_in.invoke();self.update_idletasks();assert viewer.zoom>initial
++                viewer.canvas.focus_force();self.update()
 +                zoom=viewer.zoom;viewer.canvas.event_generate('<MouseWheel>',delta=120,x=180,y=180)
 +                self.update_idletasks();assert viewer.zoom>zoom
 +                viewer.zoom_at(100);self.update_idletasks();viewer.render()
@@ -1926,7 +1931,7 @@
              spy.history_window.show('Sightings');self.update_idletasks()
              assert len(spy.history_window.tables['Sightings'].get_children())==2
              spy.history_window.show('Hourly');self.update_idletasks()
-@@ -117,8 +162,10 @@
+@@ -117,8 +163,10 @@
              assert runner.cancel.is_set() and sniper.services.owner is None
              assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
              assert len(spy.history.encounters())==2
@@ -1939,7 +1944,7 @@
              next(w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit').invoke()
      tk.Tk=Window
      try:loong_lens.main([],default_tab='spy')
-@@ -132,7 +179,7 @@
+@@ -132,7 +180,7 @@
          temporary.cleanup()
      assert completed and not errors,errors
      (ROOT/'spy-ui-check.json').write_text(json.dumps(completed[0],indent=2)+'\n','utf-8')
