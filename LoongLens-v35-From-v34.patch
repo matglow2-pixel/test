@@ -1,7 +1,7 @@
 --- /dev/null
 +++ b/LoongLens/CHANGELOG-v35.md
-@@ -0,0 +1,26 @@
-+# v35 — saved obtained gems and Endless mode
+@@ -0,0 +1,41 @@
++# v35 — Spy heatmap, saved obtained gems and Endless mode
 +
 +- Persist the daily count with each obtained choice. Recover older saved
 +  Sniper sightings if their daily ledger was missing; never reset on app exit,
@@ -27,13 +27,28 @@
 +native input checks, full route comparison and complete archive hash checks.
 +No private recordings or user databases are packaged. No live BlueStacks run
 +is claimed; Obtained defaults true and remains the user's collection judgment.
++
++
++- Replace the latest-observation panel in Gem Spy with a clickable full map.
++  Open an all-date heatmap from the shared sighting history, including missed
++  gems and excluding image tests. Unknown locations are reported separately.
++- Add wheel/button zoom, drag panning, fit, heat-layer toggle and full-resolution
++  PNG export. Render only the visible image crop at high zoom.
++- Import original overlapping map screenshots and register them to the existing
++  world grid. Preserve native source detail and reject uncertain/partial maps.
++  Save imports for relaunch and reuse them in the Sniper route editor. Keep the
++  original recognition atlas and live mouse/navigation behavior unchanged.
++- Validate all-history counts, cache refresh from worker writes, image-test
++  exclusion, world orientation, three-part registration, map persistence and
++  cancellation. Native Windows checks exercise the map UI, 800% zoom/panning,
++  PNG resolution, asynchronous three-part import and route-editor reuse.
 --- a/LoongLens/README.md
 +++ b/LoongLens/README.md
 @@ -1,6 +1,24 @@
  # Loong Lens
  
 -**v34 recognises dim camera rectangles so a successful selection can close the map and continue. It also recovers from late map movement and runs Gem Sniper until the 5/5 game-day goal. After each gem click it waits 20 seconds, returns to Emerald Corner (241,107), then starts a new route pass.** Gem Watch is removed. Shared detection preferences, alerts and the existing history remain available through Gem Sniper. Gem Spy uses that selected route and settings, continuously observes without clicking gems, and keeps durable encounter and hourly histories. See [CHANGELOG-v34.md](CHANGELOG-v34.md).
-+**v35 saves the daily obtained count and adds Endless mode.** Click the `/5`
++**v35 adds the Gem Spy map/heatmap, saves the daily obtained count and adds Endless mode.** Click the `/5`
 +counter or **History → Daily gems** to open the daily ledger. Every Gem Sniper
 +find starts with **Obtained** checked. Untick missed gems to subtract them;
 +retick to add them back. Sightings and screenshots stay saved. The daily count
@@ -64,6 +79,40 @@
  
  The EXE bundles its own code. To run edited Python files, use RUN_LOONG_LENS.bat; editing adjacent source does not alter the EXE. The launcher activates an existing instance, so exit that instance before changing launchers.
  
+@@ -171,3 +189,33 @@
+ 
+ This correction adds no fixed wait and changes no input boundaries, control
+ boxes or padding. Daily collection/return, Gem Spy, routes and history remain.
++
++
++## Gem Spy map and heatmap
++
++The lower Spy panel is now a clickable whole-map overview. Click it to open
++**Gem sightings heatmap**. It uses all dates and sources in the shared Gem
++Sniper sighting history, including missed/not-obtained gems. Image tests are
++excluded. Screenshot updates and continuing Spy encounters retain their
++original event, so they do not add duplicate heatmap counts. Entries without
++valid coordinates are counted separately. Saved locations can be camera-view
++coordinates, so the map describes recorded areas rather than exact gem tiles.
++
++Use the mouse wheel or +/− to zoom, drag to pan, and **Fit map** or double-click
++to see the whole map. **Heatmap** toggles the layer; **Save PNG…** exports the
++full-resolution image. Large zooms render only the visible crop, keeping
++memory bounded while retaining original detail.
++
++For a cleaner map, select **Import map images…** and choose your three original
++PNG/JPG screenshots together. One complete map or up to six overlapping parts
++are supported. The app aligns them to world coordinates, merges them at the
++finest supplied pixel density, and checks whole-map coverage. Uncertain or
++partial imports leave the previous map in place. It saves the chosen map in
++LocalAppData and reuses it after restart, including in **Gem Sniper → Edit
++route**. Existing routes and spawn positions stay unchanged.
++
++The bundled 3486 × 3486 atlas is the initial visual map. Live Map Tweaker and
++Gem Sniper recognition retain that original atlas: this build changes the
++visual map, not the calibration/tracking reference. Cleaner labels alone do
++not establish better recognition against live game frames. Original screenshots
++and imported maps stay on your PC; they are not uploaded by this feature.
 --- a/LoongLens/VALIDATION.md
 +++ b/LoongLens/VALIDATION.md
 @@ -1,4 +1,4 @@
@@ -97,7 +146,7 @@
  collection; it is a simulated timing comparison, not a live BlueStacks result.
  
  Sighting-map timer checks cover the new 3,615-second lifetime, hour-aware
-@@ -187,3 +187,30 @@
+@@ -187,3 +187,54 @@
  archive checks. The v33/v34 full-route benchmark uses the same atlas simulation.
  It does not measure this player's game client, the latest inline screenshot,
  or a live BlueStacks run. Private videos are not included in the archive.
@@ -128,6 +177,30 @@
 +and the daily-history UI. Packaging requires the new native report fields.
 +The full Windows suite, native input, source/frozen resources and complete 7z
 +round-trip checks are required. This is not a live BlueStacks game test.
++
++
++## v35 Spy heatmap and visual-map imports
++
++Heatmap tests exercise all dates/sources, not-obtained gems, repeated capture
++updates, independent worker commits, manual location edits, deleted records,
++invalid/missing locations, north/south world orientation and empty/disabled
++layers. PNG composition retains the original map dimensions.
++
++Three overlapping crops of the bundled atlas are registered back to independent
++known atlas positions and merged at native pixel density. Checks cover full
++coverage, refusal of partial/blank/uncertain maps, checksum/path validation,
++restart persistence, import cancellation and the original recognition atlas
++remaining byte-for-byte unchanged. These are map-processing fixtures, not the
++user's latest inline screenshots, whose original files are not mounted here.
++
++The native Spy UI check opens the map from its thumbnail, zooms with buttons
++and wheel, pans at 800%, verifies viewport-sized rendering, toggles the layer,
++exports a full-resolution PNG, imports three real image files asynchronously,
++reopens the saved map and displays it in the route editor without changing
++world coordinates. Source and frozen GUI checks also open the map. Packaging
++requires these new native report fields. Live game recognition keeps the
++original reference; no claim is made that the new visual map improves live
++tracking or that it has been tested with a live BlueStacks game session.
 --- a/LoongLens/desktop_entry.py
 +++ b/LoongLens/desktop_entry.py
 @@ -81,7 +81,7 @@
@@ -139,7 +212,7 @@
              notebook = next(item for item in widgets if isinstance(item, ttk.Notebook))
              assert [notebook.tab(tab, 'text') for tab in notebook.tabs()] == ['Map Tweaker', 'Gem Sniper', 'Gem Spy']
              assert not any(isinstance(item,ttk.Checkbutton) and item.cget('text')=='Enable live clicking' for item in widgets)
-@@ -110,6 +110,14 @@
+@@ -110,11 +110,26 @@
              assert panel.stats_text.get()=='Time spent: 0:00\nGems found: 0'
              assert panel.seen_text.get().endswith('/5') and panel.seen_label.winfo_exists()
              assert panel.progress.cget('maximum')==len(panel.runner.views)
@@ -154,7 +227,19 @@
              recent=tuple(dict(number=n,elapsed=t,gems=0) for n,t in ((4,461),(3,456),(2,451)))
              panel.events.put(dict(kind='pass_complete',passes=4,stats=recent[0],recent_passes=recent));panel.drain()
              assert 'Last 3 runs: #4 7:41 · #3 7:36 · #2 7:31' in panel.pass_text.get()
-@@ -221,10 +229,10 @@
+             assert len(spies)==1 and not spies[0].runner.running
+             spy=spies[0]
++            assert spy.map_preview.base.width>=2000
++            spy.map_preview.show();self.update_idletasks()
++            assert spy.map_preview.window.title()=='Gem sightings heatmap'
++            assert spy.map_preview.viewer.fitted
++            old=spy.map_preview.viewer.zoom;spy.map_preview.zoom_in.invoke()
++            assert spy.map_preview.viewer.zoom>old
++            spy.map_preview.close_window()
+             spy_widgets=descendants(spy.parent)
+             assert not any(isinstance(w,ttk.Combobox) for w in spy_widgets)
+             assert not any(isinstance(w,ttk.Button) and w.cget('text') in ('Edit route','Sniper settings','Sniping settings') for w in spy_widgets)
+@@ -221,10 +236,10 @@
                  gui_check()
              else:
                  check_native_input()
@@ -167,6 +252,421 @@
              status = 1
          path.write_text(json.dumps(result, indent=2), encoding='utf-8')
          return status
+--- /dev/null
++++ b/LoongLens/gem_heatmap.py
+@@ -0,0 +1,68 @@
++"""All-date visual sightings, independent of obtained status and daily quotas."""
++from dataclasses import dataclass
++import math
++import cv2
++import numpy as np
++from PIL import Image
++
++WORLD_SIZE=280
++
++
++@dataclass(frozen=True)
++class HeatmapSnapshot:
++    cells: tuple
++    total: int
++    missing: int
++    revision: tuple
++
++    @property
++    def mapped(self):return self.total-self.missing
++
++
++class HeatmapHistory:
++    def __init__(self,history):self.history=history;self.cached=None
++
++    def snapshot(self):
++        db=self.history.connection
++        revision=(db.total_changes,db.execute('PRAGMA data_version').fetchone()[0])
++        if self.cached is not None and revision==self.cached.revision:return self.cached
++        cells=[];total=missing=0
++        # One row per confirmed event; photo enrichments update that same row.
++        # Include every date/source and missed gems. Image tests are excluded.
++        for x,y,count in db.execute('''SELECT game_x,game_y,COUNT(*) FROM sightings
++                WHERE test_mode=0 GROUP BY game_x,game_y'''):
++            total+=count
++            try:valid=all(math.isfinite(v) and float(v).is_integer() and 0<=v<WORLD_SIZE for v in (x,y))
++            except (TypeError,ValueError):valid=False
++            if valid:cells.append((int(x),int(y),count))
++            else:missing+=count
++        self.cached=HeatmapSnapshot(tuple(sorted(cells)),total,missing,revision)
++        return self.cached
++
++
++def density_grid(snapshot):
++    grid=np.zeros((WORLD_SIZE,WORLD_SIZE),np.float32)
++    for x,y,count in snapshot.cells:grid[WORLD_SIZE-1-y,x]+=count
++    return grid
++
++
++def heat_layer(snapshot,size):
++    grid=density_grid(snapshot)
++    if not snapshot.mapped:return Image.new('RGBA',size)
++    density=cv2.GaussianBlur(grid,(0,0),1.6,borderType=cv2.BORDER_CONSTANT)
++    peak=float(density.max())
++    value=np.log1p(density*8)/np.log1p(peak*8) if peak else density
++    # Transparent tails keep terrain labels readable. The density is relative,
++    # not a spawn probability or a correction for observation effort.
++    stops=np.array([[70,136,244],[66,215,192],[247,227,92],[251,143,54],[238,68,81]],np.float32)
++    position=np.minimum(value*4,4);lo=np.floor(position).astype(int);hi=np.minimum(lo+1,4)
++    fraction=(position-lo)[...,None]
++    rgb=stops[lo]*(1-fraction)+stops[hi]*fraction
++    alpha=np.where(value>.055,np.minimum(.76,value*.95),0)*255
++    rgba=np.concatenate((rgb,alpha[...,None]),axis=2).astype(np.uint8)
++    return Image.fromarray(rgba).resize(size,Image.Resampling.BILINEAR)
++
++
++def compose_map(base,snapshot,enabled=True):
++    if not enabled or not snapshot.mapped:return base.copy()
++    return Image.alpha_composite(base.convert('RGBA'),heat_layer(snapshot,base.size)).convert('RGB')
+--- /dev/null
++++ b/LoongLens/gem_heatmap_panel.py
+@@ -0,0 +1,220 @@
++"""Clickable map overview and a viewport-rendered zoom/pan heatmap window."""
++from concurrent.futures import ThreadPoolExecutor
++from pathlib import Path
++import threading
++import tkinter as tk
++from tkinter import ttk,filedialog,messagebox
++from PIL import Image,ImageTk
++from gem_heatmap import HeatmapHistory,compose_map
++from heatmap_map_import import load_map,stitch_maps,save_map
++
++
++class ZoomMap:
++    def __init__(self,parent,image):
++        self.frame=ttk.Frame(parent);self.frame.pack(fill='both',expand=True)
++        self.image=image;self.zoom=1.;self.fitted=True;self.photo=None;self.job=None;self.alive=True;self.last_x=None;self.last_y=None;self.on_zoom=lambda value:None
++        self.canvas=tk.Canvas(self.frame,bg='#0d1218',highlightthickness=0,cursor='fleur')
++        self.xbar=ttk.Scrollbar(self.frame,orient='horizontal',command=self.canvas.xview)
++        self.ybar=ttk.Scrollbar(self.frame,orient='vertical',command=self.canvas.yview)
++        self.canvas.configure(xscrollcommand=self.scrolled_x,yscrollcommand=self.scrolled_y)
++        self.frame.rowconfigure(0,weight=1);self.frame.columnconfigure(0,weight=1)
++        self.canvas.grid(row=0,column=0,sticky='nsew');self.ybar.grid(row=0,column=1,sticky='ns');self.xbar.grid(row=1,column=0,sticky='ew')
++        self.item=self.canvas.create_image(0,0,anchor='nw')
++        self.canvas.bind('<Configure>',self.configured)
++        self.canvas.bind('<MouseWheel>',self.wheel)
++        self.canvas.bind('<Button-4>',lambda e:self.zoom_at(1.25,e.x,e.y))
++        self.canvas.bind('<Button-5>',lambda e:self.zoom_at(.8,e.x,e.y))
++        self.canvas.bind('<ButtonPress-1>',lambda e:self.canvas.scan_mark(e.x,e.y))
++        self.canvas.bind('<B1-Motion>',lambda e:self.canvas.scan_dragto(e.x,e.y,gain=1))
++        self.canvas.bind('<Double-Button-1>',lambda e:self.fit())
++        self.canvas.bind('<Destroy>',self.destroyed)
++
++    def destroyed(self,event):
++        if event.widget!=self.canvas:return
++        self.alive=False
++        if self.job is not None:
++            self.canvas.after_cancel(self.job);self.job=None
++        self.photo=None
++
++    def scrolled_x(self,*args):
++        self.xbar.set(*args)
++        if args!=self.last_x:self.last_x=args;self.schedule()
++
++    def scrolled_y(self,*args):
++        self.ybar.set(*args)
++        if args!=self.last_y:self.last_y=args;self.schedule()
++
++    def schedule(self):
++        if self.alive and self.job is None:self.job=self.canvas.after(16,self.render)
++
++    def geometry(self):
++        w=max(1,self.canvas.winfo_width());h=max(1,self.canvas.winfo_height())
++        iw=self.image.width*self.zoom;ih=self.image.height*self.zoom
++        return w,h,max(0.,(w-iw)/2),max(0.,(h-ih)/2),max(w,iw),max(h,ih)
++
++    def configured(self,event=None):
++        if self.fitted:self.fit()
++        else:self.update_bounds()
++
++    def update_bounds(self):
++        _,_,_,_,w,h=self.geometry();self.canvas.configure(scrollregion=(0,0,w,h));self.schedule()
++        self.on_zoom(self.zoom)
++
++    def fit(self):
++        self.zoom=min(max(1,self.canvas.winfo_width())/self.image.width,max(1,self.canvas.winfo_height())/self.image.height)
++        self.fitted=True;self.canvas.xview_moveto(0);self.canvas.yview_moveto(0);self.update_bounds()
++
++    def set_image(self,image,refit=False):
++        self.image=image
++        if refit or self.fitted:self.fit()
++        else:self.update_bounds()
++
++    def zoom_at(self,factor,x=None,y=None):
++        w,h,padx,pady,_,_=self.geometry();x=w/2 if x is None else x;y=h/2 if y is None else y
++        px=(self.canvas.canvasx(x)-padx)/self.zoom;py=(self.canvas.canvasy(y)-pady)/self.zoom
++        fit=min(w/self.image.width,h/self.image.height)
++        self.zoom=max(min(fit,.05),min(8.,self.zoom*factor));self.fitted=False
++        self.update_bounds();_,_,padx,pady,sw,sh=self.geometry()
++        self.canvas.xview_moveto(max(0.,px*self.zoom+padx-x)/sw)
++        self.canvas.yview_moveto(max(0.,py*self.zoom+pady-y)/sh);self.schedule()
++
++    def wheel(self,event):
++        self.zoom_at(1.25 if event.delta>0 else .8,event.x,event.y);return 'break'
++
++    def render(self):
++        self.job=None
++        if not self.alive:return
++        w,h,padx,pady,_,_=self.geometry();sx=self.canvas.canvasx(0);sy=self.canvas.canvasy(0)
++        left=max(0,int((sx-padx)/self.zoom));top=max(0,int((sy-pady)/self.zoom))
++        right=min(self.image.width,int((sx+w-padx)/self.zoom)+2)
++        bottom=min(self.image.height,int((sy+h-pady)/self.zoom)+2)
++        if right<=left or bottom<=top:self.canvas.itemconfigure(self.item,state='hidden');return
++        crop=self.image.crop((left,top,right,bottom))
++        # Never allocate the whole map at e.g. 800%: only the visible source
++        # rectangle is resized to viewport pixels, preserving original detail.
++        crop=crop.resize((max(1,round(crop.width*self.zoom)),max(1,round(crop.height*self.zoom))),Image.Resampling.LANCZOS)
++        self.photo=ImageTk.PhotoImage(crop,master=self.canvas)
++        self.canvas.itemconfigure(self.item,image=self.photo,state='normal');self.canvas.coords(self.item,padx+left*self.zoom,pady+top*self.zoom)
++
++
++class HeatmapPreview:
++    def __init__(self,parent,root,history,folder):
++        self.root=root;self.folder=Path(folder);self.model=HeatmapHistory(history)
++        self.base,self.metadata=load_map(self.folder);self.snapshot=self.model.snapshot()
++        self.window=None;self.viewer=None;self.composite=None;self.composite_key=None
++        self.closed=False;self.photo=None;self.resize_job=None;self.import_job=None;self.future=None;self.pool=None;self.import_cancel=threading.Event();self.overview=None;self.overview_source=None
++        self.show_heat=tk.BooleanVar(root,value=True);self.summary=tk.StringVar(root);self.zoom_text=tk.StringVar(root)
++        self.frame=ttk.Frame(parent);self.frame.pack(fill='both',expand=True)
++        self.preview=tk.Label(self.frame,bg='#192635',cursor='hand2',takefocus=True)
++        self.preview.pack(fill='both',expand=True)
++        ttk.Label(self.frame,text='Gem sightings map · Click to open heatmap',style='Muted.TLabel').pack(anchor='center',pady=(6,0))
++        self.preview.bind('<Button-1>',lambda _:self.show());self.preview.bind('<Return>',lambda _:self.show())
++        self.preview.bind('<space>',lambda _:self.show());self.preview.bind('<Configure>',self.schedule_thumbnail)
++        self.refresh(force=True)
++
++    def schedule_thumbnail(self,event=None):
++        if self.closed:return
++        if self.resize_job is not None:self.root.after_cancel(self.resize_job)
++        self.resize_job=self.root.after(60,self.thumbnail)
++
++    def thumbnail(self):
++        self.resize_job=None
++        if self.closed:return
++        size=(max(40,self.preview.winfo_width()-12),max(40,self.preview.winfo_height()-12))
++        if self.overview_source is not self.base:
++            self.overview=self.base.copy();self.overview.thumbnail((1200,1200),Image.Resampling.LANCZOS);self.overview_source=self.base
++        picture=(self.base if max(size)>1200 else self.overview).copy();picture.thumbnail(size,Image.Resampling.LANCZOS)
++        self.photo=ImageTk.PhotoImage(picture,master=self.preview);self.preview.configure(image=self.photo,text='')
++
++    def heat_image(self):
++        key=(self.snapshot.revision,id(self.base),self.show_heat.get())
++        if key!=self.composite_key:
++            self.composite=compose_map(self.base,self.snapshot,self.show_heat.get());self.composite_key=key
++        return self.composite
++
++    def refresh(self,force=False):
++        if self.closed:return
++        snapshot=self.model.snapshot();changed=force or snapshot.revision!=self.snapshot.revision
++        self.snapshot=snapshot
++        self.summary.set(f'All dates · {snapshot.mapped} mapped sightings · {snapshot.missing} without coordinates')
++        if changed and self.viewer is not None:self.viewer.set_image(self.heat_image())
++        if force:self.schedule_thumbnail()
++
++    def show(self):
++        if self.closed:return
++        self.refresh()
++        if self.window is not None and self.window.winfo_exists():self.window.lift();return
++        win=self.window=tk.Toplevel(self.root);win.title('Gem sightings heatmap');win.geometry('1120x860');win.minsize(680,500)
++        win.transient(self.root);win.protocol('WM_DELETE_WINDOW',self.close_window);win.bind('<Destroy>',self.window_destroyed)
++        body=ttk.Frame(win,padding=12);body.pack(fill='both',expand=True)
++        title=ttk.Frame(body);title.pack(fill='x')
++        ttk.Label(title,text='Gem sightings heatmap',style='Heading.TLabel').pack(side='left')
++        ttk.Label(title,textvariable=self.zoom_text,style='Muted.TLabel').pack(side='right')
++        ttk.Label(body,textvariable=self.summary,style='Muted.TLabel').pack(anchor='w',pady=(5,8))
++        controls=ttk.Frame(body);controls.pack(fill='x',pady=(0,8))
++        self.zoom_out=ttk.Button(controls,text='−',width=3,command=lambda:self.viewer.zoom_at(.8));self.zoom_out.pack(side='left')
++        self.zoom_in=ttk.Button(controls,text='+',width=3,command=lambda:self.viewer.zoom_at(1.25));self.zoom_in.pack(side='left',padx=4)
++        ttk.Button(controls,text='Fit map',command=lambda:self.viewer.fit()).pack(side='left',padx=(0,10))
++        ttk.Checkbutton(controls,text='Heatmap',variable=self.show_heat,command=self.toggle_heat).pack(side='left')
++        self.import_button=ttk.Button(controls,text='Import map images…',command=self.import_images);self.import_button.pack(side='right')
++        ttk.Button(controls,text='Save PNG…',command=self.export).pack(side='right',padx=8)
++        ttk.Label(body,text='Mouse wheel to zoom · Drag to pan · Double-click to fit · Warmer = more recorded sightings',style='Muted.TLabel').pack(anchor='w',pady=(0,7))
++        self.viewer=ZoomMap(body,self.heat_image());self.viewer.on_zoom=lambda scale:self.zoom_text.set(f'{scale*100:.0f}%')
++        ttk.Label(body,text='Locations use the saved history coordinates/camera views. Image tests are excluded; missed gems remain included.',
++                  style='Muted.TLabel',wraplength=1040).pack(anchor='w',pady=(8,0))
++        self.note=tk.StringVar(win,value=f'Original map resolution: {self.base.width} × {self.base.height}')
++        ttk.Label(body,textvariable=self.note,style='Muted.TLabel',wraplength=1040).pack(anchor='w',pady=(4,0))
++        win.update_idletasks();self.viewer.fit()
++        if self.future is not None:self.import_button.configure(state='disabled')
++
++    def toggle_heat(self):
++        if self.viewer is not None:self.viewer.set_image(self.heat_image())
++
++    def export(self):
++        path=filedialog.asksaveasfilename(parent=self.window,title='Save full-resolution heatmap',defaultextension='.png',filetypes=[('PNG image','*.png')])
++        if not path:return
++        try:self.heat_image().save(path,'PNG')
++        except OSError as exc:messagebox.showerror('Could not save map',str(exc),parent=self.window)
++
++    def import_images(self):
++        if self.future is not None:return
++        paths=filedialog.askopenfilenames(parent=self.window,title='Choose the original map screenshots (one whole map or overlapping parts)',
++            filetypes=[('Map images','*.png *.jpg *.jpeg *.webp'),('All files','*.*')])
++        if paths:self.begin_import(paths)
++
++    def begin_import(self,paths):
++        if self.closed or self.future is not None:return
++        if self.pool is None:self.pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='Spy-map-import')
++        self.import_cancel.clear();self.future=self.pool.submit(stitch_maps,paths,cancel=self.import_cancel)
++        if self.window is not None:
++            self.note.set('Aligning original map images… The current map stays available.');self.import_button.configure(state='disabled')
++        self.import_job=self.root.after(100,self.finish_import)
++
++    def finish_import(self):
++        self.import_job=None
++        if self.closed:return
++        if not self.future.done():self.import_job=self.root.after(100,self.finish_import);return
++        try:
++            image,metadata=self.future.result();self.metadata=save_map(self.folder,image,metadata);self.base=image
++            self.composite_key=None;self.refresh(force=True)
++            if self.viewer is not None:self.viewer.set_image(self.heat_image(),refit=True)
++            if self.window is not None:self.note.set(f'Merged {metadata["source_count"]} original image(s) · {image.width} × {image.height} · Saved for next launch')
++        except Exception as exc:
++            if self.window is not None:self.note.set('Import failed; your previous map was kept.');messagebox.showerror('Map import',str(exc),parent=self.window)
++        finally:
++            self.future=None
++            if self.window is not None:self.import_button.configure(state='normal')
++
++    def window_destroyed(self,event):
++        if event.widget==self.window:self.viewer=None;self.window=None
++
++    def close_window(self):
++        if self.window is not None:self.window.destroy();self.window=None;self.viewer=None
++
++    def close(self):
++        self.closed=True
++        for job in (self.resize_job,self.import_job):
++            if job is not None:self.root.after_cancel(job)
++        self.import_cancel.set()
++        if self.pool is not None:self.pool.shutdown(wait=True,cancel_futures=True)
++        self.close_window();self.photo=None;self.composite=None
+--- /dev/null
++++ b/LoongLens/heatmap_map_import.py
+@@ -0,0 +1,118 @@
++"""Register original map screenshots to the world grid and preserve native detail."""
++import hashlib
++import json
++import math
++import os
++from pathlib import Path
++import uuid
++import cv2
++import numpy as np
++from PIL import Image
++from resources import ROOT
++
++MAP_SETTINGS='spy-heatmap-map.json'
++
++
++def map_features(rgb):
++    h,w=rgb.shape[:2];factor=min(1.,1600/max(h,w))
++    small=cv2.resize(rgb,None,fx=factor,fy=factor,interpolation=cv2.INTER_AREA) if factor<1 else rgb
++    gray=cv2.cvtColor(small,cv2.COLOR_RGB2GRAY)
++    mask=(small.max(axis=2)>40).astype(np.uint8)*255
++    points,descriptors=cv2.SIFT_create(nfeatures=10000,contrastThreshold=.015).detectAndCompute(gray,mask)
++    xy=np.array([p.pt for p in points],np.float32).reshape(-1,2)/factor
++    return xy,descriptors
++
++
++def align_map(rgb,reference_features):
++    points,descriptors=map_features(rgb);dest,reference=reference_features
++    if descriptors is None or reference is None:raise ValueError('Not enough map detail to align this image.')
++    pairs=cv2.BFMatcher().knnMatch(descriptors,reference,k=2)
++    good=[a for pair in pairs if len(pair)==2 for a,b in [pair] if a.distance<.72*b.distance]
++    if len(good)<20:raise ValueError('Could not recognise this map image. Use original Loong Haven map screenshots.')
++    source=np.float32([points[m.queryIdx] for m in good]);target=np.float32([dest[m.trainIdx] for m in good])
++    affine,inliers=cv2.estimateAffinePartial2D(source,target,method=cv2.RANSAC,ransacReprojThreshold=5.,maxIters=5000,confidence=.999)
++    if affine is None or inliers is None or int(inliers.sum())<20:raise ValueError('Map alignment is uncertain; the current map was kept.')
++    if abs(math.degrees(math.atan2(affine[1,0],affine[0,0])))>.5:raise ValueError('Use upright map screenshots without perspective or rotation.')
++    keep=inliers[:,0].astype(bool);source=source[keep];target=target[keep]
++    if np.ptp(source,axis=0).min()<min(rgb.shape[:2])*.15:raise ValueError('Recognised area is too small to safely place this map.')
++    # Fit axis-aligned scale/translation only. This keeps the map north-up and
++    # avoids introducing rotation/shear or silently moving history locations.
++    a=source-source.mean(axis=0);b=target-target.mean(axis=0)
++    scale=float((a*b).sum()/(a*a).sum());offset=np.median(target-source*scale,axis=0)
++    error=np.linalg.norm(source*scale+offset-target,axis=1)
++    if not .2<=scale<=8 or float(np.median(error))>4 or np.percentile(error,90)>9:
++        raise ValueError('Map alignment is not accurate enough; the current map was kept.')
++    return np.float32([[scale,0,offset[0]],[0,scale,offset[1]]])
++
++
++def stitch_maps(paths,reference_path=None,cancel=None):
++    def check():
++        if cancel is not None and cancel.is_set():raise RuntimeError('Map import cancelled.')
++    check()
++    paths=tuple(Path(p) for p in paths)
++    if not 1<=len(paths)<=6:raise ValueError('Choose one whole map or up to six original map screenshots.')
++    reference_path=Path(reference_path or ROOT/'loong_haven_default_atlas.png')
++    with Image.open(reference_path) as image:reference=np.asarray(image.convert('RGB'))
++    if reference.shape[:2]!=(3486,3486):raise ValueError('Unexpected bundled map dimensions.')
++    features=map_features(reference);images=[];matrices=[];pixels=0
++    for path in paths:
++        check()
++        with Image.open(path) as image:
++            w,h=image.size;pixels+=w*h
++            if w*h>16_000_000 or pixels>48_000_000 or min(w,h)<200:raise ValueError('Use original map images, at least 200 px per side and up to 16 megapixels each (48 total).')
++            rgb=np.asarray(image.convert('RGB'))
++        try:matrix=align_map(rgb,features)
++        except ValueError as exc:raise ValueError(f'{path.name}: {exc}') from exc
++        images.append(rgb);matrices.append(matrix)
++    # Choose the finest supplied pixel density, not a stretched preview size.
++    atlas_scale=min(float(m[0,0]) for m in matrices)
++    edge=round(3486/atlas_scale)
++    if not 400<=edge<=5600:raise ValueError('The original resolution is outside the supported 400–5600 pixel whole-map range.')
++    output=np.full((edge,edge,3),(13,18,24),np.uint8);best=np.zeros((edge,edge),np.float32)
++    for rgb,matrix in zip(images,matrices):
++        check()
++        h,w=rgb.shape[:2];yy,xx=np.indices((h,w),dtype=np.float32)
++        # Prefer the middle of each screenshot, with hard pixel ownership so
++        # overlapping lettering is never averaged into blurry double labels.
++        weight=np.minimum.reduce((xx+1,w-xx,yy+1,h-yy))
++        valid=cv2.morphologyEx((rgb.max(axis=2)>40).astype(np.uint8),cv2.MORPH_CLOSE,np.ones((9,9),np.uint8))
++        weight[valid==0]=0
++        transform=matrix*(edge/3486)
++        warped=cv2.warpAffine(rgb,transform,(edge,edge),flags=cv2.INTER_LANCZOS4)
++        quality=cv2.warpAffine(weight,transform,(edge,edge),flags=cv2.INTER_LINEAR)
++        use=quality>best;output[use]=warped[use];best[use]=quality[use]
++    covered=cv2.resize((reference.max(axis=2)>40).astype(np.uint8),(edge,edge),interpolation=cv2.INTER_NEAREST)!=0
++    completeness=float(((best>0)&covered).sum()/max(1,covered.sum()))
++    if completeness<.86:raise ValueError(f'These images cover only {completeness:.0%} of the map. Choose all overlapping parts of the whole map.')
++    check()
++    return Image.fromarray(output),dict(width=edge,height=edge,world_size=280,source_count=len(paths))
++
++
++def load_map(folder):
++    folder=Path(folder);metadata=folder/MAP_SETTINGS
++    if metadata.exists():
++        try:
++            info=json.loads(metadata.read_text('utf-8'));path=(folder/info['image']).resolve()
++            if not path.is_relative_to(folder.resolve()) or not path.name.startswith('spy-map-') or path.suffix!='.png':raise ValueError('Invalid saved map path')
++            if info['world_size']!=280 or not 400<=info['width']<=5600 or info['height']!=info['width']:raise ValueError('Invalid saved map size')
++            if hashlib.sha256(path.read_bytes()).hexdigest()!=info['sha256']:raise ValueError('Saved map checksum mismatch')
++            with Image.open(path) as image:
++                if image.size!=(info['width'],info['height']):raise ValueError('Saved map size mismatch')
++                return image.convert('RGB'),info
++        except (OSError,ValueError,KeyError,TypeError,Image.DecompressionBombError):pass
++    with Image.open(ROOT/'loong_haven_default_atlas.png') as image:base=image.convert('RGB')
++    return base,dict(width=base.width,height=base.height,world_size=280,source_count=0)
++
++
++def save_map(folder,image,metadata):
++    folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
++    generation=uuid.uuid4().hex;path=folder/f'spy-map-{generation}.png';temporary=folder/f'spy-map-{generation}.json.tmp'
++    try:
++        image.save(path,'PNG')
++        info=dict(metadata,image=path.name,sha256=hashlib.sha256(path.read_bytes()).hexdigest())
++        temporary.write_text(json.dumps(info,indent=2)+'\n','utf-8');os.replace(temporary,folder/MAP_SETTINGS)
++    except Exception:
++        path.unlink(missing_ok=True);temporary.unlink(missing_ok=True);raise
++    # Keep earlier imports: an interrupted replacement must never erase a
++    # usable map, and the originals remain available outside this app folder.
++    return info
 --- a/LoongLens/loong_lens.py
 +++ b/LoongLens/loong_lens.py
 @@ -77,7 +77,7 @@
@@ -421,6 +921,27 @@
          self.drain();self.save_pool.shutdown(wait=True);self.drain()
          self.capture_store.close();self.save_config()
 +        if self.daily_gems.window is not None:self.daily_gems.window.destroy()
+--- a/LoongLens/route_editor.py
++++ b/LoongLens/route_editor.py
+@@ -4,7 +4,7 @@
+ import tkinter as tk
+ from tkinter import ttk,messagebox
+ from PIL import Image,ImageTk
+-from resources import ROOT
++from resources import user_dir
+ from camera_patrol import PatrolSettings
+ from patrol_route import camera_warnings,clear_view_bounds,add_camera_view,remove_camera_view,restore_camera_originals
+ from ui_theme import BG,CARD,TEXT,ACCENT,MUTED
+@@ -22,7 +22,8 @@
+         width=min(1100,self.window.winfo_screenwidth()-60);height=min(820,self.window.winfo_screenheight()-80)
+         self.window.geometry(f'{width}x{height}');self.window.minsize(820,620)
+         self.window.protocol('WM_DELETE_WINDOW',self.close)
+-        self.source=Image.open(ROOT/'loong_haven_default_atlas.png').convert('RGB')
++        from heatmap_map_import import load_map
++        self.source,self.map_metadata=load_map(user_dir())
+         bar=ttk.Frame(self.window,padding=10);bar.pack(fill='x')
+         ttk.Label(bar,text='Drag camera targets · pink dots are the original spawn locations',font=('Segoe UI',11,'bold')).pack(side='left')
+         ttk.Button(bar,text='Save & reset checks',style='Primary.TButton',command=self.save).pack(side='right')
 --- a/LoongLens/sighting_history.py
 +++ b/LoongLens/sighting_history.py
 @@ -100,8 +100,8 @@
@@ -649,6 +1170,213 @@
 +            if path.suffix.lower()!='.png' or not path.is_relative_to(folder) or not path.is_file():raise OSError('The saved screenshot is unavailable.')
 +            os.startfile(str(path))
 +        except OSError as exc:messagebox.showerror('Gem screenshot',str(exc),parent=self.window)
+--- a/LoongLens/spy_panel.py
++++ b/LoongLens/spy_panel.py
+@@ -6,8 +6,6 @@
+ import queue
+ import tkinter as tk
+ from tkinter import ttk,messagebox
+-import cv2
+-from PIL import Image,ImageTk
+ from resources import user_dir
+ from spy_history import SpyHistory
+ from spy_runner import SpyRunner
+@@ -110,7 +108,7 @@
+         self.history=SpyHistory(user_dir()/'sightings.sqlite3');self.history_window=SpyHistoryWindow(self.root,self.history,services)
+         self.status=tk.StringVar(value='Ready — uses the route and settings selected in Gem Sniper.')
+         self.location=tk.StringVar();self.stats=tk.StringVar();self.progress_text=tk.StringVar();self.photo=None
+-        self.closed=False;self.job=None;self.sniper.spy_stop=self.runner.stop
++        self.closed=False;self.job=None;self.map_refresh=0.;self.sniper.spy_stop=self.runner.stop
+         self.build_ui();self.poll()
+ 
+     def build_ui(self):
+@@ -133,7 +131,8 @@
+         ttk.Label(footer,text='New gems get one history entry and screenshot. Existing gems are tracked across runs.\n'
+                   'Automatic recovery keeps progress. Stop / F10 always stays stopped.',style='Muted.TLabel',font=(FONT,9),wraplength=470).pack(anchor='w')
+         viewport=tk.Frame(body,bg=CARD,height=230);viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
+-        self.preview=tk.Label(viewport,bg=CARD,fg=MUTED,text='Your latest Spy observation will appear here.');self.preview.pack(fill='both',expand=True)
++        from gem_heatmap_panel import HeatmapPreview
++        self.map_preview=HeatmapPreview(viewport,self.root,self.services.sighting_history,user_dir())
+ 
+     def start(self):
+         if self.runner.running:return
+@@ -165,14 +164,17 @@
+             elif kind=='spy_finished':
+                 self.services.release('spy');self.status.set(event['message']);self.on_active(False);self.sniper.buttons()
+             elif kind=='spy_history_changed':self.services.sighting_controls.refresh()
+-            elif kind=='frame':
+-                image=Image.fromarray(cv2.cvtColor(event['frame'],cv2.COLOR_BGR2RGB));image.thumbnail((440,max(80,min(240,self.preview.winfo_height()-8))))
+-                self.photo=ImageTk.PhotoImage(image);self.preview.configure(image=self.photo,text='')
++            elif kind=='frame':pass  # The panel now displays the map; original photos are still saved by Spy.
++
+ 
+     def poll(self):
+         self.job=None
+         if self.closed:return
+-        self.drain();values=self.runner.snapshot();minutes,seconds=divmod(int(values['elapsed']),60)
++        self.drain()
++        import time
++        if time.monotonic()>=self.map_refresh:
++            self.map_preview.refresh();self.map_refresh=time.monotonic()+2
++        values=self.runner.snapshot();minutes,seconds=divmod(int(values['elapsed']),60)
+         self.stats.set(f"Time spent: {minutes//60}:{minutes%60:02d}:{seconds:02d}\nGems found: {values['gems']}")
+         self.progress_text.set(f"Run {values['run']} · Processed: {values['processed']} / {values['total']} locations")
+         self.progress.configure(maximum=max(1,values['total']),value=values['processed'])
+@@ -185,4 +187,4 @@
+         self.closed=True;self.runner.stop()
+         if self.job is not None:self.root.after_cancel(self.job);self.job=None
+         if self.runner.thread is not None:self.runner.thread.join(timeout=5)
+-        self.history_window.close();self.history.close();self.services.release('spy')
++        self.map_preview.close();self.history_window.close();self.history.close();self.services.release('spy')
+--- /dev/null
++++ b/LoongLens/tests/test_gem_heatmap.py
+@@ -0,0 +1,69 @@
++import time
++import numpy as np
++from PIL import Image
++from gem_heatmap import HeatmapHistory,HeatmapSnapshot,density_grid,compose_map,heat_layer
++from sighting_history import SightingHistory
++from sniper_counter import SniperQuota
++
++
++def event(ident,x=241,y=107,**extra):
++    return dict(event_id=ident,seen_at=time.time()-100,screen_x=230,screen_y=420,score=.95,test_mode=False,
++                game_x=x,game_y=y,zone='Emerald Corner',**extra)
++
++
++def test_heatmap_uses_whole_standard_history_all_sources_and_keeps_missed_gems(tmp_path):
++    history=SightingHistory(tmp_path/'sightings.sqlite3')
++    history.record([dict(event('patrol:old'),seen_at=1),
++                    event('spy:one',origin='Gem Spy'),event('live:other',10,279),
++                    dict(event('image:test'),test_mode=True),event('missing',None,None)])
++    SniperQuota(history.path).set_obtained('patrol:old',False)
++    result=HeatmapHistory(history).snapshot()
++    assert result.total==4 and result.mapped==3 and result.missing==1
++    assert result.cells==((10,279,1),(241,107,2))
++    history.close()
++
++
++def test_photo_completion_and_replay_do_not_add_density_and_manual_edits_refresh(tmp_path):
++    history=SightingHistory(tmp_path/'sightings.sqlite3');first=event('patrol:one',capture_status='pending')
++    history.record([first]);model=HeatmapHistory(history);a=model.snapshot()
++    assert model.snapshot() is a
++    history.record([dict(first,capture_status='ready',screenshot_path='first.png'),first])
++    b=model.snapshot();assert b.total==1 and b.cells==a.cells
++    history.edit_location(history.list()[0].id,'Acme Nexus',10,279)
++    assert model.snapshot().cells==((10,279,1),)
++    history.close()
++
++
++def test_spy_worker_writes_invalidate_ui_cache_without_own_connection_changes(tmp_path):
++    path=tmp_path/'sightings.sqlite3';history=SightingHistory(path);model=HeatmapHistory(history)
++    empty=model.snapshot();other=SightingHistory(path);other.record([event('spy:worker')]);other.close()
++    assert history.connection.total_changes==empty.revision[0]
++    assert model.snapshot().total==1
++    history.remove(history.list()[0].id)
++    assert model.snapshot().total==0
++    history.close()
++
++
++def test_unknown_out_of_world_and_non_numeric_locations_are_reported_not_drawn(tmp_path):
++    history=SightingHistory(tmp_path/'sightings.sqlite3')
++    history.record([event('x',-1,20),event('y',20,280),event('unknown',None,20),event('text','bad',20)])
++    result=HeatmapHistory(history).snapshot()
++    assert result.total==result.missing==4 and not result.cells
++    history.close()
++
++
++def test_world_north_and_south_are_not_reversed_and_counts_accumulate():
++    data=HeatmapSnapshot(((0,279,3),(279,0,1),(100,50,2)),6,0,(0,0))
++    grid=density_grid(data)
++    assert grid[0,0]==3 and grid[279,279]==1 and grid[229,100]==2
++    assert float(grid.sum())==6
++
++
++def test_empty_or_disabled_heatmap_keeps_original_image_and_full_resolution():
++    base=Image.new('RGB',(900,900),(50,80,100));empty=HeatmapSnapshot((),0,0,(0,0))
++    assert compose_map(base,empty).tobytes()==base.tobytes()
++    point=HeatmapSnapshot(((100,100,1),),1,0,(0,0))
++    assert compose_map(base,point,False).tobytes()==base.tobytes()
++    result=compose_map(base,point)
++    assert result.size==base.size and result.tobytes()!=base.tobytes()
++    assert heat_layer(empty,base.size).getbbox() is None
+--- /dev/null
++++ b/LoongLens/tests/test_heatmap_map_import.py
+@@ -0,0 +1,74 @@
++from pathlib import Path
++import json
++import cv2
++import numpy as np
++import pytest
++from PIL import Image
++from heatmap_map_import import stitch_maps,save_map,load_map,MAP_SETTINGS
++from resources import ROOT
++
++
++@pytest.fixture(scope='module',autouse=True)
++def application_thread_budget():
++    previous=cv2.getNumThreads();cv2.setNumThreads(2)
++    try:yield
++    finally:cv2.setNumThreads(previous)
++
++
++@pytest.fixture(scope='module')
++def parts(tmp_path_factory):
++    folder=tmp_path_factory.mktemp('map-parts');paths=[]
++    with Image.open(ROOT/'loong_haven_default_atlas.png') as original:
++        # Known world coverage, with overlap, at the original pixel scale.
++        for i,(top,bottom) in enumerate(((0,1550),(1050,2600),(2050,3486))):
++            path=folder/f'part-{i}.png';original.crop((0,top,3486,bottom)).save(path);paths.append(path)
++    return tuple(paths)
++
++
++def test_three_overlapping_parts_register_to_world_and_survive_restart(parts,tmp_path):
++    image,meta=stitch_maps(parts)
++    assert abs(image.width-3486)<8 and image.width==image.height
++    assert meta['source_count']==3 and meta['world_size']==280
++    info=save_map(tmp_path,image,meta);restored,settings=load_map(tmp_path)
++    assert restored.size==image.size and restored.tobytes()==image.tobytes()
++    assert settings==info
++    # Pixel placement is checked away from image seams, using independently
++    # known atlas positions, not the registration transform returned by code.
++    with Image.open(ROOT/'loong_haven_default_atlas.png') as original:
++        expected=np.asarray(original.convert('RGB'))
++    actual=np.asarray(image.resize(original.size,Image.Resampling.NEAREST))
++    for x,y in ((1100,300),(1800,1700),(2800,2000),(1100,2900)):
++        assert np.abs(actual[y-5:y+5,x-5:x+5].astype(float)-expected[y-5:y+5,x-5:x+5]).mean()<12
++
++
++def test_partial_or_unrecognised_map_is_rejected_instead_of_replacing_current(parts,tmp_path):
++    with pytest.raises(ValueError,match='cover only'):stitch_maps(parts[:1])
++    path=tmp_path/'blank.png';Image.new('RGB',(600,600),(13,18,24)).save(path)
++    with pytest.raises(ValueError,match='blank.png'):stitch_maps([path])
++
++
++def test_bad_or_modified_saved_map_falls_back_without_touching_original(tmp_path):
++    image=Image.new('RGB',(500,500),(80,110,150));meta=dict(width=500,height=500,world_size=280,source_count=1)
++    info=save_map(tmp_path,image,meta);path=tmp_path/info['image'];path.write_bytes(b'broken')
++    restored,settings=load_map(tmp_path)
++    assert restored.size==(3486,3486) and settings['source_count']==0
++    outside=dict(info,image='../outside.png')
++    (tmp_path/MAP_SETTINGS).write_text(json.dumps(outside))
++    restored,_=load_map(tmp_path);assert restored.size==(3486,3486)
++    assert not (tmp_path/'outside.png').exists()
++
++
++def test_replacement_keeps_last_good_image_and_does_not_modify_recognition_atlas(tmp_path):
++    original=(ROOT/'loong_haven_default_atlas.png').read_bytes()
++    image=Image.new('RGB',(500,500),(50,80,110));meta=dict(width=500,height=500,world_size=280,source_count=1)
++    first=save_map(tmp_path,image,meta);second=save_map(tmp_path,image,meta)
++    assert first['image']!=second['image'] and (tmp_path/first['image']).exists()
++    assert load_map(tmp_path)[1]==second
++    assert (ROOT/'loong_haven_default_atlas.png').read_bytes()==original
++
++
++def test_cancelled_import_does_not_start_processing_or_write_files(parts,tmp_path):
++    import threading
++    cancel=threading.Event();cancel.set()
++    with pytest.raises(RuntimeError,match='cancelled'):stitch_maps(parts,cancel=cancel)
++    assert not list(tmp_path.iterdir())
 --- /dev/null
 +++ b/LoongLens/tests/test_obtained_endless.py
 @@ -0,0 +1,122 @@
@@ -896,7 +1624,7 @@
           'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py',
           'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
 -         'sniper_counter.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
-+         'sniper_counter.py', 'sniper_history_panel.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
++         'sniper_counter.py', 'sniper_history_panel.py', 'gem_heatmap.py', 'gem_heatmap_panel.py', 'heatmap_map_import.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
           'win_overlay.py', 'sxs_atlas_tracker.py', 'atlas_metadata.json',
           'loong_haven_default_atlas.png', 'loong_title_template.png',
           'loong_haven_map_data.json', 'loong_haven_ingredients.json',
@@ -908,7 +1636,7 @@
  import argparse
  import hashlib
  import json
-@@ -29,8 +29,12 @@
+@@ -29,8 +29,16 @@
      for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check'):
          report=ROOT/(mode+'.json')
          data=json.loads(report.read_text('utf-8-sig'))
@@ -919,10 +1647,14 @@
 +            for key in ('restart_restored_obtained_choice','restart_restored_endless_preference',
 +                        'endless_continued_beyond_five','f10_stayed_stopped_in_endless','disabling_endless_restored_quota'):
 +                if data.get(key) is not True:raise SystemExit(f'Missing native daily/endless validation: {key}')
++        if mode=='spy-ui-check':
++            for key in ('heatmap_all_history','heatmap_zoom_pan','heatmap_viewport_bounded',
++                        'heatmap_three_part_import','heatmap_saved_map_reloaded','route_editor_uses_imported_map'):
++                if data.get(key) is not True:raise SystemExit(f'Missing native heatmap validation: {key}')
          reports.append(report)
      tests=ROOT/'tests-result.txt'
      result=re.findall(r'(\d+) passed(?:, (\d+) skipped)?',tests.read_text('utf-8-sig'))
-@@ -38,19 +42,19 @@
+@@ -38,19 +46,19 @@
      passed,skipped=result[-1]
      reports.append(tests)
      comparisons={}
@@ -945,7 +1677,7 @@
          folder=Path(temporary);source_zip=folder/'source.zip'
          subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
          with zipfile.ZipFile(source_zip) as archive:
-@@ -60,17 +64,22 @@
+@@ -60,17 +68,26 @@
          shutil.copy2(binary,app/'LoongLens.exe')
          validation=app/'validation';validation.mkdir()
          for report in reports:shutil.copy2(report,validation/report.name)
@@ -959,6 +1691,10 @@
 -            'Loong Lens v34 - dim camera outline confirmation\n\n'
 +        (app/'START-HERE-v35.txt').write_text(
 +            'Loong Lens v35 - saved obtained gems and Endless mode\n\n'
++            'Gem Spy now shows a clickable full map, opening an all-history heatmap with zoom/pan.\n'
++            'Use Import map images to merge your original screenshots at native detail.\n'
++            'The imported map also appears in Edit route; live recognition keeps the original atlas.\n'
++            'Save PNG exports the full-resolution map. Image tests are excluded; missed gems are included.\n'
 +            'Click the /5 counter or History > Daily gems to tick/untick Obtained.\n'
 +            'Obtained defaults to checked; unchecking subtracts it without deleting history/photos.\n'
 +            'The counter and choices are saved immediately and survive app restarts.\n'
@@ -972,7 +1708,7 @@
              'F10 interrupts collection waits and return input immediately; it never auto-restarts.\n'
              'Late map movement triggers settling and recalculation instead of an immediate stop.\n'
              'Stable views keep the existing capture check and have no extra fixed wait.\n'
-@@ -89,7 +98,7 @@
+@@ -89,7 +106,7 @@
              'No padding or broad right-hand exclusion strip is added.\n'
              'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
              'Hide portal icons in the game map as you requested.\n'
@@ -1118,12 +1854,87 @@
  if __name__=='__main__':main()
 --- a/LoongLens/tools/ui_spy_smoke.py
 +++ b/LoongLens/tools/ui_spy_smoke.py
-@@ -117,7 +117,7 @@
+@@ -1,5 +1,6 @@
+ """Native Tk + real Spy/detector/storage; camera delivery uses a simulated backend."""
+ from datetime import datetime
++from PIL import Image
+ import json
+ import logging
+ import os
+@@ -38,7 +39,7 @@
+             super().__init__(*a,**kw)
+             def failed(kind,value,trace):errors.append(''.join(traceback.format_exception(kind,value,trace)));self.destroy()
+             self.report_callback_exception=failed
+-            self.after(1800,self.begin);self.after(60000,self.destroy)
++            self.after(1800,self.begin);self.after(120000,self.destroy)
+         def begin(self):
+             sniper=panels['sniper'];spy=panels['spy'];services=sniper.services;services.sound.set(False)
+             notebook=next(w for w in descendants(self) if isinstance(w,ttk.Notebook))
+@@ -95,6 +96,45 @@
+             assert len(list((Path(temporary.name)/'LoongLens/screenshots').glob('*.png')))==2
+             standard=sniper.services.sighting_history.list()
+             assert len(standard)==2 and all(row.source=='Gem Spy' and row.screenshot_path for row in standard)
++            if not state.get('heatmap_started'):
++                assert not any('Your latest Spy observation' in str(w.cget('text')) for w in descendants(spy.parent) if isinstance(w,tk.Label))
++                preview=spy.map_preview;preview.refresh()
++                assert preview.snapshot.total==2 and preview.snapshot.mapped==2
++                assert preview.base.size==(3486,3486)
++                preview.preview.event_generate('<Button-1>');self.update_idletasks()
++                assert preview.window is not None and preview.window.title()=='Gem sightings heatmap'
++                viewer=preview.viewer;initial=viewer.zoom
++                preview.zoom_in.invoke();self.update_idletasks();assert viewer.zoom>initial
++                zoom=viewer.zoom;viewer.canvas.event_generate('<MouseWheel>',delta=120,x=180,y=180)
++                self.update_idletasks();assert viewer.zoom>zoom
++                viewer.zoom_at(100);self.update_idletasks();viewer.render()
++                assert viewer.zoom==8. and viewer.photo.width()<=viewer.canvas.winfo_width()+32
++                assert viewer.photo.height()<=viewer.canvas.winfo_height()+32
++                viewer.canvas.xview_moveto(.4);viewer.canvas.yview_moveto(.4);self.update_idletasks();viewer.render()
++                assert viewer.canvas.canvasx(0)>0 and viewer.canvas.canvasy(0)>0
++                viewer.fit();self.update_idletasks();assert viewer.fitted
++                preview.show_heat.set(False);preview.toggle_heat()
++                assert preview.heat_image().tobytes()==preview.base.tobytes()
++                preview.show_heat.set(True);preview.toggle_heat()
++                exported=Path(temporary.name)/'heatmap-export.png';preview.heat_image().save(exported)
++                with Image.open(exported) as picture:assert picture.size==(3486,3486)
++                parts=[]
++                with Image.open(ROOT/'loong_haven_default_atlas.png') as source:
++                    for i,(top,bottom) in enumerate(((0,1550),(1050,2600),(2050,3486))):
++                        path=Path(temporary.name)/f'map-part-{i}.png';source.crop((0,top,3486,bottom)).save(path);parts.append(path)
++                state['heatmap_started']=True;preview.begin_import(parts)
++                self.after(100,self.first_done);return
++            if spy.map_preview.future is not None:self.after(100,self.first_done);return
++            assert spy.map_preview.metadata['source_count']==3
++            assert abs(spy.map_preview.base.width-3486)<8
++            from heatmap_map_import import load_map
++            saved,meta=load_map(Path(temporary.name)/'LoongLens')
++            assert meta['source_count']==3 and saved.size==spy.map_preview.base.size
++            from route_editor import RouteEditor
++            editor=RouteEditor(self,tuple(sniper.base_views[:2]),tuple(sniper.base_views[:2]),lambda views:None)
++            assert editor.map_metadata['source_count']==3 and editor.source.size==saved.size
++            x,y=editor.world(*editor.point(241,107));assert abs(x-241)<.001 and abs(y-107)<.001
++            editor.window.destroy();spy.map_preview.close_window()
+             spy.history_window.show('Sightings');self.update_idletasks()
+             assert len(spy.history_window.tables['Sightings'].get_children())==2
+             spy.history_window.show('Hourly');self.update_idletasks()
+@@ -117,8 +157,10 @@
              assert runner.cancel.is_set() and sniper.services.owner is None
              assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
              assert len(spy.history.encounters())==2
 -            completed.append(dict(passed=True,version=34,unique_gems=2,screenshots=2,
+-                                  passes=2,recovery_kept_progress=True,f10_stays_stopped=True))
 +            completed.append(dict(passed=True,version=35,unique_gems=2,screenshots=2,
-                                   passes=2,recovery_kept_progress=True,f10_stays_stopped=True))
++                                  passes=2,recovery_kept_progress=True,f10_stays_stopped=True,
++                                  heatmap_all_history=True,heatmap_zoom_pan=True,heatmap_viewport_bounded=True,
++                                  heatmap_three_part_import=True,heatmap_saved_map_reloaded=True,route_editor_uses_imported_map=True))
              next(w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit').invoke()
      tk.Tk=Window
+     try:loong_lens.main([],default_tab='spy')
+@@ -132,7 +174,7 @@
+         temporary.cleanup()
+     assert completed and not errors,errors
+     (ROOT/'spy-ui-check.json').write_text(json.dumps(completed[0],indent=2)+'\n','utf-8')
+-    print('Native Spy UI: selected Sniper route, real detector, two passes, no duplicates, both histories, recovery and F10 passed.')
++    print('Native Spy UI: selected Sniper route, real detector, two passes, no duplicates, both histories, map zoom/pan, three-part import/reload, route-editor display, recovery and F10 passed.')
+ 
+ 
+ if __name__=='__main__':main()
