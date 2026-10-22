@@ -1884,7 +1884,7 @@
          def begin(self):
              sniper=panels['sniper'];spy=panels['spy'];services=sniper.services;services.sound.set(False)
              notebook=next(w for w in descendants(self) if isinstance(w,ttk.Notebook))
-@@ -95,6 +101,46 @@
+@@ -95,6 +101,49 @@
              assert len(list((Path(temporary.name)/'LoongLens/screenshots').glob('*.png')))==2
              standard=sniper.services.sighting_history.list()
              assert len(standard)==2 and all(row.source=='Gem Spy' and row.screenshot_path for row in standard)
@@ -1893,16 +1893,19 @@
 +                preview=spy.map_preview;preview.refresh()
 +                assert preview.snapshot.total==2 and preview.snapshot.mapped==2
 +                assert preview.base.size==(3486,3486)
-+                preview.preview.event_generate('<Button-1>');self.update_idletasks()
++                preview.preview.event_generate('<ButtonPress-1>');preview.preview.event_generate('<ButtonRelease-1>');self.update_idletasks()
 +                assert preview.window is not None and preview.window.title()=='Gem sightings heatmap'
 +                viewer=preview.viewer;initial=viewer.zoom
 +                preview.zoom_in.invoke();self.update_idletasks();assert viewer.zoom>initial
 +                viewer.canvas.focus_force();self.update()
 +                zoom=viewer.zoom;viewer.canvas.event_generate('<MouseWheel>',delta=120,x=180,y=180)
 +                self.update_idletasks();assert viewer.zoom>zoom
-+                viewer.zoom_at(100);self.update_idletasks();viewer.render()
-+                assert viewer.zoom==8. and viewer.photo.width()<=viewer.canvas.winfo_width()+32
-+                assert viewer.photo.height()<=viewer.canvas.winfo_height()+32
++                viewer.zoom_at(1_000_000);self.update_idletasks();viewer.render()
++                details=dict(zoom=viewer.zoom,photo=(viewer.photo.width(),viewer.photo.height()),canvas=(viewer.canvas.winfo_width(),viewer.canvas.winfo_height()),window=preview.window.geometry(),fitted=viewer.fitted)
++                assert viewer.canvas.winfo_width()>400 and viewer.canvas.winfo_height()>250,details
++                assert abs(viewer.zoom-8.)<.001,details
++                assert viewer.photo.width()<=viewer.canvas.winfo_width()+32,details
++                assert viewer.photo.height()<=viewer.canvas.winfo_height()+32,details
 +                viewer.canvas.xview_moveto(.4);viewer.canvas.yview_moveto(.4);self.update_idletasks();viewer.render()
 +                assert viewer.canvas.canvasx(0)>0 and viewer.canvas.canvasy(0)>0
 +                viewer.fit();self.update_idletasks();assert viewer.fitted
@@ -1931,7 +1934,7 @@
              spy.history_window.show('Sightings');self.update_idletasks()
              assert len(spy.history_window.tables['Sightings'].get_children())==2
              spy.history_window.show('Hourly');self.update_idletasks()
-@@ -117,8 +163,10 @@
+@@ -117,8 +166,10 @@
              assert runner.cancel.is_set() and sniper.services.owner is None
              assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
              assert len(spy.history.encounters())==2
@@ -1944,7 +1947,7 @@
              next(w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit').invoke()
      tk.Tk=Window
      try:loong_lens.main([],default_tab='spy')
-@@ -132,7 +180,7 @@
+@@ -132,7 +183,7 @@
          temporary.cleanup()
      assert completed and not errors,errors
      (ROOT/'spy-ui-check.json').write_text(json.dumps(completed[0],indent=2)+'\n','utf-8')
