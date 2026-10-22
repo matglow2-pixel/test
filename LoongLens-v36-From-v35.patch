@@ -72,7 +72,7 @@
 +        for i,button in enumerate(self.buttons):button.configure(style='Selected.Nav.TButton' if i==selected else 'Nav.TButton')
 --- a/LoongLens/desktop_entry.py
 +++ b/LoongLens/desktop_entry.py
-@@ -52,11 +52,30 @@
+@@ -52,11 +52,31 @@
          def __init__(self, *args, **kwargs):
              super().__init__(*args, **kwargs)
              def failed(kind, value, trace):
@@ -80,9 +80,9 @@
 -                self.destroy()
 +                error=''.join(traceback.format_exception(kind,value,trace));failures.append(error);print(error,flush=True)
 +                if hasattr(self,'capture_user'):
-+                    from PIL import ImageGrab
++                    from window_capture import capture_window
 +                    out=Path(__file__).resolve().parent/'artifacts';out.mkdir(exist_ok=True)
-+                    ImageGrab.grab(window=int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v36-layout-failure.png')
++                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v36-layout-failure.png')
 +                button=next((w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit'),None)
 +                if button is None:self.destroy()
 +                else:button.invoke()
@@ -91,21 +91,22 @@
              self.after(30000, self.destroy)
 +
 +        def check_layout(self,notebook,size):
++            issues=[]
 +            for tab in notebook.tabs():
 +                notebook.select(tab);self.update()
 +                for item in descendants(self.nametowidget(tab)):
 +                    if isinstance(item,(ttk.Button,ttk.Label,ttk.Checkbutton,ttk.Combobox)) and item.winfo_ismapped():
 +                        text=str(item.cget('text'))
-+                        detail=(size,text,item.winfo_geometry(),item.winfo_reqwidth(),item.winfo_reqheight())
-+                        assert item.winfo_height()>=item.winfo_reqheight(),detail
-+                        assert item.winfo_width()>=item.winfo_reqwidth(),detail
-+                        assert item.winfo_rootx()>=self.winfo_rootx(),detail
-+                        assert item.winfo_rootx()+item.winfo_width()<=self.winfo_rootx()+self.winfo_width(),detail
-+                        assert item.winfo_rooty()+item.winfo_height()<=self.winfo_rooty()+self.winfo_height(),detail
++                        good=(item.winfo_height()>=item.winfo_reqheight() and item.winfo_width()>=item.winfo_reqwidth() and
++                            item.winfo_rootx()>=self.winfo_rootx() and
++                            item.winfo_rootx()+item.winfo_width()<=self.winfo_rootx()+self.winfo_width() and
++                            item.winfo_rooty()+item.winfo_height()<=self.winfo_rooty()+self.winfo_height())
++                        if not good:issues.append((size,notebook.tab(tab,'text'),text,item.winfo_geometry(),item.winfo_reqwidth(),item.winfo_reqheight()))
++            assert not issues,issues
  
          def check(self):
              assert self.title() == 'Loong Lens'
-@@ -73,6 +92,7 @@
+@@ -73,6 +93,7 @@
                  user.GetAncestor.restype = wintypes.HWND
                  user.SendMessageW.argtypes = (wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
                  user.SendMessageW.restype = ctypes.c_ssize_t
@@ -113,7 +114,7 @@
                  wrapper = user.GetAncestor(self.winfo_id(), 2)
                  icons = [user.SendMessageW(wrapper, 0x7F, kind, 0) for kind in (0, 1, 2)]
                  if not any(icons):
-@@ -81,7 +101,7 @@
+@@ -81,7 +102,7 @@
                      icons = [user.GetClassLongPtrW(wrapper, field) for field in (-14, -34)]
                  assert any(icons), 'The native window has no configured icon'
              widgets = descendants(self)
@@ -122,7 +123,7 @@
              notebook = next(item for item in widgets if isinstance(item, ttk.Notebook))
              assert [notebook.tab(tab, 'text') for tab in notebook.tabs()] == ['Map Tweaker', 'Gem Sniper', 'Gem Spy']
              assert not any(isinstance(item,ttk.Checkbutton) and item.cget('text')=='Enable live clicking' for item in widgets)
-@@ -106,15 +126,16 @@
+@@ -106,15 +127,16 @@
              assert [v.route_label for v in panel.runner.views if not v.route_parent]==[v.route_label for v in panel.base_views if v.route_label in retained]
              assert not panel.snipe.instate(['disabled']) and not panel.repeat.instate(['disabled'])
              assert 'Check one' not in buttons and 'Start loop' not in buttons
@@ -144,7 +145,7 @@
              assert panel.daily_gems.window.title()=='Daily gems — Gem Sniper'
              assert panel.daily_gems.tree.heading('obtained','text')=='Obtained'
              panel.daily_gems.window.destroy()
-@@ -124,7 +145,7 @@
+@@ -124,7 +146,7 @@
              assert len(spies)==1 and not spies[0].runner.running
              spy=spies[0]
              assert spy.map_preview.base.width>=2000
@@ -153,7 +154,7 @@
              assert spy.map_preview.window.title()=='Gem sightings heatmap'
              assert spy.map_preview.viewer.fitted
              old=spy.map_preview.viewer.zoom;spy.map_preview.zoom_in.invoke()
-@@ -146,10 +167,10 @@
+@@ -146,10 +168,10 @@
              spy.runner.start=original_start;panel.services.mode.set(old_mode);panel.runner.views=old_views
              spy.runner.cancel.clear();panel.emergency()
              assert spy.runner.cancel.is_set(),'F10 dispatch did not stop Spy'
@@ -166,7 +167,7 @@
              assert spy.history_window.notebook.select()==str(spy.history_window.pages['Hourly'])
              spy.history_window.close()
              # Independent diagnostic data checks exclusive history UI rendering
-@@ -164,27 +185,50 @@
+@@ -164,27 +186,50 @@
              diagnostic.observe(view,1,base,clear=True)
              diagnostic.observe(view,2,base+100,[dict(screen_x=285.,screen_y=514.5,score=.95)],True)
              diagnostic.observe(view,3,base+200,[dict(screen_x=286.,screen_y=514.5,score=.96)],True)
@@ -193,13 +194,13 @@
 +                self.check_layout(notebook,size)
 +            self.geometry('1440x940')
 +            self.update()
-+            from PIL import ImageGrab
++            from window_capture import capture_window
 +            screenshots=Path(__file__).resolve().parent/'artifacts';screenshots.mkdir(exist_ok=True)
 +            self.update()
 +            for i,tab in enumerate(notebook.tabs()):
 +                notebook.select(tab);self.update()
 +                wrapper=user.GetAncestor(self.winfo_id(),2)
-+                picture=ImageGrab.grab(window=int(wrapper))
++                picture=capture_window(int(wrapper))
 +                picture.save(screenshots/('v36-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
 +            notebook.select(1);self.update()
 +            # Sidebar commands select the existing pages, preserving controllers.
@@ -229,7 +230,7 @@
              assert panel.editor is not None and panel.editing
              editor=panel.editor
              assert len(editor.views)==len(panel.runner.views) and editor.canvas.find_all()
-@@ -236,10 +280,10 @@
+@@ -236,10 +281,10 @@
                  gui_check()
              else:
                  check_native_input()
@@ -478,7 +479,7 @@
 +        self.metric_frames=[];self.metric_fonts=[]
 +        for index,(label,value,kind) in enumerate((('Gems found',self.gems_value,'gem'),('Time spent',self.elapsed_value,'clock'),('Views checked',self.views_value,'map'),('Spawn spots',self.spots_value,'target'))):
 +            metrics.columnconfigure(index,weight=1,uniform='metrics')
-+            tile=ttk.Frame(metrics,style='Panel.TFrame',padding=(9,8));tile.grid(row=0,column=index,sticky='nsew',padx=(0,8 if index<3 else 0));self.metric_frames.append(tile)
++            tile=ttk.Frame(metrics,style='Panel.TFrame',padding=(7,8));tile.grid(row=0,column=index,sticky='nsew',padx=(0,8 if index<3 else 0));self.metric_frames.append(tile)
 +            ttk.Label(tile,text=label,style='CardMuted.TLabel').pack(anchor='w')
 +            line=row(tile)
 +            icon=gem_image(tile,26) if kind=='gem' else line_image(tile,kind,22)
@@ -682,7 +683,7 @@
 -FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
 -         'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py',
 +FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
-+         'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py', 'LoongLens-AppIcon-HD.png', 'ui_assets.py', 'dashboard_shell.py',
++         'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py', 'LoongLens-AppIcon-HD.png', 'ui_assets.py', 'dashboard_shell.py', 'window_capture.py',
           'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
           'sniper_counter.py', 'sniper_history_panel.py', 'gem_heatmap.py', 'gem_heatmap_panel.py', 'heatmap_map_import.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
           'win_overlay.py', 'sxs_atlas_tracker.py', 'atlas_metadata.json',
@@ -907,3 +908,52 @@
      frame.pack(fill='x', pady=(0, 8))
      if title:
          ttk.Label(frame, text=title, style='CardTitle.TLabel').pack(anchor='w', pady=(0, 7))
+--- /dev/null
++++ b/LoongLens/window_capture.py
+@@ -0,0 +1,46 @@
++"""Capture a native Windows validation window at its full original size."""
++import ctypes
++from ctypes import wintypes as w
++from PIL import Image
++
++
++class BitmapHeader(ctypes.Structure):
++    _fields_=[('size',w.DWORD),('width',w.LONG),('height',w.LONG),('planes',w.WORD),
++              ('bits',w.WORD),('compression',w.DWORD),('image_size',w.DWORD),
++              ('xppm',w.LONG),('yppm',w.LONG),('used',w.DWORD),('important',w.DWORD)]
++
++
++def capture_window(hwnd):
++    user=ctypes.WinDLL('user32',use_last_error=True);gdi=ctypes.WinDLL('gdi32',use_last_error=True)
++    user.GetWindowRect.argtypes=(w.HWND,ctypes.POINTER(w.RECT));user.GetWindowRect.restype=w.BOOL
++    user.GetWindowDC.argtypes=(w.HWND,);user.GetWindowDC.restype=w.HDC
++    user.ReleaseDC.argtypes=(w.HWND,w.HDC);user.ReleaseDC.restype=ctypes.c_int
++    user.PrintWindow.argtypes=(w.HWND,w.HDC,w.UINT);user.PrintWindow.restype=w.BOOL
++    gdi.CreateCompatibleDC.argtypes=(w.HDC,);gdi.CreateCompatibleDC.restype=w.HDC
++    gdi.CreateCompatibleBitmap.argtypes=(w.HDC,ctypes.c_int,ctypes.c_int);gdi.CreateCompatibleBitmap.restype=w.HBITMAP
++    gdi.SelectObject.argtypes=(w.HDC,w.HGDIOBJ);gdi.SelectObject.restype=w.HGDIOBJ
++    gdi.DeleteDC.argtypes=(w.HDC,);gdi.DeleteDC.restype=w.BOOL
++    gdi.DeleteObject.argtypes=(w.HGDIOBJ,);gdi.DeleteObject.restype=w.BOOL
++    gdi.GetDIBits.argtypes=(w.HDC,w.HBITMAP,w.UINT,w.UINT,ctypes.c_void_p,ctypes.c_void_p,w.UINT)
++    gdi.GetDIBits.restype=ctypes.c_int
++    rect=w.RECT()
++    if not user.GetWindowRect(hwnd,ctypes.byref(rect)):raise ctypes.WinError(ctypes.get_last_error())
++    width,height=rect.right-rect.left,rect.bottom-rect.top
++    if width<=0 or height<=0:raise ValueError('Window has no visible dimensions')
++    dc=user.GetWindowDC(hwnd);memory=None;bitmap=None;previous=None
++    try:
++        if not dc:raise ctypes.WinError(ctypes.get_last_error())
++        memory=gdi.CreateCompatibleDC(dc);bitmap=gdi.CreateCompatibleBitmap(dc,width,height)
++        if not memory or not bitmap:raise ctypes.WinError(ctypes.get_last_error())
++        previous=gdi.SelectObject(memory,bitmap)
++        if not user.PrintWindow(hwnd,memory,2):raise RuntimeError('Native window capture failed')
++        gdi.SelectObject(memory,previous);previous=None
++        header=BitmapHeader(size=ctypes.sizeof(BitmapHeader),width=width,height=-height,planes=1,bits=32)
++        pixels=ctypes.create_string_buffer(width*height*4)
++        if gdi.GetDIBits(memory,bitmap,0,height,pixels,ctypes.byref(header),0)!=height:raise RuntimeError('Native bitmap capture failed')
++        return Image.frombytes('RGB',(width,height),pixels.raw,'raw','BGRX')
++    finally:
++        if previous and memory:gdi.SelectObject(memory,previous)
++        if bitmap:gdi.DeleteObject(bitmap)
++        if memory:gdi.DeleteDC(memory)
++        if dc:user.ReleaseDC(hwnd,dc)
