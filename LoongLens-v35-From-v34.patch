@@ -1861,16 +1861,26 @@
  import json
  import logging
  import os
-@@ -38,7 +39,7 @@
+@@ -34,11 +35,16 @@
+         return [item for child in widget.winfo_children() for item in (child,*descendants(child))]
+ 
+     class Window(original):
++        def exit_app(self):
++            button=next((w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit'),None)
++            if button is None:self.destroy()
++            else:button.invoke()
+         def __init__(self,*a,**kw):
              super().__init__(*a,**kw)
-             def failed(kind,value,trace):errors.append(''.join(traceback.format_exception(kind,value,trace)));self.destroy()
+-            def failed(kind,value,trace):errors.append(''.join(traceback.format_exception(kind,value,trace)));self.destroy()
++            def failed(kind,value,trace):
++                error=''.join(traceback.format_exception(kind,value,trace));errors.append(error);print(error,flush=True);self.exit_app()
              self.report_callback_exception=failed
 -            self.after(1800,self.begin);self.after(60000,self.destroy)
 +            self.after(1800,self.begin);self.after(120000,self.destroy)
          def begin(self):
              sniper=panels['sniper'];spy=panels['spy'];services=sniper.services;services.sound.set(False)
              notebook=next(w for w in descendants(self) if isinstance(w,ttk.Notebook))
-@@ -95,6 +96,45 @@
+@@ -95,6 +101,45 @@
              assert len(list((Path(temporary.name)/'LoongLens/screenshots').glob('*.png')))==2
              standard=sniper.services.sighting_history.list()
              assert len(standard)==2 and all(row.source=='Gem Spy' and row.screenshot_path for row in standard)
@@ -1916,7 +1926,7 @@
              spy.history_window.show('Sightings');self.update_idletasks()
              assert len(spy.history_window.tables['Sightings'].get_children())==2
              spy.history_window.show('Hourly');self.update_idletasks()
-@@ -117,8 +157,10 @@
+@@ -117,8 +162,10 @@
              assert runner.cancel.is_set() and sniper.services.owner is None
              assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
              assert len(spy.history.encounters())==2
@@ -1929,7 +1939,7 @@
              next(w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit').invoke()
      tk.Tk=Window
      try:loong_lens.main([],default_tab='spy')
-@@ -132,7 +174,7 @@
+@@ -132,7 +179,7 @@
          temporary.cleanup()
      assert completed and not errors,errors
      (ROOT/'spy-ui-check.json').write_text(json.dumps(completed[0],indent=2)+'\n','utf-8')
