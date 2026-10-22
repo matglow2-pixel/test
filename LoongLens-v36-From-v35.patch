@@ -655,7 +655,7 @@
          self.drain();self.save_pool.shutdown(wait=True);self.drain()
 --- a/LoongLens/spy_panel.py
 +++ b/LoongLens/spy_panel.py
-@@ -113,26 +113,36 @@
+@@ -113,26 +113,39 @@
  
      def build_ui(self):
          from ui_theme import heading,card,row,CARD,MUTED,FONT
@@ -671,8 +671,8 @@
 +        self.stop_button=ttk.Button(actions,text='Stop  F10',style='Stop.TButton',command=self.stop,padding=(20,13));self.stop_button.pack(side='right')
 +        ttk.Label(footer,text='One entry per continuing gem. Automatic recovery keeps progress. Stop / F10 always stays stopped.',style='Muted.TLabel',font=(FONT,9)).pack(anchor='w',pady=(10,0))
 +        middle=ttk.Frame(body);middle.pack(fill='both',expand=True)
-+        middle.columnconfigure(0,weight=1,minsize=300);middle.columnconfigure(1,weight=2);middle.rowconfigure(0,weight=1)
-+        stack=ttk.Frame(middle);stack.grid(row=0,column=0,sticky='nsew',padx=(0,16))
++        middle.columnconfigure(0,weight=0,minsize=300);middle.columnconfigure(1,weight=1);middle.rowconfigure(0,weight=1)
++        stack=ttk.Frame(middle);stack.grid(row=0,column=0,sticky='nsew',padx=(0,16));stack.pack_propagate(False)
 +        controls=card(stack,'Spy controls')
 +        ttk.Label(controls,textvariable=self.location,style='CardMuted.TLabel',wraplength=300).pack(anchor='w',pady=(0,12))
          line=row(controls)
@@ -692,7 +692,10 @@
 -        ttk.Label(footer,text='New gems get one history entry and screenshot. Existing gems are tracked across runs.\n'
 -                  'Automatic recovery keeps progress. Stop / F10 always stays stopped.',style='Muted.TLabel',font=(FONT,9),wraplength=470).pack(anchor='w')
 -        viewport=tk.Frame(body,bg=CARD,height=230);viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
-+        map_card=ttk.Frame(middle,style='Panel.TFrame',padding=16);map_card.grid(row=0,column=1,sticky='nsew')
++        map_card=ttk.Frame(middle,style='Panel.TFrame',padding=16);map_card.grid(row=0,column=1,sticky='nsew');map_card.pack_propagate(False)
++        # Wrapped text must not request a new outer grid width on each pass.
++        # Size the columns from the viewport rather than their wrapped labels.
++        middle.bind('<Configure>',lambda e:middle.columnconfigure(0,minsize=max(300,min(380,int(e.width*.32)))))
 +        ttk.Label(map_card,text='Gem sightings map',style='CardTitle.TLabel').pack(anchor='w',pady=(0,12))
 +        viewport=tk.Frame(map_card,bg=CARD);viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
          from gem_heatmap_panel import HeatmapPreview
