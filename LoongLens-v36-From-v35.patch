@@ -72,13 +72,16 @@
 +        for i,button in enumerate(self.buttons):button.configure(style='Selected.Nav.TButton' if i==selected else 'Nav.TButton')
 --- a/LoongLens/desktop_entry.py
 +++ b/LoongLens/desktop_entry.py
-@@ -52,11 +52,35 @@
+@@ -52,11 +52,45 @@
          def __init__(self, *args, **kwargs):
              super().__init__(*args, **kwargs)
              def failed(kind, value, trace):
 -                failures.append(''.join(traceback.format_exception(kind, value, trace)))
 -                self.destroy()
 +                error=''.join(traceback.format_exception(kind,value,trace));failures.append(error);print(error,flush=True)
++                try:alive=self.winfo_exists()
++                except tk.TclError:return
++                if not alive:return
 +                if hasattr(self,'capture_user'):
 +                    from window_capture import capture_window
 +                    out=Path(__file__).resolve().parent/'artifacts';out.mkdir(exist_ok=True)
@@ -88,11 +91,19 @@
 +                else:button.invoke()
              self.report_callback_exception = failed
              self.after(2000, self.check)
-             self.after(30000, self.destroy)
+-            self.after(30000, self.destroy)
++            self.after(90000,self.timeout)
++
++        def timeout(self):
++            failures.append('Native GUI validation exceeded 90 seconds.')
++            button=next((w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit'),None)
++            if button is None:self.destroy()
++            else:button.invoke()
 +
 +        def check_layout(self,notebook,size):
 +            issues=[]
 +            for tab in notebook.tabs():
++                print('Checking layout',size,notebook.tab(tab,'text'),flush=True)
 +                notebook.select(tab);self.update()
 +                for item in descendants(self.nametowidget(tab)):
 +                    if isinstance(item,(ttk.Button,ttk.Label,ttk.Checkbutton,ttk.Combobox)) and item.winfo_ismapped():
@@ -110,7 +121,7 @@
  
          def check(self):
              assert self.title() == 'Loong Lens'
-@@ -73,6 +97,7 @@
+@@ -73,6 +107,7 @@
                  user.GetAncestor.restype = wintypes.HWND
                  user.SendMessageW.argtypes = (wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
                  user.SendMessageW.restype = ctypes.c_ssize_t
@@ -118,7 +129,7 @@
                  wrapper = user.GetAncestor(self.winfo_id(), 2)
                  icons = [user.SendMessageW(wrapper, 0x7F, kind, 0) for kind in (0, 1, 2)]
                  if not any(icons):
-@@ -81,7 +106,7 @@
+@@ -81,7 +116,7 @@
                      icons = [user.GetClassLongPtrW(wrapper, field) for field in (-14, -34)]
                  assert any(icons), 'The native window has no configured icon'
              widgets = descendants(self)
@@ -127,7 +138,7 @@
              notebook = next(item for item in widgets if isinstance(item, ttk.Notebook))
              assert [notebook.tab(tab, 'text') for tab in notebook.tabs()] == ['Map Tweaker', 'Gem Sniper', 'Gem Spy']
              assert not any(isinstance(item,ttk.Checkbutton) and item.cget('text')=='Enable live clicking' for item in widgets)
-@@ -106,15 +131,16 @@
+@@ -106,15 +141,16 @@
              assert [v.route_label for v in panel.runner.views if not v.route_parent]==[v.route_label for v in panel.base_views if v.route_label in retained]
              assert not panel.snipe.instate(['disabled']) and not panel.repeat.instate(['disabled'])
              assert 'Check one' not in buttons and 'Start loop' not in buttons
@@ -149,7 +160,7 @@
              assert panel.daily_gems.window.title()=='Daily gems — Gem Sniper'
              assert panel.daily_gems.tree.heading('obtained','text')=='Obtained'
              panel.daily_gems.window.destroy()
-@@ -124,7 +150,7 @@
+@@ -124,7 +160,7 @@
              assert len(spies)==1 and not spies[0].runner.running
              spy=spies[0]
              assert spy.map_preview.base.width>=2000
@@ -158,7 +169,7 @@
              assert spy.map_preview.window.title()=='Gem sightings heatmap'
              assert spy.map_preview.viewer.fitted
              old=spy.map_preview.viewer.zoom;spy.map_preview.zoom_in.invoke()
-@@ -146,10 +172,10 @@
+@@ -146,10 +182,10 @@
              spy.runner.start=original_start;panel.services.mode.set(old_mode);panel.runner.views=old_views
              spy.runner.cancel.clear();panel.emergency()
              assert spy.runner.cancel.is_set(),'F10 dispatch did not stop Spy'
@@ -171,7 +182,7 @@
              assert spy.history_window.notebook.select()==str(spy.history_window.pages['Hourly'])
              spy.history_window.close()
              # Independent diagnostic data checks exclusive history UI rendering
-@@ -164,27 +190,56 @@
+@@ -164,27 +200,56 @@
              diagnostic.observe(view,1,base,clear=True)
              diagnostic.observe(view,2,base+100,[dict(screen_x=285.,screen_y=514.5,score=.95)],True)
              diagnostic.observe(view,3,base+200,[dict(screen_x=286.,screen_y=514.5,score=.96)],True)
@@ -240,7 +251,7 @@
              assert panel.editor is not None and panel.editing
              editor=panel.editor
              assert len(editor.views)==len(panel.runner.views) and editor.canvas.find_all()
-@@ -236,10 +291,10 @@
+@@ -236,10 +301,10 @@
                  gui_check()
              else:
                  check_native_input()
@@ -367,7 +378,7 @@
                  if not success:raise OSError('Could not encode the captured map.')
 --- a/LoongLens/patrol_live_panel.py
 +++ b/LoongLens/patrol_live_panel.py
-@@ -63,60 +63,130 @@
+@@ -63,60 +63,138 @@
          if warning:self.status.set(warning)
  
      def build_ui(self):
@@ -489,6 +500,8 @@
 +        self.location_label.pack(anchor='w',pady=(7,10))
 +        metrics=ttk.Frame(status,style='Card.TFrame');metrics.pack(fill='x')
 +        self.metric_frames=[];self.metric_fonts=[]
++        from tkinter import font as tkfont
++        self.metric_probe=tkfont.Font(root=self.root,family=FONT,size=20,weight='bold')
 +        for index,(label,value,kind) in enumerate((('Gems found',self.gems_value,'gem'),('Time spent',self.elapsed_value,'clock'),('Views checked',self.views_value,'map'),('Spawn spots',self.spots_value,'target'))):
 +            metrics.columnconfigure(index,weight=1,uniform='metrics')
 +            tile=ttk.Frame(metrics,style='Panel.TFrame',padding=(7,8));tile.grid(row=0,column=index,sticky='nsew',padx=(0,8 if index<3 else 0));self.metric_frames.append(tile)
@@ -499,11 +512,17 @@
 +            from tkinter import font as tkfont
 +            numeric_font=tkfont.Font(root=self.root,family=FONT,size=18,weight='bold');self.metric_fonts.append(numeric_font)
 +            value_label=ttk.Label(line,textvariable=value,style='Metric.TLabel',font=numeric_font);value_label.pack(side='left')
-+            def fit_metric(event=None,tile=tile,value=value,font=numeric_font):
-+                available=max(35,tile.winfo_width()-58)
++            measured=[None]
++            def fit_metric(event=None,tile=tile,value=value,font=numeric_font,measured=measured):
++                key=(tile.winfo_width(),value.get())
++                if key==measured[0]:return
++                measured[0]=key;available=max(35,key[0]-58);chosen=11
++                # Measure with an unbound font. Mutating the displayed font
++                # while probing sizes can continually invalidate Tk geometry.
 +                for size in range(20,10,-1):
-+                    font.configure(size=size)
-+                    if font.measure(value.get())<=available:break
++                    self.metric_probe.configure(size=size)
++                    if self.metric_probe.measure(key[1])<=available:chosen=size;break
++                if int(font.cget('size'))!=chosen:font.configure(size=chosen)
 +            tile.bind('<Configure>',fit_metric);value.trace_add('write',lambda *_,fit=fit_metric:fit())
 +        self.endless_button=ttk.Checkbutton(status,text='Endless mode',variable=self.endless,style='Card.TCheckbutton',command=self.change_endless)
 +        self.endless_button.pack(anchor='w',pady=(6,2))
@@ -551,7 +570,7 @@
  
      def refresh_seen(self):
          self.seen_refresh=0.;self.seen_text.set(f'{self.services.sighting_history.sniper_seen()}/5')
-@@ -126,7 +196,9 @@
+@@ -126,7 +204,9 @@
          self.daily_gems.show()
  
      def change_endless(self):
@@ -562,7 +581,7 @@
  
      def show_history(self):
          if self.busy:self.runner.stop()
-@@ -243,7 +315,7 @@
+@@ -243,7 +323,7 @@
          if getattr(self,'spy_stop',None):self.spy_stop()
          self.events.put(dict(kind='panic'))
  
@@ -571,7 +590,7 @@
          if self.keys is None or self.busy or self.editing or self.switching:return
          if not self.endless.get() and self.services.sighting_history.sniper_seen()>=5:
              self.status.set('5/5 gems marked obtained for this game day. Stopped until the 16:00 Sofia reset.');return
-@@ -257,7 +329,7 @@
+@@ -257,7 +337,7 @@
          
          self.on_active(True);self.busy=True;self.buttons()
          self.runner.set_endless(self.endless.get())
@@ -580,7 +599,7 @@
              self.busy=False;self.services.release('sniper');self.on_active(False);self.buttons()
  
      def stop(self,silent=False):
-@@ -269,7 +341,7 @@
+@@ -269,7 +349,7 @@
              self.status.set('Stop patrol before resetting its checked locations.');return
          if not self.runner.reset_checks():
              self.status.set('Wait for sniping to stop before resetting checks.');return
@@ -589,7 +608,7 @@
          self.status.set('Checks reset.')
  
      def update_count(self):
-@@ -280,12 +352,16 @@
+@@ -280,12 +360,16 @@
          if hasattr(self,'progress'):self.progress.configure(value=len(checked),maximum=len(views))
          all_spots=set().union(*(view.cells for view in self.base_views))
          self.count.set(f'Processed: {len(self.runner.checked)} / {len(views)} views · Locked skips: {len(self.runner.skipped)}\nSpawn spots processed: {len(covered)} / {len(total)} · Omitted: {len(all_spots-total)}')
@@ -608,7 +627,7 @@
  
      def drain(self):
          while True:
-@@ -293,7 +369,7 @@
+@@ -293,7 +377,7 @@
              except queue.Empty:break
              kind=event['kind']
              if kind=='advance':
@@ -617,7 +636,7 @@
              elif kind=='panic':self.status.set('F10 emergency stop.')
              elif kind=='status':self.status.set(event['message'])
              elif kind=='view':
-@@ -344,7 +420,7 @@
+@@ -344,7 +428,7 @@
          if self.closed:return
          try:
              self.drain()
@@ -626,7 +645,7 @@
              if time.time()>=self.seen_refresh:
                  self.refresh_seen();self.seen_refresh=time.time()+1;self.daily_gems.refresh()
          except Exception:
-@@ -414,6 +490,7 @@
+@@ -414,6 +498,7 @@
          if self.closed:return
          self.closed=True;self.runner.stop()
          if self.job is not None:self.root.after_cancel(self.job);self.job=None
