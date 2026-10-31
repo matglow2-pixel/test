@@ -1,0 +1,573 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v37.md
+@@ -0,0 +1,9 @@
++# v37 — map state and filter recovery
++
++Fixes the v36 Golden Plain/filter stop. A weak match for the Loong Haven title must not turn the large map into "gameplay": its independent Back, zoom and world-tab controls now provide a second source of evidence. The shared recognition change also protects map closing and inspection.
++
++Before an opener, a negative first capture is rechecked; an already visible map receives no minimap tap. No fixed wait is added to ordinary map checks. A detected expanded filter receives one click on the calibrated Back button. Whether this closes only the filter or the map too is observed before proceeding. If the filter remains, the app stops with its checked locations preserved. Stop/F10 interrupts recovery.
++
++The click exclusions and drag geometry are unchanged: no new input padding or portal limitations. The complete v36 UI, icon, route profiles, persistent Obtained counter, Endless mode, histories and heatmap are retained.
++
++Regression coverage uses only ordinary map-control pixels from the previous user recording, with all other pixels removed. It covers unreadable/obscured title, the gameplay Back arrow, covered zoom +, an open filter, failed close, cancellation and preventing uninspected checks. Windows packaging retains all v36 source/assets and rebuilds the EXE.
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,3 +1,9 @@
++# Loong Lens v37
++
++Fixes the map/filter stop reported in v36. The map-open check uses independent Back/zoom/world-tab controls when the old title image does not match its background. An open map is not tapped again at the gameplay minimap position. Transitional frames are rechecked without a fixed per-location wait. An already-open filter is dismissed once through the calibrated Back control; the resulting state is observed before another input. Failed recovery preserves progress and Stop/F10 stays stopped.
++
++The v36 sidebar UI, transparent gem artwork, routes, obtained counter, Endless mode, histories and Spy heatmap are retained. Full Windows source + EXE package; extract the complete folder and launch LoongLens.exe.
++
+ > v36 adds the sidebar dashboard, portrait live preview, separate controls/status cards and bottom action bar. All gem artwork comes from the existing transparent Loong Lens icon. Click Daily gems to edit Obtained; Endless mode remains beneath Gems found. Loop sniping starts enabled and controls repetition of completed routes. See CHANGELOG-v36.md.
+ 
+ # Loong Lens
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,3 +1,9 @@
++# v37 map-screen regression checks
++
++Tests use real Back/zoom/world-tab control pixels extracted from the previously supplied recording, with the rest of the picture removed. No player name, chat or account information is included. The fixtures contain ordinary map controls only. Regressions cover weak title/background changes, gameplay's identical Back arrow, a covered zoom +, filter overlays, no extra minimap input on an open map, exactly one opener from gameplay, both Back behaviors, ignored Back, cancellation during filter recovery and refusing to count an unclosed map as inspected.
++
++The full Windows suite runs these regressions alongside all prior checks. Source and frozen native GUI/input, Spy import/zoom, Sniper app-restart persistence, Obtained, Endless and F10 checks remain required. Full route timing is compared with v36. Gameplay delivery is simulated; live BlueStacks results are not claimed.
++
+ # v36 dashboard validation
+ 
+ Native Windows and frozen EXE checks cover all three sidebar pages at 1000×820, 1200×860 and 1440×940. They verify navigation selection, complete widget bounds, daily-count access, Endless placement, the loop checkbox, right-side preview proportions and bottom action placement. Actual window captures are included in validation.
+--- a/LoongLens/dashboard_shell.py
++++ b/LoongLens/dashboard_shell.py
+@@ -12,7 +12,7 @@
+         art=gem_image(self.frame,38);self.images.append(art)
+         ttk.Label(brand,image=art,style='Sidebar.TLabel').pack(side='left',padx=(0,7))
+         ttk.Label(brand,text='Loong Lens',style='Logo.TLabel').pack(side='left')
+-        ttk.Label(self.frame,text='v36',style='Sidebar.TLabel').pack(anchor='w',padx=55,pady=(4,0))
++        ttk.Label(self.frame,text='v37',style='Sidebar.TLabel').pack(anchor='w',padx=55,pady=(4,0))
+         ttk.Label(self.frame,text='Loong Haven companion',style='Sidebar.TLabel').pack(anchor='w',padx=12,pady=(12,20))
+         ttk.Separator(self.frame).pack(fill='x',padx=6,pady=(0,12))
+         for index,(title,kind) in enumerate((('Map Tweaker','map'),('Gem Sniper','target'),('Gem Spy','gem'))):
+--- a/LoongLens/desktop_entry.py
++++ b/LoongLens/desktop_entry.py
+@@ -59,7 +59,7 @@
+                 if hasattr(self,'capture_user'):
+                     from window_capture import capture_window
+                     out=Path(__file__).resolve().parent/'artifacts';out.mkdir(exist_ok=True)
+-                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v36-layout-failure.png')
++                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v37-layout-failure.png')
+                 button=next((w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit'),None)
+                 if button is None:self.destroy()
+                 else:button.invoke()
+@@ -221,7 +221,7 @@
+                 if i==2:spy.map_preview.thumbnail();self.update()
+                 wrapper=user.GetAncestor(self.winfo_id(),2)
+                 picture=capture_window(int(wrapper))
+-                picture.save(screenshots/('v36-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
++                picture.save(screenshots/('v37-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
+             notebook.select(1);self.update()
+             # Sidebar commands select the existing pages, preserving controllers.
+             nav=[w for w in descendants(self) if isinstance(w,ttk.Button) and str(w.cget('style')).endswith('Nav.TButton')]
+@@ -302,10 +302,10 @@
+                 gui_check()
+             else:
+                 check_native_input()
+-            result = {'passed': True, 'mode': sys.argv[1], 'version': 36}
++            result = {'passed': True, 'mode': sys.argv[1], 'version': 37}
+             status = 0
+         except Exception:
+-            result = {'passed': False, 'mode': sys.argv[1], 'version': 36, 'error': traceback.format_exc()}
++            result = {'passed': False, 'mode': sys.argv[1], 'version': 37, 'error': traceback.format_exc()}
+             status = 1
+         path.write_text(json.dumps(result, indent=2), encoding='utf-8')
+         return status
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -77,7 +77,7 @@
+     folder.mkdir(parents=True, exist_ok=True)
+     logging.basicConfig(filename=folder / 'loonglens.log', level=logging.INFO,
+                         format='%(asctime)s %(levelname)s %(message)s')
+-    logging.getLogger('loonglens').info('Loong Lens v36 executable=%s source=%s',sys.executable,Path(__file__).resolve())
++    logging.getLogger('loonglens').info('Loong Lens v37 executable=%s source=%s',sys.executable,Path(__file__).resolve())
+     settings_path = folder / 'settings.json'
+     coordinates_path = folder / 'coordinates.csv'
+     settings = {}
+@@ -237,7 +237,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Gem Spy v36; persistent observations and recovery'
++            details['version']='Gem Spy v37; persistent observations and recovery'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+--- /dev/null
++++ b/LoongLens/map_screen.py
+@@ -0,0 +1,93 @@
++"""Read large-map controls independently of the terrain behind its title."""
++import cv2
++import numpy as np
++
++
++def normal(frame):
++    return frame if frame.shape[:2]==(1029,570) else cv2.resize(frame,(570,1029),interpolation=cv2.INTER_AREA)
++
++
++def white_parts(frame,bounds):
++    x,y,w,h=bounds
++    crop=frame[y:y+h,x:x+w]
++    hsv=cv2.cvtColor(crop,cv2.COLOR_BGR2HSV)
++    white=cv2.inRange(hsv,np.array((0,0,175)),np.array((179,75,255)))
++    _,labels,stats,_=cv2.connectedComponentsWithStats(white)
++    return [(x+a,y+b,c,d,area,labels[b:b+d,a:a+c]==i)
++            for i,(a,b,c,d,area) in enumerate(stats) if i and area>=12]
++
++
++def back_arrow_visible(frame):
++    for x,y,w,h,area,mask in white_parts(frame,(12,938,112,88)):
++        if not (12<=w<=35 and 18<=h<=46 and 1.1<=h/w<=2.2):continue
++        yy,xx=np.nonzero(mask)
++        upper=xx[yy<h*.25];lower=xx[yy>=h*.75];middle=xx[(yy>=h*.4)&(yy<=h*.6)]
++        if min(len(upper),len(lower),len(middle))<3:continue
++        if min(upper.mean(),lower.mean())-middle.mean()>w*.20:return True
++    return False
++
++
++def zoom_controls_visible(frame):
++    parts=white_parts(frame,(485,610,80,325))
++    plus=[];minus=[]
++    for x,y,w,h,area,mask in parts:
++        if 8<=w<=25 and 2<=h<=9 and w/h>=2.2 and 850<=y<=929:
++            minus.append((x+w/2,y+h/2))
++        if not (8<=w<=25 and 8<=h<=23 and .65<=w/h<=1.5 and 615<=y<=715):continue
++        binary=cv2.resize(mask.astype(np.uint8),(15,15),interpolation=cv2.INTER_NEAREST)
++        if binary[6:9,:].mean()>.55 and binary[:,6:9].mean()>.55:plus.append((x+w/2,y+h/2))
++    for a,b in plus:
++        for c,d in minus:
++            if abs(a-c)>6 or not 170<=d-b<=300:continue
++            # The dark vertical rail joins the + and −. A moving portrait may
++            # obscure part of it; unrelated white HUD glyphs do not prove a map.
++            rail=frame[round(b)+15:round(d)-12,max(0,round((a+c)/2)-3):round((a+c)/2)+4]
++            hsv=cv2.cvtColor(rail,cv2.COLOR_BGR2HSV)
++            if np.mean(((hsv[:,:,2]<155)&(hsv[:,:,1]<100)).any(axis=1))>=.65:return True
++    return False
++
++
++def world_tabs_visible(frame):
++    # Four or more separated world-name labels share the bottom baseline.
++    # Gameplay has the Back arrow too, but only its two Explore labels here.
++    hsv=cv2.cvtColor(frame[948:1014,135:565],cv2.COLOR_BGR2HSV)
++    mask=cv2.inRange(hsv,np.array((0,0,175)),np.array((179,95,255)))
++    words=cv2.dilate(mask,np.ones((1,5),np.uint8))
++    _,_,stats,centers=cv2.connectedComponentsWithStats(words)
++    labels=[center for (x,y,w,h,area),center in zip(stats[1:],centers[1:]) if 28<=w<=100 and 6<=h<=22]
++    return any(sum(abs(y-b)<9 for a,b in labels)>=4 for x,y in labels)
++
++
++def zoom_rail_visible(frame):
++    for x,y,w,h,area,mask in white_parts(frame,(485,845,80,90)):
++        if not (8<=w<=25 and 2<=h<=9 and w/h>=2.2):continue
++        cx=round(x+w/2);rail=frame[y-215:y-12,cx-3:cx+4]
++        hsv=cv2.cvtColor(rail,cv2.COLOR_BGR2HSV)
++        if np.mean(((hsv[:,:,2]<155)&(hsv[:,:,1]<100)).any(axis=1))>=.65:return True
++    return False
++
++
++def filter_menu_visible(frame):
++    """The expanded filter has repeated yellow pill buttons in three columns."""
++    frame=normal(frame);crop=frame[50:730,85:565]
++    hsv=cv2.cvtColor(crop,cv2.COLOR_BGR2HSV)
++    yellow=cv2.inRange(hsv,np.array((20,75,120)),np.array((45,255,255)))
++    if cv2.countNonZero(yellow)<12_000:return False
++    _,_,stats,centers=cv2.connectedComponentsWithStats(yellow)
++    buttons=[]
++    for (x,y,w,h,area),center in zip(stats[1:],centers[1:]):
++        if 75<=w<=170 and 20<=h<=65 and 2.3<=w/h<=5 and .5<=area/(w*h)<=.96:buttons.append(center)
++    if len(buttons)<8:return False
++    # Repeated rows and columns distinguish the filter from yellow terrain.
++    rows=[];columns=[]
++    for axis,groups,tolerance in ((0,columns,18),(1,rows,12)):
++        for value in sorted(p[axis] for p in buttons):
++            if not groups or value-np.mean(groups[-1])>tolerance:groups.append([value])
++            else:groups[-1].append(value)
++    return sum(len(g)>=3 for g in columns)>=3 and sum(len(g)>=2 for g in rows)>=4
++
++
++def map_controls_visible(frame):
++    frame=normal(frame)
++    return back_arrow_visible(frame) and (zoom_controls_visible(frame) or
++        zoom_rail_visible(frame) and world_tabs_visible(frame) or filter_menu_visible(frame))
+--- a/LoongLens/patrol_live.py
++++ b/LoongLens/patrol_live.py
+@@ -231,11 +231,29 @@
+             self.check();frame=backend.capture()
+             if self.is_map(frame):return frame
+             backend.wait(.2)
+-        raise RuntimeError('The large map did not open. Set Open map to the minimap in Sniping settings; patrol stopped.')
++        raise RuntimeError('The large map was not confirmed. Check Open map in Sniper settings; patrol stopped.')
+ 
+     def open_map(self,backend):
+-        frame=backend.capture()
+-        if self.is_map(frame):return frame
++        from map_screen import filter_menu_visible
++        frame=backend.capture();self.check()
++        # A single transitional screenshot must not send the gameplay minimap
++        # tap into an already-open map's filter. No fixed delay on normal views.
++        if not self.is_map(frame):frame=backend.capture();self.check()
++        if self.is_map(frame):
++            if not filter_menu_visible(frame):return frame
++            self.send('status',message='Closing the map filter panel; keeping route progress…')
++            # Use the already calibrated Back control, never a filter option
++            # or a guessed terrain point. Some game versions close just the
++            # panel; others close the map too. Observe which happened.
++            backend.click(self.settings.map_close)
++            deadline=self.clock()+1.5
++            while True:
++                self.check();backend.wait(.08);frame=backend.capture()
++                if not filter_menu_visible(frame):break
++                if self.clock()>=deadline:
++                    raise RuntimeError('The map filter is still open. Close it, then resume; checked locations are kept.')
++            if not self.is_map(frame):frame=backend.capture();self.check()
++            if self.is_map(frame):return frame
+         self.send('status',message='Reopening the large map…')
+         backend.click(self.settings.map_open)
+         selected=self.navigation.get('selected_camera')
+@@ -244,7 +262,7 @@
+             sx,sy=known.project(*selected)
+             self.reopen_reference=(before,known,(285.-sx,530.-sy))
+         # One opener click only. Do not proceed or click other controls until
+-        # the actual map title appears; alignment follows on fresh screenshots.
++        # the actual map screen is confirmed; alignment uses fresh screenshots.
+         return self.map_frame(backend)
+ 
+     def align(self,backend,reference=None,timeout=7.,recovery=False,initial_frame=None,observed_at=None):
+--- a/LoongLens/tests/test_live_patrol.py
++++ b/LoongLens/tests/test_live_patrol.py
+@@ -98,7 +98,7 @@
+ 
+ def test_reported_bug_wrong_old_opener_fails_after_first_closed_scene():
+     engine,backend,events=setup();engine.settings=LiveSettings(map_open=(515.,830.))
+-    with pytest.raises(RuntimeError,match='large map did not open'):engine.run(backend)
++    with pytest.raises(RuntimeError,match='large map was not confirmed'):engine.run(backend)
+     assert engine.checked=={0}
+     assert backend.inputs[-1]==('click',(515.,830.),False)
+     assert len([e for e in events if e['kind']=='view'])==1
+--- /dev/null
++++ b/LoongLens/tests/test_map_screen_state.py
+@@ -0,0 +1,168 @@
++"""Real map controls with an unreadable title: no repeated minimap/filter tap."""
++from pathlib import Path
++import threading
++from types import SimpleNamespace
++import cv2
++import numpy as np
++import pytest
++from map_screen import map_controls_visible,filter_menu_visible
++from patrol_live import LivePatrol,LiveSettings
++from patrol_windows import PatrolStopped
++from vision import TitleDetector
++from test_live_patrol import Clock,setup
++
++FIXTURE=Path(__file__).parent/'fixtures/map-controls.png'
++
++
++def controls():return cv2.imread(str(FIXTURE))
++
++
++def expanded():
++    image=controls();cv2.rectangle(image,(98,58),(560,702),(43,43,43),-1)
++    for row in range(9):
++        for col in range(3):
++            x=110+col*149;y=76+row*57
++            cv2.rectangle(image,(x+15,y),(x+115,y+34),(105,212,208),-1)
++            cv2.ellipse(image,(x+15,y+17),(15,17),0,90,270,(105,212,208),-1)
++            cv2.ellipse(image,(x+115,y+17),(15,17),0,-90,90,(105,212,208),-1)
++    return image
++
++
++def gameplay():
++    image=np.full((1029,570,3),(72,116,84),np.uint8)
++    image[938:1026,12:124]=controls()[938:1026,12:124]  # Same Back arrow in gameplay.
++    return image
++
++
++@pytest.mark.parametrize('color',[(25,25,25),(190,210,230),(112,82,55)])
++def test_map_controls_confirm_open_map_without_a_matching_title(color):
++    image=controls();image[31:134,8:246]=color
++    detector=TitleDetector();gray=cv2.cvtColor(image[31:133,8:245],cv2.COLOR_BGR2GRAY)
++    old=float(cv2.minMaxLoc(cv2.matchTemplate(gray,detector.template,cv2.TM_CCOEFF_NORMED))[1])
++    assert old<.64 and map_controls_visible(image)
++    assert detector.score(image)>=.64
++
++
++def test_back_arrow_in_gameplay_does_not_prove_map_open():
++    image=gameplay();assert not map_controls_visible(image) and TitleDetector().score(image)<.64
++
++
++def test_zoom_without_back_does_not_prove_map_open():
++    image=controls();image[938:1026,12:124]=0
++    assert not map_controls_visible(image) and TitleDetector().score(image)<.64
++
++
++def test_world_labels_and_rail_still_work_when_portrait_covers_plus():
++    image=controls();image[620:700,515:560]=0
++    assert map_controls_visible(image) and TitleDetector().score(image)>=.64
++
++
++def test_expanded_filter_is_recognized_even_when_it_covers_title_and_plus():
++    image=expanded();assert filter_menu_visible(image) and map_controls_visible(image)
++    assert TitleDetector().score(image)>=.64
++
++
++def test_yellow_terrain_is_not_a_filter_grid():
++    image=np.full((1029,570,3),(105,212,208),np.uint8)
++    assert not filter_menu_visible(image) and not map_controls_visible(image)
++
++
++class Replay:
++    def __init__(self,mode='map',back='panel',cancel=None):
++        self.mode=mode;self.back=back;self.cancel=cancel or threading.Event();self.clock=Clock()
++        self.clicks=[];self.first=None
++    def capture(self):
++        if self.first is not None:image=self.first;self.first=None;return image.copy()
++        return {'map':controls,'filter':expanded,'game':gameplay}[self.mode]()
++    def wait(self,seconds):
++        if self.cancel.is_set():raise PatrolStopped('Stopped.')
++        self.clock.now+=seconds
++    def click(self,point):
++        point=tuple(point);self.clicks.append(point)
++        if point==LiveSettings().map_close:
++            if self.back=='game':self.mode='game'
++            elif self.back=='panel':self.mode='map'
++            elif self.back=='cancel':self.cancel.set()
++        elif point==LiveSettings().map_open:
++            # This is the exact old bug: the opener on an open map opens filters.
++            self.mode='map' if self.mode=='game' else 'filter'
++
++
++def opener(backend):
++    return LivePatrol((),LiveSettings(),backend.cancel,lambda e:None,title=TitleDetector(),clock=backend.clock)
++
++
++def test_already_open_weak_title_map_sends_no_minimap_click():
++    backend=Replay();engine=opener(backend)
++    assert engine.is_map(engine.open_map(backend)) and backend.clicks==[]
++
++
++def test_single_transitional_frame_does_not_click_minimap_on_open_map():
++    backend=Replay();backend.first=gameplay();engine=opener(backend)
++    assert engine.is_map(engine.open_map(backend)) and backend.clicks==[]
++
++
++def test_gameplay_opens_map_once():
++    backend=Replay('game');engine=opener(backend)
++    assert engine.is_map(engine.open_map(backend))
++    assert backend.clicks==[LiveSettings().map_open]
++
++
++@pytest.mark.parametrize('back',['panel','game'])
++def test_existing_filter_is_dismissed_with_calibrated_back_and_progress_kept(back):
++    backend=Replay('filter',back);engine=opener(backend);engine.checked.update((2,4));engine.skipped.add(2)
++    assert engine.is_map(engine.open_map(backend)) and backend.mode=='map'
++    assert backend.clicks==[LiveSettings().map_close]+([LiveSettings().map_open] if back=='game' else [])
++    assert engine.checked=={2,4} and engine.skipped=={2}
++
++
++def test_filter_back_ignored_never_clicks_options_or_repeats_opener():
++    backend=Replay('filter','ignored');engine=opener(backend)
++    with pytest.raises(RuntimeError,match='filter is still open'):engine.open_map(backend)
++    assert backend.clicks==[LiveSettings().map_close]
++
++
++def test_transitional_frame_after_filter_back_does_not_reopen_filter():
++    backend=Replay('filter');click=backend.click
++    def transition(point):
++        click(point)
++        if tuple(point)==LiveSettings().map_close:backend.first=gameplay()
++    backend.click=transition;engine=opener(backend)
++    assert engine.is_map(engine.open_map(backend))
++    assert backend.clicks==[LiveSettings().map_close]
++
++
++def test_f10_during_filter_recovery_never_reopens_map():
++    backend=Replay('filter','cancel');engine=opener(backend)
++    with pytest.raises(PatrolStopped):engine.open_map(backend)
++    assert backend.clicks==[LiveSettings().map_close]
++
++
++def real_control_engine(ignored_back=False):
++    engine,backend,events=setup();engine.title=TitleDetector();backend.break_back=ignored_back
++    original=backend.capture
++    def capture():
++        fake=original()
++        if not backend.open:return gameplay()
++        image=controls()
++        # Preserve the independently simulated camera outline, not title flags.
++        white=(fake[:,:,0]==255)&(fake[:,:,1]==255)&(fake[:,:,2]==255)
++        image[white]=255
++        return image
++    backend.capture=capture
++    return engine,backend,events
++
++
++def test_title_failure_does_not_classify_selected_open_map_as_gameplay():
++    engine,backend,events=real_control_engine()
++    engine.run(backend,auto=False)
++    assert engine.checked=={0} and not backend.open
++    assert len(backend.inputs)==2 and backend.inputs[-1][1]==LiveSettings().map_close
++    assert not any(p==LiveSettings().map_open for action,p,state in backend.inputs)
++
++
++def test_ignored_back_stays_map_and_cannot_be_counted_as_inspected():
++    engine,backend,events=real_control_engine(ignored_back=True)
++    with pytest.raises(RuntimeError,match='map did not close'):engine.run(backend,auto=False)
++    assert backend.open and not engine.checked
++    assert not any(e['kind']=='frame' for e in events)
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,10 +4,10 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'CHANGELOG-v37.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py', 'LoongLens-AppIcon-HD.png', 'ui_assets.py', 'dashboard_shell.py', 'window_capture.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+-         'sniper_counter.py', 'sniper_history_panel.py', 'gem_heatmap.py', 'gem_heatmap_panel.py', 'heatmap_map_import.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'tracker.py', 'pose.py',
++         'sniper_counter.py', 'sniper_history_panel.py', 'gem_heatmap.py', 'gem_heatmap_panel.py', 'heatmap_map_import.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'map_screen.py', 'tracker.py', 'pose.py',
+          'win_overlay.py', 'sxs_atlas_tracker.py', 'atlas_metadata.json',
+          'loong_haven_default_atlas.png', 'loong_title_template.png',
+          'loong_haven_map_data.json', 'loong_haven_ingredients.json',
+@@ -32,6 +32,8 @@
+         for directory in ['tests', 'tools']:
+             for source in sorted((ROOT / directory).glob('*.py')):
+                 archive.write(source, 'LoongLens/' + str(source.relative_to(ROOT)))
++        for source in sorted((ROOT/'tests/fixtures').glob('*.png')):
++            archive.write(source,'LoongLens/'+str(source.relative_to(ROOT)))
+         for source in sorted((ROOT/'gem_templates').iterdir()):
+             if source.suffix in ('.png','.txt'):
+                 archive.write(source,'LoongLens/'+str(source.relative_to(ROOT)))
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v36 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v37 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -29,7 +29,7 @@
+     for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check'):
+         report=ROOT/(mode+'.json')
+         data=json.loads(report.read_text('utf-8-sig'))
+-        if data.get('passed') is not True or data.get('version')!=36:
++        if data.get('passed') is not True or data.get('version')!=37:
+             raise SystemExit(f'{mode} did not pass')
+         if mode=='sniper-ui-check':
+             for key in ('restart_restored_obtained_choice','restart_restored_endless_preference',
+@@ -46,19 +46,19 @@
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v35','v36'):
++    for version in ('v36','v37'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
+         comparisons[version]=data;reports.append(path)
+-    baseline=comparisons['v35'];latest=comparisons['v36']
++    baseline=comparisons['v36'];latest=comparisons['v37']
+     if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
+         raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+     if latest['held_strokes']>=30 or latest['held_moves']>latest['held_strokes']*5:
+         raise SystemExit('The centre-start route comparison exceeded its movement bounds.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v36-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v37-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+@@ -68,13 +68,17 @@
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=36,baseline=35,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=37,baseline=36,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                   speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v36.txt').write_text(
+-            'Loong Lens v36 - sidebar dashboard\n\n'
++        (app/'START-HERE-v37.txt').write_text(
++            'Loong Lens v37 - reliable map state and filter recovery\n\n'
++            'Map recognition now also checks map controls when the title image does not match.\n'
++            'An already-open map does not get another minimap tap. A transient frame is rechecked.\n'
++            'An open filter panel gets one calibrated Back click; it is observed before proceeding.\n'
++            'If it stays open, input stops and route progress is kept. F10 remains immediate.\n'
+             'New sidebar navigation, controls/status cards, live portrait preview and bottom action bar.\n'
+             'Uses the original transparent gem artwork throughout the interface.\n'
+             'Loop sniping repeats completed routes. Endless bypasses the daily quota.\n'
+@@ -109,7 +113,7 @@
+             'No padding or broad right-hand exclusion strip is added.\n'
+             'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
+             'Hide portal icons in the game map as you requested.\n'
+-            'The header shows v36; settings and personal routes remain in LocalAppData.\n'
++            'The header shows v37; settings and personal routes remain in LocalAppData.\n'
+             'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
+             'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
+             'It observes repeatedly, never clicks a gem, and continues after a find.\n'
+@@ -139,7 +143,7 @@
+             'and validation reports are included under validation; live game speed is not measured.\n'
+             'Do not delete %LOCALAPPDATA%\\LoongLens; settings, screenshots and history stay there.\n',
+             'utf-8')
+-        for image in sorted((ROOT/'artifacts').glob('v36-*.png')):shutil.copy2(image,validation/image.name)
++        for image in sorted((ROOT/'artifacts').glob('v37-*.png')):shutil.copy2(image,validation/image.name)
+         manifest={p.relative_to(app).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in sorted(app.rglob('*')) if p.is_file()}
+         (app/'PACKAGE-SHA256.json').write_text(json.dumps(manifest,indent=2)+'\n','utf-8')
+--- a/LoongLens/tools/ui_sniper_smoke.py
++++ b/LoongLens/tools/ui_sniper_smoke.py
+@@ -131,7 +131,7 @@
+             assert panel.services.sighting_history.sniper_seen()==5
+             count=len(clicks);panel.snipe.invoke()
+             assert panel.services.owner is None and len(clicks)==count and '5/5' in panel.status.get()
+-            results.append(dict(passed=True,version=36,collection_seconds=20,return_world=[241,107],
++            results.append(dict(passed=True,version=37,collection_seconds=20,return_world=[241,107],
+                                 daily_count=5,stopped_at_goal=True,source_screenshot_saved=True,
+                                 dim_camera_selected_once_per_visit=True,
+                                 reset_kept_daily_counter=True,scope='Native Tk and detector; simulated game input and waits'))
+--- a/LoongLens/tools/ui_spy_smoke.py
++++ b/LoongLens/tools/ui_spy_smoke.py
+@@ -48,7 +48,7 @@
+                 from ctypes import wintypes
+                 user=ctypes.WinDLL('user32');user.GetAncestor.argtypes=(wintypes.HWND,wintypes.UINT);user.GetAncestor.restype=wintypes.HWND
+                 out=ROOT/'artifacts';out.mkdir(exist_ok=True)
+-                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v36-spy-ui-failure.png')
++                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v37-spy-ui-failure.png')
+                 self.exit_app()
+             self.report_callback_exception=failed
+             self.after(1800,self.begin);self.after(120000,self.destroy)
+@@ -179,7 +179,7 @@
+             assert runner.cancel.is_set() and sniper.services.owner is None
+             assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
+             assert len(spy.history.encounters())==2
+-            completed.append(dict(passed=True,version=36,unique_gems=2,screenshots=2,
++            completed.append(dict(passed=True,version=37,unique_gems=2,screenshots=2,
+                                   passes=2,recovery_kept_progress=True,f10_stays_stopped=True,
+                                   heatmap_all_history=True,heatmap_zoom_pan=True,heatmap_viewport_bounded=True,
+                                   heatmap_three_part_import=True,heatmap_saved_map_reloaded=True,route_editor_uses_imported_map=True))
+--- a/LoongLens/vision.py
++++ b/LoongLens/vision.py
+@@ -160,7 +160,13 @@
+         gray = cv2.cvtColor(frame[31:133, 8:245], cv2.COLOR_BGR2GRAY)
+         if any(a < b for a, b in zip(gray.shape, self.template.shape)):
+             return 0.
+-        return float(cv2.minMaxLoc(cv2.matchTemplate(gray, self.template, cv2.TM_CCOEFF_NORMED))[1])
++        score=float(cv2.minMaxLoc(cv2.matchTemplate(gray, self.template, cv2.TM_CCOEFF_NORMED))[1])
++        if score>=.64:return score
++        # The title template contains old terrain pixels. Ice, dark ground,
++        # scaling and the filter panel can lower its match while the map is
++        # still open. Confirm independent map controls before reporting closed.
++        from map_screen import map_controls_visible
++        return max(score,.80) if map_controls_visible(frame) else score
+ 
+ class AtlasIndex:
+     """A cached SIFT index replaces repeated whole-atlas template searches.
