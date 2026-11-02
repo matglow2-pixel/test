@@ -1,0 +1,990 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v39.md
+@@ -0,0 +1,34 @@
++# v39 — faster ADB screenshots
++
++v38 started a host ADB command and compressed/transferred a full PNG for every
++screenshot. That overhead was repeated many times per camera view. v39 keeps one
++request-driven Android screen connection open, including foreground-app queries.
++Each screenshot is taken after its request; queued/stale frames are never used.
++
++At connection startup it warms up and measures PNG and uncompressed screenshots
++on the selected emulator, including transfer and decoding, then uses the faster
++format. Android raw RGB/RGBA/RGBX/BGRA/RGB565 images and both header layouts are
++handled explicitly. Unsupported raw layouts select persistent PNG. Whole-image
++black-screen checking now uses exact OpenCV statistics without allocating a large
++floating-point array on every capture.
++
++The route, map validation, loading/inspection waits, three-hit confirmation,
++20-second collection wait, return point and histories stay the same. Sniper and
++Spy keep Windows mouse/focus free. No new dependency, APK or root is required.
++ADB errors never fall back to Windows mouse input. Minimized operation still
++requires BlueStacks to keep rendering and the game to stay active inside Android.
++
++Exit the old app, extract the full package and run LoongLens.exe (header v39).
++Keep Android Debug Bridge enabled at the existing 127.0.0.1:5555 address. In
++Sniper Settings, Test connection / preview with the large map open; the result
++now includes measured capture milliseconds. Test map pan with BlueStacks
++minimized, then Save. Existing device/alignment, routes and history are retained.
++
++Windows checks compare the actual v38/v39 capture code with an independent
++simulated Android subprocess, modeled command/encoding costs and real transfer/
++decoding. They require fresh frames and zero new host processes per v39 capture.
++Native source/frozen GUI checks also verify this reuse and unchanged Windows
++cursor/focus. Linux runs the actual quoted Android shell script against command
++stubs, including binary framing, file permissions and cleanup. These checks are
++not a measured live BlueStacks speed claim; compare your actual route timings.
++
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,3 +1,38 @@
++# v39 — faster ADB screenshots
++
++v38 started a host ADB command and compressed/transferred a full PNG for every
++screenshot. That overhead was repeated many times per camera view. v39 keeps one
++request-driven Android screen connection open, including foreground-app queries.
++Each screenshot is taken after its request; queued/stale frames are never used.
++
++At connection startup it warms up and measures PNG and uncompressed screenshots
++on the selected emulator, including transfer and decoding, then uses the faster
++format. Android raw RGB/RGBA/RGBX/BGRA/RGB565 images and both header layouts are
++handled explicitly. Unsupported raw layouts select persistent PNG. Whole-image
++black-screen checking now uses exact OpenCV statistics without allocating a large
++floating-point array on every capture.
++
++The route, map validation, loading/inspection waits, three-hit confirmation,
++20-second collection wait, return point and histories stay the same. Sniper and
++Spy keep Windows mouse/focus free. No new dependency, APK or root is required.
++ADB errors never fall back to Windows mouse input. Minimized operation still
++requires BlueStacks to keep rendering and the game to stay active inside Android.
++
++Exit the old app, extract the full package and run LoongLens.exe (header v39).
++Keep Android Debug Bridge enabled at the existing 127.0.0.1:5555 address. In
++Sniper Settings, Test connection / preview with the large map open; the result
++now includes measured capture milliseconds. Test map pan with BlueStacks
++minimized, then Save. Existing device/alignment, routes and history are retained.
++
++Windows checks compare the actual v38/v39 capture code with an independent
++simulated Android subprocess, modeled command/encoding costs and real transfer/
++decoding. They require fresh frames and zero new host processes per v39 capture.
++Native source/frozen GUI checks also verify this reuse and unchanged Windows
++cursor/focus. Linux runs the actual quoted Android shell script against command
++stubs, including binary framing, file permissions and cleanup. These checks are
++not a measured live BlueStacks speed claim; compare your actual route timings.
++
++
+ # v38 — BlueStacks ADB background mode
+ 
+ ADB is now the default input mode for Gem Sniper and Gem Spy. Android screenshots
+@@ -74,7 +109,7 @@
+ 
+ ## Start
+ 
+-Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v38**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
++Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v39**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
+ 
+ The EXE bundles its own code. To run edited Python files, use RUN_LOONG_LENS.bat; editing adjacent source does not alter the EXE. The launcher activates an existing instance, so exit that instance before changing launchers.
+ 
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,3 +1,38 @@
++# v39 — faster ADB screenshots
++
++v38 started a host ADB command and compressed/transferred a full PNG for every
++screenshot. That overhead was repeated many times per camera view. v39 keeps one
++request-driven Android screen connection open, including foreground-app queries.
++Each screenshot is taken after its request; queued/stale frames are never used.
++
++At connection startup it warms up and measures PNG and uncompressed screenshots
++on the selected emulator, including transfer and decoding, then uses the faster
++format. Android raw RGB/RGBA/RGBX/BGRA/RGB565 images and both header layouts are
++handled explicitly. Unsupported raw layouts select persistent PNG. Whole-image
++black-screen checking now uses exact OpenCV statistics without allocating a large
++floating-point array on every capture.
++
++The route, map validation, loading/inspection waits, three-hit confirmation,
++20-second collection wait, return point and histories stay the same. Sniper and
++Spy keep Windows mouse/focus free. No new dependency, APK or root is required.
++ADB errors never fall back to Windows mouse input. Minimized operation still
++requires BlueStacks to keep rendering and the game to stay active inside Android.
++
++Exit the old app, extract the full package and run LoongLens.exe (header v39).
++Keep Android Debug Bridge enabled at the existing 127.0.0.1:5555 address. In
++Sniper Settings, Test connection / preview with the large map open; the result
++now includes measured capture milliseconds. Test map pan with BlueStacks
++minimized, then Save. Existing device/alignment, routes and history are retained.
++
++Windows checks compare the actual v38/v39 capture code with an independent
++simulated Android subprocess, modeled command/encoding costs and real transfer/
++decoding. They require fresh frames and zero new host processes per v39 capture.
++Native source/frozen GUI checks also verify this reuse and unchanged Windows
++cursor/focus. Linux runs the actual quoted Android shell script against command
++stubs, including binary framing, file permissions and cleanup. These checks are
++not a measured live BlueStacks speed claim; compare your actual route timings.
++
++
+ # v38 — BlueStacks ADB background mode
+ 
+ ADB is now the default input mode for Gem Sniper and Gem Spy. Android screenshots
+--- a/LoongLens/adb_diagnostics.py
++++ b/LoongLens/adb_diagnostics.py
+@@ -27,6 +27,7 @@
+     if not python or not Path(python).is_file():raise RuntimeError('Set LOONGLENS_DIAGNOSTIC_PYTHON for the simulated-device diagnostic.')
+     temporary=tempfile.TemporaryDirectory(prefix='loonglens-adb-check-');folder=Path(temporary.name);device=folder/'device'
+     prepare_fixture(device,ROOT)
++    launches=[]
+     old_local=os.environ.get('LOCALAPPDATA');os.environ['LOCALAPPDATA']=str(folder)
+     original_tk=tk.Tk;original_init=patrol_live_panel.LivePatrolPanel.__init__;panels=[];errors=[];completed=[]
+     user=ctypes.WinDLL('user32');user.GetForegroundWindow.restype=wintypes.HWND
+@@ -34,7 +35,7 @@
+     def cursor():
+         point=wintypes.POINT();assert user.GetCursorPos(ctypes.byref(point));return point.x,point.y
+     def factory(command,**kwargs):
+-        assert not kwargs.get('shell')
++        assert not kwargs.get('shell');launches.append(command)
+         return subprocess.Popen([python,str(ROOT/'adb_fixture.py'),str(device),*command[1:]],**kwargs)
+     def adb(cancel,settings):return AdbBackend(cancel,settings,factory)
+     def unavailable():raise RuntimeError('No visible emulator window in this diagnostic')
+@@ -85,6 +86,10 @@
+             cancel=threading.Event()
+             with adb(cancel,settings) as backend:
+                 backend.focus()
++                assert backend.capture_profile['persistent'] and backend.capture_profile['raw_ms'] is not None
++                before_launches=len(launches);screen=backend.screen
++                backend.capture();backend.capture()
++                assert len(launches)==before_launches and backend.screen is screen
+                 timer=threading.Timer(.25,cancel.set)
+                 try:
+                     with backend.hold_drag((285.,530.)):
+@@ -116,7 +121,7 @@
+         if old_local is None:os.environ.pop('LOCALAPPDATA',None)
+         else:os.environ['LOCALAPPDATA']=old_local
+         temporary.cleanup()
+-    return dict(android_screenshots=True,persistent_hold=True,map_pan_and_return=True,
++    return dict(persistent_screen=True,capture_benchmark_completed=True,capture_no_new_adb_process=True,android_screenshots=True,persistent_hold=True,map_pan_and_return=True,
+         windows_cursor_unchanged=True,windows_foreground_unchanged=True,
+         cancel_kept_settings=True,adb_profile_reloaded=True,cancellation_released_android=True,
+         scope='Native Windows GUI and subprocess transport; simulated Android device. Real minimized BlueStacks must pass the in-app pan test.')
+--- a/LoongLens/adb_fixture.py
++++ b/LoongLens/adb_fixture.py
+@@ -1,5 +1,6 @@
+ """Disposable ADB process fixture used only by transport validation tools."""
+ import json
++import struct
+ import os
+ from pathlib import Path
+ import sys
+@@ -35,6 +36,26 @@
+         temporary=root/'state.next';temporary.write_text(json.dumps(state));temporary.replace(state_path)
+     def log(kind,value):
+         with (root/'calls.jsonl').open('a',encoding='utf-8') as f:f.write(json.dumps([kind,value])+'\n')
++    def capture(mode):
++        import cv2
++        import numpy as np
++        cv2.setNumThreads(2)
++        state=read();time.sleep(state.get('screen_delays',{}).get(mode,0.))
++        if state.get('black'):image=np.zeros((state['height'],state['width'],3),np.uint8)
++        else:
++            base=cv2.imread(str(root/'map.png'))
++            if state['open']:
++                image=cv2.warpAffine(base,np.float32([[1,0,state['dx']],[0,1,state['dy']]]),(570,1029))
++                for l,t,r,b in ((0,0,570,135),(410,40,570,240),(0,929,570,1029),(490,610,570,929)):image[t:b,l:r]=base[t:b,l:r]
++                if state.get('camera'):
++                    x,y=state['camera'];cv2.rectangle(image,(round(x-42),round(y-75)),(round(x+42),round(y+75)),(255,255,255),2)
++            else:image=cv2.imread(str(root/'game.png'))
++            image=cv2.resize(image[32:1013],(state['width'],state['height']))
++        if mode=='P':
++            if state.get('bad_png'):return b'bad image'
++            ok,png=cv2.imencode('.png',image);return png.tobytes()
++        rgba=cv2.cvtColor(image,cv2.COLOR_BGR2RGBA)
++        return struct.pack('<IIII',state['width'],state['height'],1,0)+rgba.tobytes()
+     log('command',args)
+     if args[:1]==['connect']:print('connected to '+args[1]);return
+     if args[:2]!=['-s','127.0.0.1:5555']:raise SystemExit(2)
+@@ -71,24 +92,27 @@
+             if action=='Q':return
+         if down:state=read();state['down']=False;write(state);log('touch',['EOF_UP',position])
+         return
++    if args[:4]==['shell','-T','sh','-c'] and 'LL_SCREEN_V39' in args[4]:
++        print('LLSCREEN1 0 READY 0',flush=True)
++        for line in sys.stdin:
++            identifier,mode=line.strip().split();log('screen',[int(identifier),mode,time.monotonic()])
++            if mode in ('A','W'):
++                package=read().get('package')
++                data=('mResumedActivity: ActivityRecord{9 u0 '+package+'/.Game t4}' if package else 'mCurrentFocus=null').encode()
++                kind=mode
++            elif mode in ('P','R'):
++                if (root/'block-capture').exists():time.sleep(30)
++                current=read()
++                if mode=='R' and current.get('raw_unsupported'):
++                    data=b'';kind='E'
++                else:data=capture(mode);kind=mode
++            else:break
++            sys.stdout.buffer.write(f'LLSCREEN1 {identifier} {kind} {len(data)}\n'.encode('ascii'))
++            sys.stdout.buffer.write(data);sys.stdout.buffer.flush()
++        return
+     if args==['exec-out','screencap','-p']:
+         if (root/'block-capture').exists():time.sleep(30)
+-        import cv2
+-        import numpy as np
+-        cv2.setNumThreads(2)
+-        state=read()
+-        if state.get('bad_png'):sys.stdout.buffer.write(b'bad image');return
+-        if state.get('black'):image=np.zeros((state['height'],state['width'],3),np.uint8)
+-        else:
+-            base=cv2.imread(str(root/'map.png'))
+-            if state['open']:
+-                image=cv2.warpAffine(base,np.float32([[1,0,state['dx']],[0,1,state['dy']]]),(570,1029))
+-                for l,t,r,b in ((0,0,570,135),(410,40,570,240),(0,929,570,1029),(490,610,570,929)):image[t:b,l:r]=base[t:b,l:r]
+-                if state.get('camera'):
+-                    x,y=state['camera'];cv2.rectangle(image,(round(x-42),round(y-75)),(round(x+42),round(y+75)),(255,255,255),2)
+-            else:image=cv2.imread(str(root/'game.png'))
+-            image=cv2.resize(image[32:1013],(state['width'],state['height']))
+-        ok,png=cv2.imencode('.png',image);sys.stdout.buffer.write(png.tobytes());return
++        sys.stdout.buffer.write(capture('P'));return
+     raise SystemExit('Unsupported fixture command: '+repr(args))
+ 
+ if __name__=='__main__':main()
+--- /dev/null
++++ b/LoongLens/adb_screen.py
+@@ -0,0 +1,175 @@
++"""A request-driven Android screen connection; no desktop capture or input."""
++import queue
++import struct
++import subprocess
++import threading
++import time
++
++import cv2
++import numpy as np
++
++from patrol_adb import BackgroundInputError
++from patrol_windows import PatrolStopped
++
++
++# Each response is captured AFTER its request. There is no queued video/stale
++# frame to mistake for the result of a camera click or a held map movement.
++# The Android shell owns one temporary file, removed on EOF/exit. No APK/root.
++SCREEN_SCRIPT = r'''LL_SCREEN_V39=1
++umask 077
++frame=/data/local/tmp/loonglens-screen-$$
++trap 'rm -f "$frame"' EXIT HUP INT TERM
++printf 'LLSCREEN1 0 READY 0\n'
++while read -r request mode; do
++    ok=0
++    case "$mode" in
++        P) screencap -p "$frame" 2>/dev/null && ok=1 ;;
++        R) screencap "$frame" 2>/dev/null && ok=1 ;;
++        A) dumpsys activity activities > "$frame" 2>/dev/null && ok=1 ;;
++        W) dumpsys window > "$frame" 2>/dev/null && ok=1 ;;
++        Q) break ;;
++        *) break ;;
++    esac
++    if [ "$ok" = 1 ]; then
++        size=$(wc -c < "$frame")
++        printf 'LLSCREEN1 %s %s %s\n' "$request" "$mode" "$size"
++        cat "$frame" || break
++    else
++        printf 'LLSCREEN1 %s E 0\n' "$request"
++    fi
++done
++'''
++
++
++class ScreenCommandError(BackgroundInputError):
++    pass
++
++
++class UnsupportedRawFrame(ValueError):
++    pass
++
++
++def decode_raw(payload):
++    """Android raw screencap: dimensions/format, optional dataspace, pixels."""
++    if len(payload) < 12:
++        raise UnsupportedRawFrame('Incomplete Android raw image header')
++    width, height, fmt = struct.unpack_from('<III', payload)
++    if not (100 <= width <= 4320 and 100 <= height <= 7680):
++        raise UnsupportedRawFrame('Unsupported Android raw image dimensions')
++    channels = {1: 4, 2: 4, 3: 3, 4: 2, 5: 4}.get(fmt)
++    if channels is None:
++        raise UnsupportedRawFrame('Unsupported Android raw pixel format')
++    offset = len(payload) - width * height * channels
++    if offset not in (12, 16):
++        raise UnsupportedRawFrame('Unsupported Android raw image layout')
++    pixels = np.frombuffer(payload, np.uint8, offset=offset).reshape(height, width, channels)
++    conversion = {1: cv2.COLOR_RGBA2BGR, 2: cv2.COLOR_RGBA2BGR,
++                  3: cv2.COLOR_RGB2BGR, 4: cv2.COLOR_BGR5652BGR,
++                  5: cv2.COLOR_BGRA2BGR}[fmt]
++    return cv2.cvtColor(pixels, conversion)
++
++
++class ScreenChannel:
++    def __init__(self, process, cancel):
++        self.process = process
++        self.cancel = cancel
++        self.events = queue.Queue()
++        self.operation = threading.Lock()
++        self.closed = threading.Event()
++        self.failure = None
++        self.next_id = 1
++        self.diagnostics = []
++        self.reader = threading.Thread(target=self.read, daemon=True, name='ADB-screen-reader')
++        self.error_reader = threading.Thread(target=self.read_errors, daemon=True, name='ADB-screen-errors')
++        self.reader.start()
++        self.error_reader.start()
++        kind, data = self.receive(0, 8.)
++        if kind != 'READY' or data:
++            raise BackgroundInputError('Android screen connection did not start.')
++
++    def exact(self, length):
++        data = bytearray(length)
++        view = memoryview(data)
++        offset = 0
++        while offset < length:
++            count = self.process.stdout.readinto(view[offset:])
++            if not count:
++                raise EOFError('Android screen connection ended during a frame.')
++            offset += count
++        return data
++
++    def read(self):
++        try:
++            while True:
++                header = self.process.stdout.readline(256)
++                if not header:
++                    raise EOFError('Android screen connection ended.')
++                fields = header.decode('ascii').strip().split()
++                if len(fields) != 4 or fields[0] != 'LLSCREEN1':
++                    raise ValueError('Invalid Android screen response header.')
++                identifier, kind, length = int(fields[1]), fields[2], int(fields[3])
++                if identifier < 0 or kind not in ('READY', 'P', 'R', 'A', 'W', 'E') or not 0 <= length <= 64 * 1024 * 1024:
++                    raise ValueError('Invalid Android screen response size/type.')
++                self.events.put((identifier, kind, self.exact(length)))
++        except Exception as exc:
++            if not self.closed.is_set():
++                self.failure = str(exc)
++
++    def read_errors(self):
++        for line in iter(self.process.stderr.readline, b''):
++            self.diagnostics = (self.diagnostics + [line.decode('utf-8', 'replace').strip()])[-5:]
++
++    def receive(self, identifier, timeout):
++        deadline = time.monotonic() + timeout
++        while True:
++            if self.cancel.is_set():
++                raise PatrolStopped('Stopped.')
++            try:
++                received, kind, data = self.events.get(timeout=.05)
++            except queue.Empty:
++                if self.failure or self.process.poll() is not None:
++                    raise BackgroundInputError('Android screen connection failed: ' + (self.failure or ' '.join(self.diagnostics)[-250:]))
++                if time.monotonic() >= deadline:
++                    raise BackgroundInputError('Android screenshot timed out. Check BlueStacks rendering.')
++                continue
++            if received != identifier:
++                raise BackgroundInputError('Android screen responses arrived out of order.')
++            return kind, data
++
++    def request(self, mode, timeout=8.):
++        if mode not in ('P', 'R', 'A', 'W'):
++            raise ValueError('Invalid Android screen request')
++        with self.operation:
++            if self.cancel.is_set():
++                raise PatrolStopped('Stopped.')
++            if self.closed.is_set() or self.failure:
++                raise BackgroundInputError('Android screen connection is closed.')
++            identifier = self.next_id
++            self.next_id += 1
++            try:
++                self.process.stdin.write(f'{identifier} {mode}\n'.encode('ascii'))
++                self.process.stdin.flush()
++            except (OSError, ValueError) as exc:
++                raise BackgroundInputError('Android screen request failed.') from exc
++            kind, data = self.receive(identifier, timeout)
++            if kind == 'E':
++                raise ScreenCommandError('Android could not complete the screen request.')
++            if kind != mode:
++                raise BackgroundInputError('Unexpected Android screen response type.')
++            return data
++
++    def close(self):
++        if self.closed.is_set():
++            return
++        self.closed.set()
++        try:
++            self.process.stdin.close()  # EOF removes the Android temporary file.
++        except (OSError, ValueError):
++            pass
++        try:
++            self.process.wait(timeout=1.)
++        except subprocess.TimeoutExpired:
++            self.process.kill()
++            self.process.wait(timeout=2.)
++        self.reader.join(1.)
++        self.error_reader.join(1.)
+--- a/LoongLens/adb_setup_panel.py
++++ b/LoongLens/adb_setup_panel.py
+@@ -121,7 +121,8 @@
+         try:
+             self.candidate,self.frame,info=self.future.result()
+             self.note.set(('Map pan and return verified. ' if info.get('pan_verified') else 'Connected. ')+f'Android {info["width"]} × {info["height"]}. '+
+-                ('Screen alignment matched BlueStacks. ' if info['auto_aligned'] else '')+('Game app: '+info['package'] if info['package'] else 'Game map verified; Android did not report an app name.'))
++                ('Screen alignment matched BlueStacks. ' if info['auto_aligned'] else '')+('Game app: '+info['package'] if info['package'] else 'Game map verified; Android did not report an app name.')+
++                (' Capture: '+str(min(v for v in (info['capture_profile']['png_ms'],info['capture_profile']['raw_ms']) if v is not None))+' ms/frame.' if info.get('capture_profile') else ''))
+             self.preview(self.frame)
+         except Exception as exc:self.error.set(str(exc));self.note.set('Test stopped. No Windows mouse input was sent.')
+         finally:self.future=None;self.test_button.state(['!disabled']);self.pan_button.state(['!disabled'])
+--- a/LoongLens/dashboard_shell.py
++++ b/LoongLens/dashboard_shell.py
+@@ -12,7 +12,7 @@
+         art=gem_image(self.frame,38);self.images.append(art)
+         ttk.Label(brand,image=art,style='Sidebar.TLabel').pack(side='left',padx=(0,7))
+         ttk.Label(brand,text='Loong Lens',style='Logo.TLabel').pack(side='left')
+-        ttk.Label(self.frame,text='v38',style='Sidebar.TLabel').pack(anchor='w',padx=55,pady=(4,0))
++        ttk.Label(self.frame,text='v39',style='Sidebar.TLabel').pack(anchor='w',padx=55,pady=(4,0))
+         ttk.Label(self.frame,text='Loong Haven companion',style='Sidebar.TLabel').pack(anchor='w',padx=12,pady=(12,20))
+         ttk.Separator(self.frame).pack(fill='x',padx=6,pady=(0,12))
+         for index,(title,kind) in enumerate((('Map Tweaker','map'),('Gem Sniper','target'),('Gem Spy','gem'))):
+--- a/LoongLens/desktop_entry.py
++++ b/LoongLens/desktop_entry.py
+@@ -59,7 +59,7 @@
+                 if hasattr(self,'capture_user'):
+                     from window_capture import capture_window
+                     out=Path(__file__).resolve().parent/'artifacts';out.mkdir(exist_ok=True)
+-                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v38-layout-failure.png')
++                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v39-layout-failure.png')
+                 button=next((w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit'),None)
+                 if button is None:self.destroy()
+                 else:button.invoke()
+@@ -221,7 +221,7 @@
+                 if i==2:spy.map_preview.thumbnail();self.update()
+                 wrapper=user.GetAncestor(self.winfo_id(),2)
+                 picture=capture_window(int(wrapper))
+-                picture.save(screenshots/('v38-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
++                picture.save(screenshots/('v39-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
+             notebook.select(1);self.update()
+             # Sidebar commands select the existing pages, preserving controllers.
+             nav=[w for w in descendants(self) if isinstance(w,ttk.Button) and str(w.cget('style')).endswith('Nav.TButton')]
+@@ -306,10 +306,10 @@
+                 details=run_check()
+             else:
+                 check_native_input()
+-            result = {'passed': True, 'mode': sys.argv[1], 'version': 38, **details}
++            result = {'passed': True, 'mode': sys.argv[1], 'version': 39, **details}
+             status = 0
+         except Exception:
+-            result = {'passed': False, 'mode': sys.argv[1], 'version': 38, 'error': traceback.format_exc()}
++            result = {'passed': False, 'mode': sys.argv[1], 'version': 39, 'error': traceback.format_exc()}
+             status = 1
+         path.write_text(json.dumps(result, indent=2), encoding='utf-8')
+         return status
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -77,7 +77,7 @@
+     folder.mkdir(parents=True, exist_ok=True)
+     logging.basicConfig(filename=folder / 'loonglens.log', level=logging.INFO,
+                         format='%(asctime)s %(levelname)s %(message)s')
+-    logging.getLogger('loonglens').info('Loong Lens v38 executable=%s source=%s',sys.executable,Path(__file__).resolve())
++    logging.getLogger('loonglens').info('Loong Lens v39 executable=%s source=%s',sys.executable,Path(__file__).resolve())
+     settings_path = folder / 'settings.json'
+     coordinates_path = folder / 'coordinates.csv'
+     settings = {}
+@@ -237,7 +237,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Gem Spy v38; persistent observations and recovery'
++            details['version']='Gem Spy v39; persistent observations and recovery'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+--- a/LoongLens/patrol_adb.py
++++ b/LoongLens/patrol_adb.py
+@@ -5,6 +5,9 @@
+ import hashlib
+ import json
+ import math
++import logging
++import statistics
++import shlex
+ import os
+ import queue
+ import re
+@@ -158,7 +161,8 @@
+ class AdbBackend:
+     def __init__(self,cancel,settings=None,process_factory=None):
+         self.cancel=cancel;self.settings=settings or InputSettings();self.factory=process_factory or subprocess.Popen
+-        self.executable=None;self.size=None;self.touch=None;self.down=False;self.position=None
++        self.executable=None;self.size=None;self.touch=None;self.screen=None;self.down=False;self.position=None
++        self.capture_mode=None;self.capture_profile={};self.capture_times=[]
+         self.connected=False;self.package=self.settings.package or None;self.app_check_at=0.;self.state_lock=threading.RLock()
+         self.last_frame=None;self.pending_motion=None;self.game_verified=False
+         l,t,r,b=self.settings.content_rect;self.drag_bounds=(l,t,r-1e-6,b-1e-6)
+@@ -198,11 +202,26 @@
+         if self.command('get-state').strip()!=b'device':raise BackgroundInputError('The selected BlueStacks ADB device is not ready or authorized.')
+         self.connected=True
+ 
++    def start_screen(self):
++        if self.screen is not None:return
++        from adb_screen import ScreenChannel,SCREEN_SCRIPT
++        process=self.spawn(('shell','-T','sh','-c',shlex.quote(SCREEN_SCRIPT)),stream=True)
++        try:self.screen=ScreenChannel(process,self.cancel)
++        except Exception:
++            if process.poll() is None:process.kill();process.wait(timeout=2.)
++            raise
++
+     def foreground(self):
+-        for args in (('shell','dumpsys','activity','activities'),('shell','dumpsys','window')):
+-            try:text=self.command(*args,timeout=2.).decode('utf-8','replace')
++        from adb_screen import ScreenCommandError
++        self.start_screen()
++        for mode in ('A','W'):
++            try:text=self.screen.request(mode,timeout=2.).decode('utf-8','replace')
+             except PatrolStopped:raise
+-            except RuntimeError:continue
++            except ScreenCommandError:continue
++            except RuntimeError:
++                # A timed-out framed response cannot safely be reused as the
++                # response to a later screen request. Close it and stop input.
++                self.screen.close();self.screen=None;raise
+             package=active_package(text)
+             if package:return package
+         return None
+@@ -215,16 +234,49 @@
+         if package and self.package and package!=self.package:raise BackgroundInputError('The active Android app changed. ADB input stopped.')
+         return package
+ 
+-    def capture_raw(self):
+-        self.check();png=self.command('exec-out','screencap','-p')
+-        if not png.startswith(b'\x89PNG\r\n\x1a\n'):raise BackgroundInputError('ADB did not return an Android PNG screenshot.')
+-        frame=cv2.imdecode(np.frombuffer(png,np.uint8),cv2.IMREAD_COLOR)
+-        if frame is None:raise BackgroundInputError('Android screenshot could not be decoded.')
++    def capture_one(self,mode):
++        from adb_screen import decode_raw
++        started=time.monotonic();payload=self.screen.request(mode)
++        if mode=='R':frame=decode_raw(payload)
++        else:
++            if not payload.startswith(b'\x89PNG\r\n\x1a\n'):raise BackgroundInputError('ADB did not return an Android PNG screenshot.')
++            frame=cv2.imdecode(np.frombuffer(payload,np.uint8),cv2.IMREAD_COLOR)
++            if frame is None:raise BackgroundInputError('Android screenshot could not be decoded.')
+         h,w=frame.shape[:2]
+         if not .4<=w/h<=.75:raise BackgroundInputError('Use the game in portrait orientation for ADB mode.')
+         if self.size is None:self.size=(w,h)
+         elif self.size!=(w,h):raise BackgroundInputError('Android resolution changed. Stop and test the connection again.')
+-        if float(frame.mean())<2 and float(frame.std())<3:raise BackgroundInputError('Android returned a black screen. BlueStacks may have paused rendering while minimized.')
++        # Exact full-image statistics, without allocating a float64 copy of
++        # every pixel for NumPy std() on each screenshot.
++        means,deviations=cv2.meanStdDev(frame)
++        average=float(means.mean());variance=float(np.mean(deviations**2+means**2))-average**2
++        if average<2 and variance<9:raise BackgroundInputError('Android returned a black screen. BlueStacks may have paused rendering while minimized.')
++        return frame,time.monotonic()-started
++
++    def capture_raw(self):
++        from adb_screen import UnsupportedRawFrame,ScreenCommandError
++        self.check();self.start_screen()
++        if self.capture_mode is None:
++            # Warm each format once, then measure two fresh frames per format.
++            # Choose on this emulator, including transfer AND decoding cost.
++            timings={'P':[],'R':[]};raw_supported=True;last=None
++            for index,mode in enumerate(('P','R','P','R','P','R')):
++                if mode=='R' and not raw_supported:continue
++                try:last,elapsed=self.capture_one(mode)
++                except (UnsupportedRawFrame,ScreenCommandError):
++                    if mode!='R':raise
++                    raw_supported=False;continue
++                if index>=2:timings[mode].append(elapsed)
++            png=statistics.median(timings['P'])
++            raw=statistics.median(timings['R']) if raw_supported and timings['R'] else None
++            self.capture_mode='R' if raw is not None and raw<png else 'P'
++            self.capture_profile=dict(mode='raw' if self.capture_mode=='R' else 'PNG',
++                png_ms=round(png*1000,1),raw_ms=round(raw*1000,1) if raw is not None else None,
++                persistent=True,measured_on_device=True)
++            logging.getLogger('loonglens').info('ADB capture benchmark: %s',self.capture_profile)
++            # The returned frame is captured after selecting the transport.
++        frame,elapsed=self.capture_one(self.capture_mode)
++        self.capture_times=(self.capture_times+[elapsed])[-40:]
+         return frame
+ 
+     def render(self,raw):
+@@ -235,7 +287,7 @@
+         if self.touch is not None:return
+         jar=ROOT/'loonglens-touch.jar';manifest=json.loads((ROOT/'android_touch/BUILD.json').read_text('utf-8'))
+         digest=hashlib.sha256(jar.read_bytes()).hexdigest()
+-        if digest!=manifest['jar_sha256']:raise BackgroundInputError('Android touch helper checksum mismatch. Extract the complete v38 folder again.')
++        if digest!=manifest['jar_sha256']:raise BackgroundInputError('Android touch helper checksum mismatch. Extract the complete v39 folder again.')
+         path='/data/local/tmp/loonglens-touch-'+digest[:16]+'.jar'
+         self.command('push',str(jar),path,timeout=15.)
+         process=self.spawn(('shell','-T','CLASSPATH='+path,'app_process','/','com.loonglens.TouchBridge',str(self.size[0]),str(self.size[1])),stream=True)
+@@ -253,7 +305,7 @@
+         if map_visible:self.game_verified=True
+         if package and map_visible:self.package=package
+         self.start_touch()
+-        return dict(package=self.package or '',map_visible=map_visible,width=self.size[0],height=self.size[1],transport='Android screenshots and persistent touch')
++        return dict(package=self.package or '',map_visible=map_visible,width=self.size[0],height=self.size[1],transport='Android screenshots and persistent touch',capture_profile=self.capture_profile.copy())
+ 
+     def focus(self):
+         # The interface name is shared with WindowsBackend. No Windows focus
+@@ -331,7 +383,10 @@
+     def close(self):
+         try:self.release()
+         finally:
+-            if self.touch is not None:self.touch.close();self.touch=None
++            try:
++                if self.touch is not None:self.touch.close();self.touch=None
++            finally:
++                if self.screen is not None:self.screen.close();self.screen=None
+ 
+ 
+ def align_android_display(raw,desktop):
+--- a/LoongLens/tests/test_adb_background.py
++++ b/LoongLens/tests/test_adb_background.py
+@@ -103,7 +103,7 @@
+     with pytest.raises(RuntimeError,match='resolution changed'):backend.capture()
+     state(folder,width=720,height=1280,black=True)
+     with pytest.raises(RuntimeError,match='black screen'):backend.capture()
+-    state(folder,black=False,bad_png=True)
++    state(folder,black=False,bad_png=True);backend.capture_mode='P'
+     with pytest.raises(RuntimeError,match='PNG screenshot'):backend.capture()
+ 
+ 
+--- /dev/null
++++ b/LoongLens/tests/test_adb_screen.py
+@@ -0,0 +1,109 @@
++import io
++import json
++import os
++from pathlib import Path
++import shlex
++import struct
++import subprocess
++import threading
++
++import cv2
++import numpy as np
++import pytest
++
++from adb_screen import ScreenChannel, SCREEN_SCRIPT, UnsupportedRawFrame, decode_raw
++from patrol_adb import BackgroundInputError
++from test_adb_background import android, state
++
++
++@pytest.mark.parametrize('header', [12, 16])
++@pytest.mark.parametrize('fmt,channels', [(1, 4), (2, 4), (3, 3), (5, 4)])
++def test_android_raw_headers_and_pixel_order(header, fmt, channels):
++    pixels = np.zeros((100, 100, channels), np.uint8)
++    pixels[:, :, :3] = [31, 107, 219] if fmt != 5 else [219, 107, 31]
++    payload = struct.pack('<III', 100, 100, fmt) + (b'\0' * (header - 12)) + pixels.tobytes()
++    result = decode_raw(payload)
++    assert result.shape == (100, 100, 3)
++    assert np.all(result == [219, 107, 31])
++
++
++def test_android_rgb565_is_decoded_without_row_padding():
++    pixels = np.full((100, 100), 0xf800, dtype='<u2')
++    result = decode_raw(struct.pack('<IIII', 100, 100, 4, 0) + pixels.tobytes())
++    assert np.all(result == [0, 0, 248])
++
++
++@pytest.mark.parametrize('payload', [b'', b'bad image', struct.pack('<III', 100, 100, 99),
++    struct.pack('<III', 99999, 99999, 1), struct.pack('<III', 100, 100, 1) + b'\0' * 40001])
++def test_unsupported_raw_layout_is_never_guessed(payload):
++    with pytest.raises(UnsupportedRawFrame): decode_raw(payload)
++
++
++def test_sustained_capture_reuses_screen_and_app_query_process(android):
++    backend, folder, _ = android
++    backend.focus(); screen = backend.screen
++    before = len([x for x in map(json.loads, (folder/'calls.jsonl').read_text().splitlines()) if x[0] == 'command'])
++    images = []
++    for offset in (4, 12, 24):
++        state(folder, dx=offset); backend.app_check_at=0
++        images.append(backend.capture())
++    after = len([x for x in map(json.loads, (folder/'calls.jsonl').read_text().splitlines()) if x[0] == 'command'])
++    assert backend.screen is screen and before == after
++    assert all(not np.array_equal(a, b) for a, b in zip(images, images[1:]))
++
++
++@pytest.mark.parametrize('slow,expected', [('P', 'R'), ('R', 'P')])
++def test_capture_transport_is_measured_instead_of_assuming_raw_is_faster(android, slow, expected):
++    backend, folder, _ = android
++    state(folder, screen_delays={slow: .15})
++    backend.focus()
++    assert backend.capture_mode == expected
++    assert backend.capture_profile['persistent'] and backend.capture_profile['measured_on_device']
++
++
++def test_unsupported_android_raw_capture_uses_persistent_png(android):
++    backend, folder, _ = android
++    state(folder, raw_unsupported=True)
++    backend.focus(); backend.capture()
++    assert backend.capture_mode == 'P' and backend.capture_profile['raw_ms'] is None
++
++
++@pytest.mark.skipif(os.name == 'nt', reason='POSIX shell semantics; Windows subprocess protocol is checked natively')
++def test_real_remote_shell_script_framing_quoting_and_cleanup(tmp_path):
++    # Run the actual quoted remote shell script, substituting only the Android
++    # temporary directory and Android command executables on this Linux host.
++    binaries = tmp_path/'bin'; binaries.mkdir()
++    raw = b'\0\n\xffLLSCREEN1 3 R 1\n' * 30
++    source = tmp_path/'pixels'; source.write_bytes(raw)
++    (binaries/'screencap').write_text('#!/bin/sh\nfor arg in "$@"; do target="$arg"; done\ncp '+shlex.quote(str(source))+' "$target"\n')
++    (binaries/'dumpsys').write_text("#!/bin/sh\nprintf 'mResumedActivity: ActivityRecord{3 u0 com.example.loong/.Game t1}'\n")
++    for path in binaries.iterdir(): path.chmod(0o755)
++    script = SCREEN_SCRIPT.replace('/data/local/tmp/', str(tmp_path)+'/')
++    environment = dict(PATH=str(binaries)+':/usr/bin:/bin')
++    process = subprocess.Popen(['sh', '-c', 'sh -c '+shlex.quote(script)],
++        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0, env=environment)
++    channel = ScreenChannel(process, threading.Event())
++    try:
++        assert channel.request('P') == raw
++        source.write_bytes(b'\x89PNG\nchanged\0')
++        assert channel.request('R') == source.read_bytes()
++        assert b'com.example.loong' in channel.request('A')
++        saved = next(tmp_path.glob('loonglens-screen-*'))
++        assert saved.stat().st_mode & 0o077 == 0
++    finally: channel.close()
++    assert not list(tmp_path.glob('loonglens-screen-*'))
++
++
++@pytest.mark.parametrize('response', [b'garbage\n', b'LLSCREEN1 1 R 999999999\n',
++    b'LLSCREEN1 1 P 10\nshort'])
++def test_broken_binary_stream_fails_without_returning_an_image(response):
++    class Process:
++        stdin = io.BytesIO()
++        stdout = io.BytesIO(b'LLSCREEN1 0 READY 0\n' + response)
++        stderr = io.BytesIO()
++        def poll(self): return None
++        def wait(self, timeout=None): return 0
++    channel=ScreenChannel(Process(),threading.Event())
++    try:
++        with pytest.raises(BackgroundInputError): channel.request('P',timeout=.2)
++    finally: channel.close()
+--- /dev/null
++++ b/LoongLens/tools/benchmark_adb_capture.py
+@@ -0,0 +1,62 @@
++"""Compare v38/v39 subprocess overhead against a disposable Android model."""
++import argparse
++import hashlib
++import importlib.util
++import json
++from pathlib import Path
++import subprocess
++import sys
++import tempfile
++import threading
++import time
++
++ROOT=Path(__file__).resolve().parents[1]
++sys.path.insert(0,str(ROOT))
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--baseline-root',type=Path,required=True)
++    parser.add_argument('--output',type=Path,default=ROOT/'adb-capture-benchmark.json')
++    args=parser.parse_args()
++    import cv2
++    cv2.setNumThreads(2)
++    from adb_fixture import prepare_fixture
++    from patrol_adb import AdbBackend,InputSettings
++    spec=importlib.util.spec_from_file_location('adb_v38_baseline',args.baseline_root/'patrol_adb.py')
++    baseline=importlib.util.module_from_spec(spec);sys.modules[spec.name]=baseline;spec.loader.exec_module(baseline)
++    results={}
++    for label,kind in (('v38',baseline.AdbBackend),('v39',AdbBackend)):
++        with tempfile.TemporaryDirectory(prefix='loonglens-capture-bench-') as tmp:
++            folder=Path(tmp);prepare_fixture(folder,ROOT)
++            path=folder/'state.json';state=json.loads(path.read_text())
++            state['screen_delays']={'P':.06,'R':.003};path.write_text(json.dumps(state))
++            launches=[]
++            def factory(command,**kwargs):
++                # Explicit, identical model cost for every host process launch.
++                time.sleep(.025);launches.append(command[1:])
++                return subprocess.Popen([sys.executable,str(ROOT/'adb_fixture.py'),str(folder),*command[1:]],**kwargs)
++            with kind(threading.Event(),InputSettings(adb_path=str(ROOT/'adb_fixture.py')),factory) as backend:
++                backend.focus();initial=len(launches);durations=[];hashes=[]
++                # Isolate capture. Foreground querying is checked separately by
++                # native tests and also reuses the persistent v39 connection.
++                backend.app_check_at=time.monotonic()+60
++                for n in range(12):
++                    state=json.loads(path.read_text());state['dx']=n*4.;path.write_text(json.dumps(state))
++                    started=time.perf_counter();frame=backend.capture();durations.append(time.perf_counter()-started)
++                    hashes.append(hashlib.sha256(frame.tobytes()).hexdigest())
++                assert len(set(hashes))==12,'A screenshot was reused after a new capture request'
++                results[label]=dict(captures=12,seconds=round(sum(durations),4),
++                    per_capture_ms=[round(t*1000,2) for t in durations],
++                    new_host_processes=len(launches)-initial,fresh_frames_verified=True,
++                    profile=getattr(backend,'capture_profile',None))
++    assert results['v38']['new_host_processes']==12
++    assert results['v39']['new_host_processes']==0
++    report=dict(passed=True,version=39,results=results,
++        scope='Real subprocess transfer/decoding with modeled 25ms host launch and 60ms PNG/3ms raw costs. Simulated Android; not live BlueStacks speed.')
++    args.output.parent.mkdir(parents=True,exist_ok=True)
++    args.output.write_text(json.dumps(report,indent=2)+'\n','utf-8')
++    print(json.dumps(report,indent=2))
++
++
++if __name__=='__main__':main()
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,7 +4,7 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'CHANGELOG-v37.md', 'CHANGELOG-v38.md', 'patrol_adb.py', 'adb_setup_panel.py', 'adb_fixture.py', 'adb_diagnostics.py', 'loonglens-touch.jar', 'android_touch/TouchBridge.java', 'android_touch/BUILD.json', 'android_touch/README.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'CHANGELOG-v37.md', 'CHANGELOG-v38.md', 'CHANGELOG-v39.md', 'adb_screen.py', 'patrol_adb.py', 'adb_setup_panel.py', 'adb_fixture.py', 'adb_diagnostics.py', 'loonglens-touch.jar', 'android_touch/TouchBridge.java', 'android_touch/BUILD.json', 'android_touch/README.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py', 'LoongLens-AppIcon-HD.png', 'ui_assets.py', 'dashboard_shell.py', 'window_capture.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+          'sniper_counter.py', 'sniper_history_panel.py', 'gem_heatmap.py', 'gem_heatmap_panel.py', 'heatmap_map_import.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'map_screen.py', 'tracker.py', 'pose.py',
+--- a/LoongLens/tools/check_touch_helper.py
++++ b/LoongLens/tools/check_touch_helper.py
+@@ -62,7 +62,7 @@
+         assert [r[0] for r in rows(log)]==['0','2','1'],'EOF failed to release finger'
+         p,log=process('invalid');output=done(p,b'1 D -1 200\n2 Q\n')
+         assert any(item.get('ok') is False for item in output) and rows(log)==[]
+-    report=dict(passed=True,version=38,stable_down_time=True,android_touchscreen_source=True,
++    report=dict(passed=True,version=39,stable_down_time=True,android_touchscreen_source=True,
+         watchdog_released=True,eof_released=True,invalid_points_rejected=True,
+         scope='Actual Java helper executed against independent Android API stubs; not a live Android permission test')
+     (ROOT/'touch-helper-check.json').write_text(json.dumps(report,indent=2)+'\n','utf-8')
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v38 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v39 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -29,7 +29,7 @@
+     for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check','source-adb-check','adb-check','touch-helper-check'):
+         report=ROOT/(mode+'.json')
+         data=json.loads(report.read_text('utf-8-sig'))
+-        if data.get('passed') is not True or data.get('version')!=38:
++        if data.get('passed') is not True or data.get('version')!=39:
+             raise SystemExit(f'{mode} did not pass')
+         if mode=='sniper-ui-check':
+             for key in ('restart_restored_obtained_choice','restart_restored_endless_preference',
+@@ -40,31 +40,36 @@
+                         'heatmap_three_part_import','heatmap_saved_map_reloaded','route_editor_uses_imported_map'):
+                 if data.get(key) is not True:raise SystemExit(f'Missing native heatmap validation: {key}')
+         if mode in ('source-adb-check','adb-check'):
+-            for key in ('windows_cursor_unchanged','windows_foreground_unchanged','map_pan_and_return','adb_profile_reloaded','cancellation_released_android'):
++            for key in ('windows_cursor_unchanged','windows_foreground_unchanged','map_pan_and_return','adb_profile_reloaded','cancellation_released_android','persistent_screen','capture_benchmark_completed','capture_no_new_adb_process'):
+                 if data.get(key) is not True:raise SystemExit(f'Missing ADB validation: {key}')
+         if mode=='touch-helper-check':
+             for key in ('stable_down_time','watchdog_released','eof_released'):
+                 if data.get(key) is not True:raise SystemExit(f'Missing Android helper validation: {key}')
+         reports.append(report)
++    capture_report=ROOT/'adb-capture-benchmark.json'
++    capture=json.loads(capture_report.read_text('utf-8-sig'))
++    if capture.get('passed') is not True or capture.get('version')!=39:raise SystemExit('ADB capture benchmark did not pass')
++    if capture['results']['v39']['new_host_processes']!=0:raise SystemExit('New ADB process per screenshot')
++    reports.append(capture_report)
+     tests=ROOT/'tests-result.txt'
+     result=re.findall(r'(\d+) passed(?:, (\d+) skipped)?',tests.read_text('utf-8-sig'))
+     if not result:raise SystemExit('No successful test count found for this build.')
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v37','v38'):
++    for version in ('v38','v39'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
+         comparisons[version]=data;reports.append(path)
+-    baseline=comparisons['v37'];latest=comparisons['v38']
++    baseline=comparisons['v38'];latest=comparisons['v39']
+     if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
+         raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+     if latest['held_strokes']>=30 or latest['held_moves']>latest['held_strokes']*5:
+         raise SystemExit('The centre-start route comparison exceeded its movement bounds.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v38-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v39-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+@@ -78,13 +83,20 @@
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=38,baseline=37,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=39,baseline=38,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                   speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v38.txt').write_text(
+-            'Loong Lens v38 - BlueStacks ADB background input\n\n'
++        (app/'START-HERE-v39.txt').write_text(
++            'Loong Lens v39 - faster ADB screenshots\n\n'
++            'Fixes repeated host ADB launches and app-query processes in the v38 capture path.\n'
++            'One persistent screen connection captures a fresh image only after each request.\n'
++            'Startup compares PNG with uncompressed Android frames and selects the faster format.\n'
++            'No new ADB executable is launched for subsequent screenshots or foreground checks.\n'
++            'Connection preview reports capture milliseconds; details are in loonglens.log.\n'
++            'Route, loading and gem inspection/confirmation waits are unchanged.\n'
++            'This removes measured/modelled overhead; real run speed still depends on BlueStacks.\n\n'
+             'ADB is the default input mode. It uses Android screenshots and touch events.\n'
+             'It does not move the Windows mouse or activate BlueStacks.\n'
+             'Enable Android Debug Bridge in BlueStacks Settings > Advanced. Device: 127.0.0.1:5555.\n'
+@@ -139,7 +151,7 @@
+             'No padding or broad right-hand exclusion strip is added.\n'
+             'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
+             'Hide portal icons in the game map as you requested.\n'
+-            'The header shows v38; settings and personal routes remain in LocalAppData.\n'
++            'The header shows v39; settings and personal routes remain in LocalAppData.\n'
+             'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
+             'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
+             'It observes repeatedly, never clicks a gem, and continues after a find.\n'
+@@ -169,7 +181,7 @@
+             'and validation reports are included under validation; live game speed is not measured.\n'
+             'Do not delete %LOCALAPPDATA%\\LoongLens; settings, screenshots and history stay there.\n',
+             'utf-8')
+-        for image in sorted((ROOT/'artifacts').glob('v38-*.png')):shutil.copy2(image,validation/image.name)
++        for image in sorted((ROOT/'artifacts').glob('v39-*.png')):shutil.copy2(image,validation/image.name)
+         manifest={p.relative_to(app).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in sorted(app.rglob('*')) if p.is_file()}
+         (app/'PACKAGE-SHA256.json').write_text(json.dumps(manifest,indent=2)+'\n','utf-8')
+--- a/LoongLens/tools/ui_adb_smoke.py
++++ b/LoongLens/tools/ui_adb_smoke.py
+@@ -6,6 +6,6 @@
+ from adb_diagnostics import run_check
+ 
+ if __name__=='__main__':
+-    result=run_check();result.update(passed=True,version=38)
++    result=run_check();result.update(passed=True,version=39)
+     (ROOT/'adb-check.json').write_text(json.dumps(result,indent=2)+'\n','utf-8')
+     print('Native ADB UI/transport:',result)
+--- a/LoongLens/tools/ui_sniper_smoke.py
++++ b/LoongLens/tools/ui_sniper_smoke.py
+@@ -131,7 +131,7 @@
+             assert panel.services.sighting_history.sniper_seen()==5
+             count=len(clicks);panel.snipe.invoke()
+             assert panel.services.owner is None and len(clicks)==count and '5/5' in panel.status.get()
+-            results.append(dict(passed=True,version=38,collection_seconds=20,return_world=[241,107],
++            results.append(dict(passed=True,version=39,collection_seconds=20,return_world=[241,107],
+                                 daily_count=5,stopped_at_goal=True,source_screenshot_saved=True,
+                                 dim_camera_selected_once_per_visit=True,
+                                 reset_kept_daily_counter=True,scope='Native Tk and detector; simulated game input and waits'))
+--- a/LoongLens/tools/ui_spy_smoke.py
++++ b/LoongLens/tools/ui_spy_smoke.py
+@@ -48,7 +48,7 @@
+                 from ctypes import wintypes
+                 user=ctypes.WinDLL('user32');user.GetAncestor.argtypes=(wintypes.HWND,wintypes.UINT);user.GetAncestor.restype=wintypes.HWND
+                 out=ROOT/'artifacts';out.mkdir(exist_ok=True)
+-                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v38-spy-ui-failure.png')
++                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v39-spy-ui-failure.png')
+                 self.exit_app()
+             self.report_callback_exception=failed
+             self.after(1800,self.begin);self.after(120000,self.destroy)
+@@ -179,7 +179,7 @@
+             assert runner.cancel.is_set() and sniper.services.owner is None
+             assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
+             assert len(spy.history.encounters())==2
+-            completed.append(dict(passed=True,version=38,unique_gems=2,screenshots=2,
++            completed.append(dict(passed=True,version=39,unique_gems=2,screenshots=2,
+                                   passes=2,recovery_kept_progress=True,f10_stays_stopped=True,
+                                   heatmap_all_history=True,heatmap_zoom_pan=True,heatmap_viewport_bounded=True,
+                                   heatmap_three_part_import=True,heatmap_saved_map_reloaded=True,route_editor_uses_imported_map=True))
