@@ -135,6 +135,15 @@
  # v37 map-screen regression checks
  
  Tests use real Back/zoom/world-tab control pixels extracted from the previously supplied recording, with the rest of the picture removed. No player name, chat or account information is included. The fixtures contain ordinary map controls only. Regressions cover weak title/background changes, gameplay's identical Back arrow, a covered zoom +, filter overlays, no extra minimap input on an open map, exactly one opener from gameplay, both Back behaviors, ignored Back, cancellation during filter recovery and refusing to count an unclosed map as inspected.
+@@ -250,3 +288,8 @@
+ requires these new native report fields. Live game recognition keeps the
+ original reference; no claim is made that the new visual map improves live
+ tracking or that it has been tested with a live BlueStacks game session.
++
++The virtual-clock Spy fixture limits OpenCV to the same two threads as the app.
++Its bounded completion join allows 30 seconds for real SQLite/PNG host I/O; a
++timeout prints all thread stacks, cancels and fails. This does not change any
++application wait, scan timing or screenshot behavior.
 --- /dev/null
 +++ b/LoongLens/adb_diagnostics.py
 @@ -0,0 +1,122 @@
@@ -1583,7 +1592,44 @@
 +    assert [c[0] for c in calls][-3:]==['shutdown','destroy','buttons']
 --- a/LoongLens/tests/test_spy_runner.py
 +++ b/LoongLens/tests/test_spy_runner.py
-@@ -168,3 +168,15 @@
+@@ -2,6 +2,7 @@
+ from pathlib import Path
+ from types import SimpleNamespace
+ import threading
++import faulthandler
+ import cv2
+ import numpy as np
+ import pytest
+@@ -11,6 +12,13 @@
+ from spy_history import SpyHistory
+ from spy_runner import SpyRunner,scene_quality
+ from test_live_patrol import Backend,Clock,Locator
++
++
++@pytest.fixture(scope='module',autouse=True)
++def application_opencv_threads():
++    previous=cv2.getNumThreads();cv2.setNumThreads(2)
++    try:yield
++    finally:cv2.setNumThreads(previous)
+ 
+ 
+ def texture():
+@@ -68,8 +76,12 @@
+ 
+ 
+ def finish(runner):
+-    runner.thread.join(15)
+-    if runner.running:runner.stop();runner.thread.join(3)
++    # SQLite commits and PNG writes use real host I/O despite a virtual game clock.
++    runner.thread.join(30)
++    if runner.running:
++        faulthandler.dump_traceback(all_threads=True)
++        runner.stop();runner.thread.join(5)
++        pytest.fail('Spy fixture exceeded its bounded completion budget; thread stacks printed')
+     assert not runner.running
+ 
+ 
+@@ -168,3 +180,15 @@
      assert len(store.standard.list())==2 and all(row.score>.95 for row in store.standard.list())
      assert len(list((tmp_path/'screenshots').glob('*.png')))==2
      store.close()
