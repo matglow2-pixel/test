@@ -1,0 +1,1903 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v38.md
+@@ -0,0 +1,37 @@
++# v38 — BlueStacks ADB background mode
++
++ADB is now the default input mode for Gem Sniper and Gem Spy. Android screenshots
++and a persistent Android touch session replace desktop screenshots/mouse input.
++The Windows mouse and foreground window stay untouched. Mouse mode is still an
++explicit option in Settings and never serves as an automatic fallback.
++
++1. Enable Android Debug Bridge in BlueStacks Settings → Advanced. Keep the
++   selected device at `127.0.0.1:5555` unless your BlueStacks reports another port.
++2. Open the large Loong Haven map. In Gem Sniper → Settings, use **Test connection /
++   preview** while BlueStacks is visible. This can align Android pixels with your
++   existing routes using a read-only window capture.
++3. Minimize BlueStacks and use **Test map pan (minimized)**. It moves the camera
++   slightly and restores it. It never clicks a gem or walks your character.
++4. Save, then start Sniper or Spy. Keep the game active inside Android.
++
++BlueStacks must remain running and continue rendering while minimized. The pan
++test diagnoses paused rendering; a failed test does not claim background support.
++Resolution changes, black/corrupt screenshots, known app switches and transport
++failures stop ADB input while preserving progress. F10 cancels active commands,
++releases the Android finger and stays stopped. A helper watchdog releases a held
++touch after loss of heartbeat. Unknown Android focus metadata is accepted when
++the large game map is visually confirmed; a null focus is not treated as failure.
++
++The full package includes the EXE, all source/assets and the small compiled touch
++helper. Existing BlueStacks HD-Adb.exe is reused; no APK, root, Java or Android SDK
++installation is needed on your PC. `android_touch/` contains the Java source,
++build manifest and reproducible build instructions. Existing histories, Obtained
++choices, routes, counters, Endless, collection/return and heatmaps are retained.
++
++Windows validation uses an independent simulated Android subprocess and real Tk
++windows. It verifies screenshots, held gestures, map pan/restore, cancellation,
++saved settings and unchanged Windows cursor/foreground. The actual Java helper
++is also executed against Android API stubs and rebuilt from pinned tools. These
++checks do not prove live BlueStacks permissions or minimized rendering: run the
++included pan test on your PC.
++
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,3 +1,41 @@
++# v38 — BlueStacks ADB background mode
++
++ADB is now the default input mode for Gem Sniper and Gem Spy. Android screenshots
++and a persistent Android touch session replace desktop screenshots/mouse input.
++The Windows mouse and foreground window stay untouched. Mouse mode is still an
++explicit option in Settings and never serves as an automatic fallback.
++
++1. Enable Android Debug Bridge in BlueStacks Settings → Advanced. Keep the
++   selected device at `127.0.0.1:5555` unless your BlueStacks reports another port.
++2. Open the large Loong Haven map. In Gem Sniper → Settings, use **Test connection /
++   preview** while BlueStacks is visible. This can align Android pixels with your
++   existing routes using a read-only window capture.
++3. Minimize BlueStacks and use **Test map pan (minimized)**. It moves the camera
++   slightly and restores it. It never clicks a gem or walks your character.
++4. Save, then start Sniper or Spy. Keep the game active inside Android.
++
++BlueStacks must remain running and continue rendering while minimized. The pan
++test diagnoses paused rendering; a failed test does not claim background support.
++Resolution changes, black/corrupt screenshots, known app switches and transport
++failures stop ADB input while preserving progress. F10 cancels active commands,
++releases the Android finger and stays stopped. A helper watchdog releases a held
++touch after loss of heartbeat. Unknown Android focus metadata is accepted when
++the large game map is visually confirmed; a null focus is not treated as failure.
++
++The full package includes the EXE, all source/assets and the small compiled touch
++helper. Existing BlueStacks HD-Adb.exe is reused; no APK, root, Java or Android SDK
++installation is needed on your PC. `android_touch/` contains the Java source,
++build manifest and reproducible build instructions. Existing histories, Obtained
++choices, routes, counters, Endless, collection/return and heatmaps are retained.
++
++Windows validation uses an independent simulated Android subprocess and real Tk
++windows. It verifies screenshots, held gestures, map pan/restore, cancellation,
++saved settings and unchanged Windows cursor/foreground. The actual Java helper
++is also executed against Android API stubs and rebuilt from pinned tools. These
++checks do not prove live BlueStacks permissions or minimized rendering: run the
++included pan test on your PC.
++
++
+ # Loong Lens v37
+ 
+ Fixes the map/filter stop reported in v36. The map-open check uses independent Back/zoom/world-tab controls when the old title image does not match its background. An open map is not tapped again at the gameplay minimap position. Transitional frames are rechecked without a fixed per-location wait. An already-open filter is dismissed once through the calibrated Back control; the resulting state is observed before another input. Failed recovery preserves progress and Stop/F10 stays stopped.
+@@ -36,7 +74,7 @@
+ 
+ ## Start
+ 
+-Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v35**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
++Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v38**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
+ 
+ The EXE bundles its own code. To run edited Python files, use RUN_LOONG_LENS.bat; editing adjacent source does not alter the EXE. The launcher activates an existing instance, so exit that instance before changing launchers.
+ 
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,3 +1,41 @@
++# v38 — BlueStacks ADB background mode
++
++ADB is now the default input mode for Gem Sniper and Gem Spy. Android screenshots
++and a persistent Android touch session replace desktop screenshots/mouse input.
++The Windows mouse and foreground window stay untouched. Mouse mode is still an
++explicit option in Settings and never serves as an automatic fallback.
++
++1. Enable Android Debug Bridge in BlueStacks Settings → Advanced. Keep the
++   selected device at `127.0.0.1:5555` unless your BlueStacks reports another port.
++2. Open the large Loong Haven map. In Gem Sniper → Settings, use **Test connection /
++   preview** while BlueStacks is visible. This can align Android pixels with your
++   existing routes using a read-only window capture.
++3. Minimize BlueStacks and use **Test map pan (minimized)**. It moves the camera
++   slightly and restores it. It never clicks a gem or walks your character.
++4. Save, then start Sniper or Spy. Keep the game active inside Android.
++
++BlueStacks must remain running and continue rendering while minimized. The pan
++test diagnoses paused rendering; a failed test does not claim background support.
++Resolution changes, black/corrupt screenshots, known app switches and transport
++failures stop ADB input while preserving progress. F10 cancels active commands,
++releases the Android finger and stays stopped. A helper watchdog releases a held
++touch after loss of heartbeat. Unknown Android focus metadata is accepted when
++the large game map is visually confirmed; a null focus is not treated as failure.
++
++The full package includes the EXE, all source/assets and the small compiled touch
++helper. Existing BlueStacks HD-Adb.exe is reused; no APK, root, Java or Android SDK
++installation is needed on your PC. `android_touch/` contains the Java source,
++build manifest and reproducible build instructions. Existing histories, Obtained
++choices, routes, counters, Endless, collection/return and heatmaps are retained.
++
++Windows validation uses an independent simulated Android subprocess and real Tk
++windows. It verifies screenshots, held gestures, map pan/restore, cancellation,
++saved settings and unchanged Windows cursor/foreground. The actual Java helper
++is also executed against Android API stubs and rebuilt from pinned tools. These
++checks do not prove live BlueStacks permissions or minimized rendering: run the
++included pan test on your PC.
++
++
+ # v37 map-screen regression checks
+ 
+ Tests use real Back/zoom/world-tab control pixels extracted from the previously supplied recording, with the rest of the picture removed. No player name, chat or account information is included. The fixtures contain ordinary map controls only. Regressions cover weak title/background changes, gameplay's identical Back arrow, a covered zoom +, filter overlays, no extra minimap input on an open map, exactly one opener from gameplay, both Back behaviors, ignored Back, cancellation during filter recovery and refusing to count an unclosed map as inspected.
+--- /dev/null
++++ b/LoongLens/adb_diagnostics.py
+@@ -0,0 +1,121 @@
++"""Native GUI/subprocess validation against a disposable simulated Android."""
++from dataclasses import replace
++import ctypes
++from ctypes import wintypes
++import json
++import logging
++import os
++from pathlib import Path
++import subprocess
++import sys
++import tempfile
++import threading
++import traceback
++import tkinter as tk
++from tkinter import ttk
++from adb_fixture import prepare_fixture
++from adb_setup_panel import probe_android
++from patrol_adb import AdbBackend
++from patrol_windows import PatrolStopped
++from resources import ROOT
++
++
++def run_check():
++    if os.name!='nt':raise RuntimeError('Run this native ADB UI check on Windows.')
++    import loong_lens,patrol_live_panel
++    python=os.environ.get('LOONGLENS_DIAGNOSTIC_PYTHON') or (sys.executable if not getattr(sys,'frozen',False) else None)
++    if not python or not Path(python).is_file():raise RuntimeError('Set LOONGLENS_DIAGNOSTIC_PYTHON for the simulated-device diagnostic.')
++    temporary=tempfile.TemporaryDirectory(prefix='loonglens-adb-check-');folder=Path(temporary.name);device=folder/'device'
++    prepare_fixture(device,ROOT)
++    old_local=os.environ.get('LOCALAPPDATA');os.environ['LOCALAPPDATA']=str(folder)
++    original_tk=tk.Tk;original_init=patrol_live_panel.LivePatrolPanel.__init__;panels=[];errors=[];completed=[]
++    user=ctypes.WinDLL('user32');user.GetForegroundWindow.restype=wintypes.HWND
++    user.GetCursorPos.argtypes=(ctypes.POINTER(wintypes.POINT),)
++    def cursor():
++        point=wintypes.POINT();assert user.GetCursorPos(ctypes.byref(point));return point.x,point.y
++    def factory(command,**kwargs):
++        assert not kwargs.get('shell')
++        return subprocess.Popen([python,str(ROOT/'adb_fixture.py'),str(device),*command[1:]],**kwargs)
++    def adb(cancel,settings):return AdbBackend(cancel,settings,factory)
++    def unavailable():raise RuntimeError('No visible emulator window in this diagnostic')
++    def remember(panel,*a,**kw):
++        original_init(panel,*a,**kw);panels.append(panel)
++        panel.input_settings=replace(panel.input_settings,adb_path=str(ROOT/'adb_fixture.py'))
++        panel.adb_factory=adb;panel.reference_capture=unavailable
++    patrol_live_panel.LivePatrolPanel.__init__=remember
++    def descendants(widget):return [w for child in widget.winfo_children() for w in (child,*descendants(child))]
++
++    class Window(original_tk):
++        def exit_app(self):
++            button=next((w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit'),None)
++            if button is None:self.destroy()
++            else:button.invoke()
++        def __init__(self,*a,**kw):
++            super().__init__(*a,**kw)
++            def failed(kind,value,trace):
++                error=''.join(traceback.format_exception(kind,value,trace));errors.append(error);print(error,flush=True);self.exit_app()
++            self.report_callback_exception=failed;self.after(1700,self.begin);self.after(90000,self.deadline)
++        def deadline(self):errors.append('ADB diagnostic timed out');self.exit_app()
++        def begin(self):
++            panel=panels[-1]
++            assert panel.input_settings.mode=='ADB'
++            panel.show_settings();dialog=panel.settings_dialog
++            assert dialog.mode.get()=='ADB'
++            dialog.test_button.invoke();self.after(100,self.connected)
++        def connected(self):
++            panel=panels[-1];dialog=panel.settings_dialog
++            if dialog.future is not None:self.after(100,self.connected);return
++            assert not dialog.error.get(),dialog.error.get()
++            assert dialog.frame is not None and dialog.candidate.package=='com.example.loong'
++            # Cancel preserves profile; a new dialog and explicit Save applies it.
++            dialog.close();assert not panel.input_settings.package
++            panel.show_settings();dialog=panel.settings_dialog;dialog.test_button.invoke();self.after(100,self.saved)
++        def saved(self):
++            panel=panels[-1];dialog=panel.settings_dialog
++            if dialog.future is not None:self.after(100,self.saved);return
++            assert not dialog.error.get(),dialog.error.get()
++            dialog.save();assert panel.input_settings.package=='com.example.loong'
++            stored=json.loads(panel.path.read_text());assert stored['input']['mode']=='ADB' and stored['input']['package']=='com.example.loong'
++            # Only the explicit settings preview created windows. Backend work
++            # below must preserve the Windows cursor and foreground window.
++            self.update();before=cursor();foreground=user.GetForegroundWindow()
++            settings,frame,info=probe_android(adb,panel.input_settings,threading.Event(),pan=True)
++            assert info['pan_verified'] and cursor()==before and user.GetForegroundWindow()==foreground
++            # Exercise F10's cancellation path during an outstanding screenshot.
++            cancel=threading.Event()
++            with adb(cancel,settings) as backend:
++                backend.focus()
++                timer=threading.Timer(.25,cancel.set)
++                try:
++                    with backend.hold_drag((285.,530.)):
++                        (device/'block-capture').touch();timer.start()
++                        try:backend.capture();raise AssertionError('Blocked capture ignored cancellation')
++                        except PatrolStopped:pass
++                finally:timer.cancel();(device/'block-capture').unlink(missing_ok=True)
++            assert not json.loads((device/'state.json').read_text())['down'] and cursor()==before
++            assert user.GetForegroundWindow()==foreground
++            completed.append(True);self.exit_app()
++
++    tk.Tk=Window
++    try:
++        loong_lens.main([],default_tab='live')
++        assert completed and not errors,errors
++        # A new complete Tk/App construction loads the actual saved input data.
++        class Restored(Window):
++            def begin(self):
++                panel=panels[-1]
++                assert panel.input_settings.mode=='ADB' and panel.input_settings.package=='com.example.loong'
++                assert panel.runtime_settings().map_open==tuple(panel.adb_map['map_open']) or panel.runtime_settings().map_open==panel.adb_map['map_open']
++                self.exit_app()
++        tk.Tk=Restored;loong_lens.main([],default_tab='live')
++        assert len(panels)==2 and not errors,errors
++    finally:
++        tk.Tk=original_tk;patrol_live_panel.LivePatrolPanel.__init__=original_init
++        logging.shutdown()
++        if old_local is None:os.environ.pop('LOCALAPPDATA',None)
++        else:os.environ['LOCALAPPDATA']=old_local
++        temporary.cleanup()
++    return dict(android_screenshots=True,persistent_hold=True,map_pan_and_return=True,
++        windows_cursor_unchanged=True,windows_foreground_unchanged=True,
++        cancel_kept_settings=True,adb_profile_reloaded=True,cancellation_released_android=True,
++        scope='Native Windows GUI and subprocess transport; simulated Android device. Real minimized BlueStacks must pass the in-app pan test.')
+--- /dev/null
++++ b/LoongLens/adb_fixture.py
+@@ -0,0 +1,90 @@
++"""Disposable ADB process fixture used only by transport validation tools."""
++import json
++from pathlib import Path
++import sys
++import time
++
++
++def prepare_fixture(folder,assets=None):
++    assets=Path(assets) if assets is not None else Path(__file__).resolve().parent
++    import cv2
++    import numpy as np
++    folder=Path(folder);folder.mkdir(parents=True,exist_ok=True);(folder/'fixture-marker').touch()
++    atlas=cv2.imread(str(assets/'loong_haven_default_atlas.png'))
++    tx=285-130*12.45;ty=530+160*12.45
++    image=cv2.warpAffine(atlas,np.float32([[1,0,tx],[0,1,ty-279*12.45]]),(570,1029))
++    ui=cv2.imread(str(assets/'tests/fixtures/map-controls.png'))
++    for l,t,r,b in ((12,938,124,1026),(520,620,557,927),(138,940,555,1016)):image[t:b,l:r]=ui[t:b,l:r]
++    title=cv2.imread(str(assets/'loong_title_template.png'));h,w=title.shape[:2];image[55:55+h,20:20+w]=title
++    cv2.imwrite(str(folder/'map.png'),image)
++    game=np.random.default_rng(3).integers(60,150,(1029,570,3),dtype=np.uint8);cv2.imwrite(str(folder/'game.png'),game)
++    state=dict(width=720,height=1280,package='com.example.loong',open=True,dx=0.,dy=0.,down=False)
++    (folder/'state.json').write_text(json.dumps(state))
++    return image
++
++
++def main():
++    root=Path(sys.argv[1]);args=sys.argv[2:]
++    if not (root/'fixture-marker').is_file():raise SystemExit('Missing disposable ADB fixture marker')
++    state_path=root/'state.json'
++    def read():return json.loads(state_path.read_text())
++    def write(state):
++        temporary=root/'state.next';temporary.write_text(json.dumps(state));temporary.replace(state_path)
++    def log(kind,value):
++        with (root/'calls.jsonl').open('a',encoding='utf-8') as f:f.write(json.dumps([kind,value])+'\n')
++    log('command',args)
++    if args[:1]==['connect']:print('connected to '+args[1]);return
++    if args[:2]!=['-s','127.0.0.1:5555']:raise SystemExit(2)
++    args=args[2:]
++    if args==['get-state']:print('device');return
++    if args[:3]==['shell','dumpsys','activity']:
++        package=read().get('package')
++        print('mResumedActivity: ActivityRecord{9 u0 '+package+'/.Game t4}' if package else 'mResumedActivity=null');return
++    if args[:3]==['shell','dumpsys','window']:print('mCurrentFocus=null');return
++    if args[:1]==['push']:print('1 file pushed');return
++    if 'app_process' in args:
++        print('{"ready":true,"protocol":1,"sdk":30}',flush=True)
++        down=False;position=None
++        for line in sys.stdin:
++            fields=line.split();identifier=int(fields[0]);action=fields[1]
++            if action=='H':continue
++            state=read()
++            if action=='D':down=True;position=list(map(int,fields[2:4]));state['moved']=False
++            elif action=='M':
++                if not down:print(json.dumps(dict(id=identifier,ok=False,error='not down')),flush=True);continue
++                current=list(map(int,fields[2:4]));sx=570/state['width'];sy=981/state['height']
++                if not state.get('frozen'):
++                    state['dx']+=(current[0]-position[0])*sx;state['dy']+=(current[1]-position[1])*sy
++                position=current;state['moved']=True
++            elif action in ('U','Q'):
++                if down and not state.get('moved') and position is not None:
++                    x=position[0]*570/state['width'];y=32+position[1]*981/state['height']
++                    if not state['open'] and 400<x<550 and 70<y<245:state['open']=True
++                    elif state['open'] and 15<x<110 and 945<y<1013:state['open']=False
++                    elif state['open']:state['camera']=[x,y]
++                down=False
++            state['down']=down;write(state);log('touch',[action,position])
++            print(json.dumps(dict(id=identifier,ok=True,down=down)),flush=True)
++            if action=='Q':return
++        if down:state=read();state['down']=False;write(state);log('touch',['EOF_UP',position])
++        return
++    if args==['exec-out','screencap','-p']:
++        if (root/'block-capture').exists():time.sleep(30)
++        import cv2
++        import numpy as np
++        state=read()
++        if state.get('bad_png'):sys.stdout.buffer.write(b'bad image');return
++        if state.get('black'):image=np.zeros((state['height'],state['width'],3),np.uint8)
++        else:
++            base=cv2.imread(str(root/'map.png'))
++            if state['open']:
++                image=cv2.warpAffine(base,np.float32([[1,0,state['dx']],[0,1,state['dy']]]),(570,1029))
++                for l,t,r,b in ((0,0,570,135),(410,40,570,240),(0,929,570,1029),(490,610,570,929)):image[t:b,l:r]=base[t:b,l:r]
++                if state.get('camera'):
++                    x,y=state['camera'];cv2.rectangle(image,(round(x-42),round(y-75)),(round(x+42),round(y+75)),(255,255,255),2)
++            else:image=cv2.imread(str(root/'game.png'))
++            image=cv2.resize(image[32:1013],(state['width'],state['height']))
++        ok,png=cv2.imencode('.png',image);sys.stdout.buffer.write(png.tobytes());return
++    raise SystemExit('Unsupported fixture command: '+repr(args))
++
++if __name__=='__main__':main()
+--- /dev/null
++++ b/LoongLens/adb_setup_panel.py
+@@ -0,0 +1,166 @@
++"""Input setup, Android preview and an explicit background map-pan check."""
++from concurrent.futures import ThreadPoolExecutor
++from dataclasses import asdict,replace
++import threading
++import tkinter as tk
++from tkinter import ttk,messagebox,filedialog
++import cv2
++from PIL import Image,ImageTk
++from patrol_adb import InputSettings,align_android_display
++from patrol_live import LiveSettings
++from patrol_windows import WindowsBackend
++from resources import user_dir
++
++
++def probe_android(factory,settings,cancel,pan=False,reference_capture=None):
++    with factory(cancel,settings) as backend:
++        backend.connect();raw=backend.capture_raw();aligned=False
++        if not pan and reference_capture is not None:
++            try:
++                reference=reference_capture();rect=align_android_display(raw,reference)
++                settings=replace(settings,content_rect=rect);backend.settings=settings
++                l,t,r,b=rect;backend.drag_bounds=(l,t,r-1e-6,b-1e-6);aligned=True
++            except Exception:
++                if cancel.is_set():backend.check()
++        frame=backend.render(raw);info=backend.verify_game(frame);backend.last_frame=frame
++        if pan:
++            from vision import TitleDetector,Calibrator,track_map_pan
++            if TitleDetector().score(frame)<.64:raise RuntimeError('Open the large map before testing a map pan. No gameplay touch was sent.')
++            pose=Calibrator(user_dir()/'adb-alignment',wide=True).locate(frame)
++            if pose is None:raise RuntimeError('Use the default map zoom and show recognisable map terrain before the pan test.')
++            before=frame.copy();start=(285.,530.);end=(285.,490.)
++            with backend.hold_drag(start):backend.drag_held_to(end);backend.wait(.12)
++            backend.wait(.10);after=backend.capture()
++            if TitleDetector().score(after)<.64:raise RuntimeError('The map changed during the pan test. Stop and open the large map again.')
++            moved=track_map_pan(before,after,pose,(0.,-40.))
++            if moved is None or abs(moved.ty-pose.ty)<8:
++                raise RuntimeError('No map movement was confirmed. Move away from the map edge and retry. If BlueStacks is minimized, it may have paused rendering.')
++            dx,dy=moved.tx-pose.tx,moved.ty-pose.ty
++            restore=(start[0]-dx,start[1]-dy)
++            if abs(dx)>80 or abs(dy)>80:raise RuntimeError('Unexpected map movement; test stopped before another touch.')
++            with backend.hold_drag(start):backend.drag_held_to(restore);backend.wait(.12)
++            backend.wait(.10);restored=backend.capture()
++            returned=track_map_pan(after,restored,moved,(-dx,-dy))
++            if returned is None or abs(returned.tx-pose.tx)>5 or abs(returned.ty-pose.ty)>5:
++                raise RuntimeError('Touches reached Android, but the map did not return to its starting view. Inspect the map before starting.')
++            frame=restored;info['pan_verified']=True
++        info['auto_aligned']=aligned
++        return replace(settings,package=info.get('package','')),frame,info
++
++
++class InputDialog:
++    def __init__(self,panel):
++        self.panel=panel;self.root=panel.root;self.closed=False;self.future=None;self.job=None
++        self.cancel=threading.Event();self.pool=ThreadPoolExecutor(max_workers=1,thread_name_prefix='ADB-setup')
++        self.candidate=panel.input_settings;self.photo=None;self.frame=None
++        win=self.window=tk.Toplevel(self.root);win.title('Gem Sniper settings');win.transient(self.root)
++        win.protocol('WM_DELETE_WINDOW',self.close)
++        body=ttk.Frame(win,padding=18);body.pack(fill='both',expand=True)
++        self.mode=tk.StringVar(win,value=self.candidate.mode);self.path=tk.StringVar(win,value=self.candidate.adb_path)
++        self.serial=tk.StringVar(win,value=self.candidate.serial);self.note=tk.StringVar(win,value='ADB uses Android screenshots and touches. Your Windows mouse stays free.')
++        ttk.Label(body,text='Input and map controls',style='Heading.TLabel').grid(row=0,column=0,columnspan=3,sticky='w',pady=(0,10))
++        ttk.Label(body,text='Input mode').grid(row=1,column=0,sticky='w')
++        ttk.Combobox(body,textvariable=self.mode,values=('ADB','Mouse'),state='readonly',width=18).grid(row=1,column=1,sticky='w',padx=8)
++        ttk.Label(body,text='BlueStacks ADB address').grid(row=2,column=0,sticky='w',pady=5)
++        ttk.Entry(body,textvariable=self.serial,width=26).grid(row=2,column=1,sticky='we',padx=8)
++        ttk.Label(body,text='ADB executable (blank = auto)').grid(row=3,column=0,sticky='w')
++        ttk.Entry(body,textvariable=self.path,width=30).grid(row=3,column=1,sticky='we',padx=8)
++        ttk.Button(body,text='Browse…',command=self.browse).grid(row=3,column=2)
++        line=ttk.Frame(body);line.grid(row=4,column=0,columnspan=3,sticky='we',pady=10)
++        self.test_button=ttk.Button(line,text='Test connection / preview',command=self.test);self.test_button.pack(side='left')
++        self.pan_button=ttk.Button(line,text='Test map pan (minimized)',command=lambda:self.test(True));self.pan_button.pack(side='left',padx=8)
++        ttk.Label(body,text='Open Loong Haven’s large map for the first test. Connection testing can align to visible BlueStacks.\nFor the pan test, minimize BlueStacks first. It pans the map a little and restores the view; it does not walk your character.',
++            style='Muted.TLabel',wraplength=640).grid(row=5,column=0,columnspan=3,sticky='w',pady=(0,8))
++        ttk.Label(body,textvariable=self.note,wraplength=640,style='Muted.TLabel').grid(row=6,column=0,columnspan=3,sticky='we')
++        ttk.Separator(body).grid(row=7,column=0,columnspan=3,sticky='we',pady=12)
++        self.fields={}
++        for row,name,label in ((8,'map_open','Open map (minimap)'),(9,'map_close','Map Back button')):
++            ttk.Label(body,text=label).grid(row=row,column=0,sticky='w',pady=4)
++            field=ttk.Entry(body,width=17);field.grid(row=row,column=1,padx=8,sticky='w');self.fields[name]=field
++            ttk.Button(body,text='Pick on screenshot',command=lambda f=field:self.pick(f)).grid(row=row,column=2)
++        for row,name,label in ((10,'settle_seconds','Scene loading wait (seconds)'),(11,'inspect_seconds','Empty-view check (seconds)')):
++            ttk.Label(body,text=label).grid(row=row,column=0,sticky='w',pady=5)
++            field=ttk.Entry(body,width=17);field.insert(0,str(getattr(panel.settings,name)));field.grid(row=row,column=1,padx=8,sticky='w');self.fields[name]=field
++        self.detection=tk.StringVar(win,value=panel.services.mode.get());self.mask=tk.BooleanVar(win,value=panel.services.mask_hud.get());self.sound=tk.BooleanVar(win,value=panel.services.sound.get())
++        ttk.Label(body,text='Detection sensitivity').grid(row=12,column=0,sticky='w',pady=5)
++        ttk.Combobox(body,textvariable=self.detection,values=('Conservative','Balanced','Sensitive'),state='readonly',width=17).grid(row=12,column=1,sticky='w',padx=8)
++        ttk.Checkbutton(body,text='Mask interface areas',variable=self.mask).grid(row=13,column=0,sticky='w')
++        ttk.Checkbutton(body,text='Sound alerts',variable=self.sound).grid(row=13,column=1,sticky='w',padx=8)
++        ttk.Label(body,text='Gem Spy shares this input mode, route and detection settings. F10 stops both.\nKeep the game active inside Android. Minimized operation requires BlueStacks to keep rendering.',style='Muted.TLabel',wraplength=640).grid(row=14,column=0,columnspan=3,sticky='w',pady=8)
++        self.error=tk.StringVar(win);ttk.Label(body,textvariable=self.error,wraplength=640).grid(row=15,column=0,columnspan=3,sticky='w')
++        ttk.Button(body,text='Save settings',command=self.save).grid(row=16,column=0,sticky='w',pady=8)
++        ttk.Button(body,text='Cancel',command=self.close).grid(row=16,column=2,sticky='e')
++        self.mode.trace_add('write',lambda *_:self.fill_buttons());self.fill_buttons()
++
++    def fill_buttons(self):
++        settings=self.panel.adb_map if self.mode.get()=='ADB' else dict(map_open=self.panel.settings.map_open,map_close=self.panel.settings.map_close)
++        for name in ('map_open','map_close'):
++            self.fields[name].delete(0,'end');self.fields[name].insert(0,','.join(str(v) for v in settings[name]))
++
++    def input(self):return replace(self.candidate,mode=self.mode.get(),adb_path=self.path.get().strip(),serial=self.serial.get().strip())
++
++    def browse(self):
++        path=filedialog.askopenfilename(parent=self.window,title='Choose BlueStacks HD-Adb.exe',filetypes=[('ADB executable','*.exe'),('All files','*.*')])
++        if path:self.path.set(path)
++
++    def test(self,pan=False):
++        if self.future is not None:return
++        try:settings=self.input()
++        except (ValueError,TypeError) as exc:self.error.set(str(exc));return
++        if settings.mode!='ADB':self.error.set('Choose ADB input to test Android background operation.');return
++        self.error.set('');self.cancel.clear();self.note.set('Testing Android connection… Your Windows mouse is not used.')
++        self.test_button.state(['disabled']);self.pan_button.state(['disabled'])
++        reference=None if pan else self.panel.reference_capture
++        self.future=self.pool.submit(probe_android,self.panel.adb_factory,settings,self.cancel,pan,reference)
++        self.job=self.root.after(80,self.finish)
++
++    def finish(self):
++        self.job=None
++        if self.closed:return
++        if not self.future.done():self.job=self.root.after(80,self.finish);return
++        try:
++            self.candidate,self.frame,info=self.future.result()
++            self.note.set(('Map pan and return verified. ' if info.get('pan_verified') else 'Connected. ')+f'Android {info["width"]} × {info["height"]}. '+
++                ('Screen alignment matched BlueStacks. ' if info['auto_aligned'] else '')+('Game app: '+info['package'] if info['package'] else 'Game map verified; Android did not report an app name.'))
++            self.preview(self.frame)
++        except Exception as exc:self.error.set(str(exc));self.note.set('Test stopped. No Windows mouse input was sent.')
++        finally:self.future=None;self.test_button.state(['!disabled']);self.pan_button.state(['!disabled'])
++
++    def preview(self,frame,field=None):
++        win=tk.Toplevel(self.window);win.title('Android screenshot — click a map button' if field is not None else 'Android screenshot — background capture')
++        image=Image.fromarray(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB));image.thumbnail((420,720))
++        photo=ImageTk.PhotoImage(image,master=win);canvas=tk.Canvas(win,width=image.width,height=image.height,highlightthickness=0)
++        canvas.pack();canvas.create_image(0,0,image=photo,anchor='nw');canvas.photo=photo
++        if field is not None:
++            def selected(event):
++                field.delete(0,'end');field.insert(0,f'{event.x*570/image.width:.1f},{event.y*1029/image.height:.1f}');win.destroy()
++            canvas.bind('<Button-1>',selected)
++
++    def pick(self,field):
++        if self.mode.get()=='ADB':
++            if self.frame is None:self.error.set('Run Test connection / preview first, then pick the button in that Android screenshot.');return
++            self.preview(self.frame,field)
++        else:
++            try:self.preview(self.panel.reference_capture(),field)
++            except Exception as exc:self.error.set(str(exc))
++
++    def save(self):
++        if self.future is not None:self.error.set('Wait for the connection test to finish or press F10 to cancel it.');return
++        try:
++            settings=self.input();points={name:tuple(float(v.strip()) for v in self.fields[name].get().split(',')) for name in ('map_open','map_close')}
++            live=replace(self.panel.settings,**points,settle_seconds=float(self.fields['settle_seconds'].get()),inspect_seconds=float(self.fields['inspect_seconds'].get()))
++        except (TypeError,ValueError) as exc:self.error.set(str(exc));return
++        if settings.mode=='ADB':self.panel.adb_map=points;self.panel.settings=replace(self.panel.settings,settle_seconds=live.settle_seconds,inspect_seconds=live.inspect_seconds)
++        else:self.panel.settings=live
++        self.panel.input_settings=settings
++        self.panel.services.mode.set(self.detection.get());self.panel.services.mask_hud.set(self.mask.get());self.panel.services.sound.set(self.sound.get())
++        self.panel.services.save();self.panel.save_config();self.panel.update_input_label();self.close()
++
++    def cancel_test(self):self.cancel.set()
++
++    def close(self,wait=False):
++        if self.closed:return
++        self.closed=True;self.cancel.set()
++        if self.job is not None:self.root.after_cancel(self.job);self.job=None
++        self.pool.shutdown(wait=wait,cancel_futures=True);self.window.destroy()
++        self.panel.settings_dialog=None;self.panel.buttons()
+--- /dev/null
++++ b/LoongLens/android_touch/BUILD.json
+@@ -0,0 +1,20 @@
++{
++  "protocol": 1,
++  "min_android_api": 26,
++  "source_sha256": "803e06eea52063e8e0c5d03c8e20a8af35431005241a2a376a20df1336a25b84",
++  "jar_sha256": "03cae9c041df9f81c52527f75053df1ed0f2e93c83999aa79da388baf1420848",
++  "tools": {
++    "platform": {
++      "url": "https://dl.google.com/android/repository/platform-30_r03.zip",
++      "sha256": "f3f5b75744dbf6ee6ed3e8174a71e513bfee502d0bc3463ea97e517bff68d84e",
++      "sha1": "e7c6280901dcfa511af098d67dd88c4dfcbc6ea2",
++      "bytes": 52328361
++    },
++    "r8": {
++      "url": "https://dl.google.com/dl/android/maven2/com/android/tools/r8/9.5.28/r8-9.5.28.jar",
++      "sha256": "38a9ffaaebbd17d1514e3ecbff5a85b989bb13c551b9e224c7409514eea84ff5",
++      "sha1": "64d61ecc00e96c85eaec16c6e777343db83ef803",
++      "bytes": 21188744
++    }
++  }
++}
+--- /dev/null
++++ b/LoongLens/android_touch/README.md
+@@ -0,0 +1,15 @@
++# Android touch channel
++
++`TouchBridge.java` runs as Android's ADB shell user through `app_process`. It uses Android InputManager and MotionEvent; it does not access the game process, install an APK, require root or control the Windows mouse. The JAR is pushed to `/data/local/tmp/loonglens-touch-<hash>.jar` in the explicitly selected BlueStacks device. The shared ADB server and emulator are left running.
++
++The line protocol keeps a finger down across screenshots and MOVE commands. A gesture uses one downTime, pressure and finger identity throughout. UP occurs at a stationary endpoint. A heartbeat watchdog releases the finger after 1.8 seconds without host commands. EOF and normal shutdown also release it. F10 cancels host commands and sends UP through the existing channel.
++
++`BUILD.json` records the Java source hash, JAR hash and pinned compiler dependencies. The JAR contains this project's DEX code only; compiler tools and the Android SDK are not distributed in the app.
++
++Rebuild with Java 21 and Python:
++
++```
++python tools/build_android_touch.py --cache ../android-build-cache --verify
++```
++
++The platform archive and R8 are downloaded from Google's HTTPS repositories and verified against their pinned hashes before use. Normal Loong Lens operation does not download these tools or require Java on Windows; Android supplies its own runtime.
+--- /dev/null
++++ b/LoongLens/android_touch/TouchBridge.java
+@@ -0,0 +1,126 @@
++package com.loonglens;
++
++import android.os.Build;
++import android.os.SystemClock;
++import android.view.InputDevice;
++import android.view.InputEvent;
++import android.view.MotionEvent;
++import java.io.BufferedReader;
++import java.io.InputStreamReader;
++import java.lang.reflect.Method;
++
++/** Shell-UID touch channel. No APK, game hooks, root or Windows input. */
++public final class TouchBridge {
++    private final Object manager;
++    private final Method inject;
++    private final int width, height;
++    private boolean down;
++    private float x, y;
++    private long downTime, alive;
++    private volatile boolean closing;
++
++    private TouchBridge(int width, int height) throws Exception {
++        if (width < 100 || height < 100) throw new IllegalArgumentException("Invalid display size");
++        this.width=width; this.height=height;
++        Class<?> type;
++        try { type=Class.forName("android.hardware.input.InputManagerGlobal"); }
++        catch (ClassNotFoundException e) { type=Class.forName("android.hardware.input.InputManager"); }
++        manager=type.getMethod("getInstance").invoke(null);
++        inject=type.getMethod("injectInputEvent",InputEvent.class,int.class);
++        alive=SystemClock.uptimeMillis();
++    }
++
++    private static synchronized void output(String value) {
++        System.out.println(value); System.out.flush();
++    }
++
++    private boolean event(int action,float px,float py) throws Exception {
++        long now=SystemClock.uptimeMillis();
++        MotionEvent.PointerProperties property=new MotionEvent.PointerProperties();
++        property.id=0; property.toolType=MotionEvent.TOOL_TYPE_FINGER;
++        MotionEvent.PointerCoords coord=new MotionEvent.PointerCoords();
++        coord.x=px; coord.y=py; coord.pressure=action==MotionEvent.ACTION_UP ? 0f : 1f; coord.size=1f;
++        MotionEvent motion=MotionEvent.obtain(downTime,now,action,1,
++            new MotionEvent.PointerProperties[]{property},new MotionEvent.PointerCoords[]{coord},
++            0,0,1f,1f,-1,0,InputDevice.SOURCE_TOUCHSCREEN,0);
++        try {
++            // Async injection keeps the watchdog independent of a slow game.
++            return Boolean.TRUE.equals(inject.invoke(manager,motion,0));
++        } finally { motion.recycle(); }
++    }
++
++    private synchronized void up() throws Exception {
++        if (!down) return;
++        try { if (!event(MotionEvent.ACTION_UP,x,y)) throw new IllegalStateException("Android rejected touch release"); }
++        finally { down=false; }
++    }
++
++    private synchronized boolean command(String action,String[] parts) throws Exception {
++        alive=SystemClock.uptimeMillis();
++        if (action.equals("H")) return true;
++        if (action.equals("Q")) { up(); closing=true; return true; }
++        if (action.equals("U")) { up(); return true; }
++        if (parts.length!=4) throw new IllegalArgumentException("Expected coordinates");
++        float px=Float.parseFloat(parts[2]),py=Float.parseFloat(parts[3]);
++        if (Float.isNaN(px)||Float.isNaN(py)||Float.isInfinite(px)||Float.isInfinite(py)
++            ||px<0||py<0||px>=width||py>=height) throw new IllegalArgumentException("Touch outside Android display");
++        if (action.equals("D")) {
++            if (down) throw new IllegalStateException("Finger already down");
++            downTime=SystemClock.uptimeMillis();
++            if (!event(MotionEvent.ACTION_DOWN,px,py)) throw new IllegalStateException("Android rejected touch");
++            down=true; x=px; y=py; return true;
++        }
++        if (action.equals("M")) {
++            if (!down) throw new IllegalStateException("Finger is not down");
++            if (!event(MotionEvent.ACTION_MOVE,px,py)) throw new IllegalStateException("Android rejected move");
++            x=px; y=py; return true;
++        }
++        throw new IllegalArgumentException("Unknown touch command");
++    }
++
++    private void run() throws Exception {
++        Thread watchdog=new Thread(new Runnable() {
++            public void run() {
++                while (!closing) {
++                    try {
++                        Thread.sleep(150);
++                        synchronized (TouchBridge.this) {
++                            if (down && SystemClock.uptimeMillis()-alive>1800) {
++                                up(); output("{\"event\":\"released\",\"reason\":\"heartbeat expired\"}");
++                            }
++                        }
++                    } catch (Exception e) {
++                        output("{\"event\":\"error\",\"reason\":\"touch watchdog failed\"}"); closing=true;
++                    }
++                }
++            }
++        },"LoongLens-touch-watchdog");
++        watchdog.setDaemon(true); watchdog.start();
++        output("{\"ready\":true,\"protocol\":1,\"sdk\":"+Build.VERSION.SDK_INT+"}");
++        BufferedReader input=new BufferedReader(new InputStreamReader(System.in,"UTF-8"));
++        try {
++            String line;
++            while (!closing && (line=input.readLine())!=null) {
++                String[] parts=line.trim().split("\\s+");
++                if (parts.length<2) continue;
++                int id;
++                try { id=Integer.parseInt(parts[0]); } catch (NumberFormatException e) { continue; }
++                if (id<0) continue;
++                try {
++                    command(parts[1],parts);
++                    if (id!=0) output("{\"id\":"+id+",\"ok\":true,\"down\":"+down+"}");
++                } catch (Exception e) {
++                    try { up(); } catch (Exception ignored) { }
++                    Throwable cause=e.getCause();
++                    String message=(cause==null?e:cause).toString().replace("\\","/").replace("\"","'").replace('\n',' ');
++                    if (id!=0) output("{\"id\":"+id+",\"ok\":false,\"error\":\""+message+"\"}");
++                }
++            }
++        } finally { closing=true; up(); }
++    }
++
++    public static void main(String[] args) {
++        try { new TouchBridge(Integer.parseInt(args[0]),Integer.parseInt(args[1])).run(); }
++        catch (Throwable e) { output("{\"ready\":false,\"error\":\"Android touch channel could not start\"}"); e.printStackTrace(System.err); System.exit(1); }
++    }
++}
+--- a/LoongLens/dashboard_shell.py
++++ b/LoongLens/dashboard_shell.py
+@@ -12,7 +12,7 @@
+         art=gem_image(self.frame,38);self.images.append(art)
+         ttk.Label(brand,image=art,style='Sidebar.TLabel').pack(side='left',padx=(0,7))
+         ttk.Label(brand,text='Loong Lens',style='Logo.TLabel').pack(side='left')
+-        ttk.Label(self.frame,text='v37',style='Sidebar.TLabel').pack(anchor='w',padx=55,pady=(4,0))
++        ttk.Label(self.frame,text='v38',style='Sidebar.TLabel').pack(anchor='w',padx=55,pady=(4,0))
+         ttk.Label(self.frame,text='Loong Haven companion',style='Sidebar.TLabel').pack(anchor='w',padx=12,pady=(12,20))
+         ttk.Separator(self.frame).pack(fill='x',padx=6,pady=(0,12))
+         for index,(title,kind) in enumerate((('Map Tweaker','map'),('Gem Sniper','target'),('Gem Spy','gem'))):
+--- a/LoongLens/desktop_entry.py
++++ b/LoongLens/desktop_entry.py
+@@ -59,7 +59,7 @@
+                 if hasattr(self,'capture_user'):
+                     from window_capture import capture_window
+                     out=Path(__file__).resolve().parent/'artifacts';out.mkdir(exist_ok=True)
+-                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v37-layout-failure.png')
++                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v38-layout-failure.png')
+                 button=next((w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit'),None)
+                 if button is None:self.destroy()
+                 else:button.invoke()
+@@ -221,7 +221,7 @@
+                 if i==2:spy.map_preview.thumbnail();self.update()
+                 wrapper=user.GetAncestor(self.winfo_id(),2)
+                 picture=capture_window(int(wrapper))
+-                picture.save(screenshots/('v37-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
++                picture.save(screenshots/('v38-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
+             notebook.select(1);self.update()
+             # Sidebar commands select the existing pages, preserving controllers.
+             nav=[w for w in descendants(self) if isinstance(w,ttk.Button) and str(w.cget('style')).endswith('Nav.TButton')]
+@@ -293,19 +293,23 @@
+ 
+ 
+ def main():
+-    if len(sys.argv) == 3 and sys.argv[1] in ('--self-check-report', '--gui-check-report','--input-check-report'):
++    if len(sys.argv) == 3 and sys.argv[1] in ('--self-check-report', '--gui-check-report','--input-check-report','--adb-check-report'):
+         path = Path(sys.argv[2])
+         try:
++            details={}
+             if sys.argv[1] == '--self-check-report':
+                 loong_lens.self_check()
+             elif sys.argv[1] == '--gui-check-report':
+                 gui_check()
++            elif sys.argv[1]=='--adb-check-report':
++                from adb_diagnostics import run_check
++                details=run_check()
+             else:
+                 check_native_input()
+-            result = {'passed': True, 'mode': sys.argv[1], 'version': 37}
++            result = {'passed': True, 'mode': sys.argv[1], 'version': 38, **details}
+             status = 0
+         except Exception:
+-            result = {'passed': False, 'mode': sys.argv[1], 'version': 37, 'error': traceback.format_exc()}
++            result = {'passed': False, 'mode': sys.argv[1], 'version': 38, 'error': traceback.format_exc()}
+             status = 1
+         path.write_text(json.dumps(result, indent=2), encoding='utf-8')
+         return status
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -77,7 +77,7 @@
+     folder.mkdir(parents=True, exist_ok=True)
+     logging.basicConfig(filename=folder / 'loonglens.log', level=logging.INFO,
+                         format='%(asctime)s %(levelname)s %(message)s')
+-    logging.getLogger('loonglens').info('Loong Lens v37 executable=%s source=%s',sys.executable,Path(__file__).resolve())
++    logging.getLogger('loonglens').info('Loong Lens v38 executable=%s source=%s',sys.executable,Path(__file__).resolve())
+     settings_path = folder / 'settings.json'
+     coordinates_path = folder / 'coordinates.csv'
+     settings = {}
+@@ -237,7 +237,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Gem Spy v37; persistent observations and recovery'
++            details['version']='Gem Spy v38; persistent observations and recovery'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+--- /dev/null
++++ b/LoongLens/patrol_adb.py
+@@ -0,0 +1,358 @@
++"""Android-only screen and persistent touch input. Never calls desktop input."""
++from contextlib import contextmanager
++from dataclasses import dataclass,replace
++from pathlib import Path
++import hashlib
++import json
++import math
++import os
++import queue
++import re
++import shutil
++import subprocess
++import threading
++import time
++import cv2
++import numpy as np
++from patrol_windows import PatrolStopped
++from resources import ROOT
++
++
++class BackgroundInputError(RuntimeError):
++    pause_input=True
++
++
++@dataclass(frozen=True)
++class InputSettings:
++    mode:str='ADB'
++    adb_path:str=''
++    serial:str='127.0.0.1:5555'
++    content_rect:tuple=(0.,32.,570.,1013.)
++    package:str=''
++
++    def __post_init__(self):
++        if self.mode not in ('ADB','Mouse'):raise ValueError('Choose ADB or Mouse input.')
++        if not isinstance(self.adb_path,str):raise ValueError('ADB path must be text.')
++        match=re.fullmatch(r'127\.0\.0\.1:([0-9]{1,5})',self.serial)
++        if not match or not 1<=int(match[1])<=65535:raise ValueError('Use the BlueStacks loopback address, e.g. 127.0.0.1:5555.')
++        if len(self.content_rect)!=4 or not all(isinstance(v,(int,float)) and math.isfinite(v) for v in self.content_rect):raise ValueError('Invalid Android screen alignment.')
++        l,t,r,b=self.content_rect
++        if not(0<=l<r<=570 and 0<=t<b<=1029 and r-l>=400 and b-t>=750):raise ValueError('Android display must fill most of the reference picture.')
++        if not isinstance(self.package,str) or self.package and not re.fullmatch(r'[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+',self.package):raise ValueError('Invalid Android app identifier.')
++        object.__setattr__(self,'content_rect',tuple(self.content_rect))
++
++
++def find_adb(configured=''):
++    if configured:
++        path=Path(configured).expanduser()
++        if path.is_file():return str(path.resolve())
++        raise BackgroundInputError('ADB executable not found. Choose BlueStacks HD-Adb.exe.')
++    for variable in ('ProgramFiles','ProgramFiles(x86)'):
++        base=os.environ.get(variable)
++        if base:
++            for folder in ('BlueStacks_nxt','BlueStacks'):
++                path=Path(base)/folder/'HD-Adb.exe'
++                if path.is_file():return str(path)
++    for name in ('HD-Adb.exe','adb.exe','adb'):
++        path=shutil.which(name)
++        if path:return path
++    raise BackgroundInputError('ADB was not found. Select HD-Adb.exe in the BlueStacks installation folder.')
++
++
++def active_package(text):
++    # Read active records only. A null focus record must not hide a valid
++    # resumed-activity record on BlueStacks Android 11.
++    fields=('topResumedActivity','mTopResumedActivity','mResumedActivity','ResumedActivity',
++            'mFocusedActivity','mFocusedApp','mCurrentFocus','mFocusedWindow')
++    for field in fields:
++        rows=re.findall(r'^\s*'+re.escape(field)+r'\s*[:=]\s*([^\r\n]+)',text,re.M)
++        found=[]
++        for row in rows:
++            match=re.search(r'(?:^|\s)([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+)/[^\s}]+',row)
++            if match:found.append(match[1])
++        if found:return found[0] if len(set(found))==1 else None
++    return None
++
++
++class TouchChannel:
++    def __init__(self,process,cancel,timeout=6.):
++        self.process=process;self.cancel=cancel;self.events=queue.Queue();self.pending={};self.next_id=1
++        self.operation=threading.RLock();self.write_lock=threading.Lock();self.closed=threading.Event()
++        self.failure=None;self.down=False;self.diagnostics=[]
++        self.reader=threading.Thread(target=self.read,daemon=True,name='ADB-touch-reader');self.reader.start()
++        self.error_reader=threading.Thread(target=self.read_errors,daemon=True,name='ADB-touch-errors');self.error_reader.start()
++        ready=self.receive(None,timeout)
++        if ready.get('ready') is not True or ready.get('protocol')!=1:raise BackgroundInputError('Android touch helper could not start: '+str(ready.get('error','unsupported protocol')))
++        self.heartbeat=threading.Thread(target=self.beat,daemon=True,name='ADB-touch-heartbeat');self.heartbeat.start()
++
++    def read(self):
++        try:
++            for line in iter(self.process.stdout.readline,b''):
++                try:message=json.loads(line)
++                except (ValueError,UnicodeError):continue
++                if message.get('event') in ('released','error'):
++                    self.down=False;self.failure='Android released the held touch: '+message.get('reason','channel error')
++                else:self.events.put(message)
++        finally:
++            if not self.closed.is_set():self.failure=self.failure or 'Android touch channel disconnected.'
++
++    def read_errors(self):
++        for line in iter(self.process.stderr.readline,b''):
++            self.diagnostics=(self.diagnostics+[line.decode('utf-8','replace').strip()])[-8:]
++
++    def check(self,cleanup=False):
++        if not cleanup and self.cancel.is_set():raise PatrolStopped('Stopped.')
++        if self.failure and not cleanup:raise BackgroundInputError(self.failure)
++        if self.process.poll() is not None:raise BackgroundInputError('Android touch channel ended. '+ ' '.join(self.diagnostics)[-300:])
++
++    def write(self,line):
++        with self.write_lock:
++            self.process.stdin.write((line+'\n').encode('ascii'));self.process.stdin.flush()
++
++    def beat(self):
++        while not self.closed.wait(.35):
++            try:self.write('0 H')
++            except (OSError,ValueError):self.failure='Android touch heartbeat disconnected.';return
++
++    def receive(self,wanted,timeout,cleanup=False):
++        deadline=time.monotonic()+timeout
++        while True:
++            self.check(cleanup)
++            if wanted in self.pending:return self.pending.pop(wanted)
++            remaining=deadline-time.monotonic()
++            if remaining<=0:raise BackgroundInputError('Android touch acknowledgement timed out.')
++            try:message=self.events.get(timeout=min(.05,remaining))
++            except queue.Empty:continue
++            key=message.get('id')
++            if key==wanted:return message
++            self.pending[key]=message
++
++    def send(self,action,point=None,cleanup=False):
++        with self.operation:
++            self.check(cleanup);identifier=self.next_id;self.next_id+=1
++            text=f'{identifier} {action}'
++            if point is not None:text+=' '+str(point[0])+' '+str(point[1])
++            self.write(text);result=self.receive(identifier,2. if cleanup else 4.,cleanup)
++            self.down=bool(result.get('down',False))
++            if not result.get('ok'):raise BackgroundInputError('Android touch rejected: '+str(result.get('error','unknown error')))
++
++    def release(self):
++        if self.process.poll() is None:self.send('U',cleanup=True)
++        self.down=False
++
++    def close(self):
++        if self.closed.is_set():return
++        try:
++            if self.process.poll() is None:
++                try:self.send('Q',cleanup=True)
++                except Exception:pass
++        finally:
++            self.closed.set()
++            try:self.process.stdin.close()
++            except OSError:pass
++            try:self.process.wait(timeout=1.)
++            except subprocess.TimeoutExpired:self.process.kill();self.process.wait(timeout=2.)
++            self.reader.join(1.);self.error_reader.join(1.)
++
++
++class AdbBackend:
++    def __init__(self,cancel,settings=None,process_factory=None):
++        self.cancel=cancel;self.settings=settings or InputSettings();self.factory=process_factory or subprocess.Popen
++        self.executable=None;self.size=None;self.touch=None;self.down=False;self.position=None
++        self.connected=False;self.package=self.settings.package or None;self.app_check_at=0.;self.state_lock=threading.RLock()
++        self.last_frame=None;self.pending_motion=None
++        l,t,r,b=self.settings.content_rect;self.drag_bounds=(l,t,r-1e-6,b-1e-6)
++
++    def __enter__(self):self.executable=find_adb(self.settings.adb_path);return self
++    def __exit__(self,*args):self.close()
++
++    def check(self):
++        if self.cancel.is_set():raise PatrolStopped('Stopped.')
++
++    def wait(self,seconds):
++        if self.cancel.wait(seconds):self.check()
++
++    def spawn(self,args,stream=False,targeted=True):
++        command=[self.executable]+(['-s',self.settings.serial] if targeted else [])+list(args)
++        return self.factory(command,stdin=subprocess.PIPE if stream else subprocess.DEVNULL,
++            stdout=subprocess.PIPE,stderr=subprocess.PIPE,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0),bufsize=0)
++
++    def command(self,*args,timeout=8.,targeted=True):
++        self.check();process=self.spawn(args,targeted=targeted);deadline=time.monotonic()+timeout
++        try:
++            while True:
++                self.check()
++                if time.monotonic()>=deadline:raise BackgroundInputError('ADB timed out. Check that BlueStacks is running and Android Debug Bridge is enabled.')
++                try:output,error=process.communicate(timeout=.05);break
++                except subprocess.TimeoutExpired:continue
++            self.check()
++            if process.returncode:raise BackgroundInputError('ADB failed: '+error.decode('utf-8','replace').strip()[-350:])
++            return output
++        finally:
++            if process.poll() is None:process.kill();process.communicate()
++
++    def connect(self):
++        if self.connected:return
++        output=self.command('connect',self.settings.serial,targeted=False).lower()
++        if any(word in output for word in (b'failed',b'cannot',b'unable',b'refused')):raise BackgroundInputError('Cannot connect to BlueStacks. Enable Android Debug Bridge and check 127.0.0.1:5555 in settings.')
++        if self.command('get-state').strip()!=b'device':raise BackgroundInputError('The selected BlueStacks ADB device is not ready or authorized.')
++        self.connected=True
++
++    def foreground(self):
++        for args in (('shell','dumpsys','activity','activities'),('shell','dumpsys','window')):
++            try:text=self.command(*args,timeout=2.).decode('utf-8','replace')
++            except PatrolStopped:raise
++            except RuntimeError:continue
++            package=active_package(text)
++            if package:return package
++        return None
++
++    def check_app(self,force=False):
++        if not force and time.monotonic()<self.app_check_at:return None
++        package=self.foreground();self.app_check_at=time.monotonic()+(2. if package else 10.)
++        if package and (any(s in package.lower() for s in ('launcher','systemui','permissioncontroller')) or package=='com.android.settings'):
++            raise BackgroundInputError('Open Loong Haven inside Android. ADB input stopped because another Android screen is active.')
++        if package and self.package and package!=self.package:raise BackgroundInputError('The active Android app changed. ADB input stopped.')
++        return package
++
++    def capture_raw(self):
++        self.check();png=self.command('exec-out','screencap','-p')
++        if not png.startswith(b'\x89PNG\r\n\x1a\n'):raise BackgroundInputError('ADB did not return an Android PNG screenshot.')
++        frame=cv2.imdecode(np.frombuffer(png,np.uint8),cv2.IMREAD_COLOR)
++        if frame is None:raise BackgroundInputError('Android screenshot could not be decoded.')
++        h,w=frame.shape[:2]
++        if not .4<=w/h<=.75:raise BackgroundInputError('Use the game in portrait orientation for ADB mode.')
++        if self.size is None:self.size=(w,h)
++        elif self.size!=(w,h):raise BackgroundInputError('Android resolution changed. Stop and test the connection again.')
++        if float(frame.mean())<2 and float(frame.std())<3:raise BackgroundInputError('Android returned a black screen. BlueStacks may have paused rendering while minimized.')
++        return frame
++
++    def render(self,raw):
++        l,t,r,b=self.settings.content_rect;w,h=self.size
++        return cv2.warpAffine(raw,np.float32([[(r-l)/w,0,l],[0,(b-t)/h,t]]),(570,1029),flags=cv2.INTER_LINEAR)
++
++    def start_touch(self):
++        if self.touch is not None:return
++        jar=ROOT/'loonglens-touch.jar';manifest=json.loads((ROOT/'android_touch/BUILD.json').read_text('utf-8'))
++        digest=hashlib.sha256(jar.read_bytes()).hexdigest()
++        if digest!=manifest['jar_sha256']:raise BackgroundInputError('Android touch helper checksum mismatch. Extract the complete v38 folder again.')
++        path='/data/local/tmp/loonglens-touch-'+digest[:16]+'.jar'
++        self.command('push',str(jar),path,timeout=15.)
++        process=self.spawn(('shell','-T','CLASSPATH='+path,'app_process','/','com.loonglens.TouchBridge',str(self.size[0]),str(self.size[1])),stream=True)
++        try:self.touch=TouchChannel(process,self.cancel)
++        except Exception:
++            if process.poll() is None:process.kill();process.wait(timeout=2.)
++            raise
++
++    def verify_game(self,frame):
++        from vision import TitleDetector
++        package=self.check_app(force=True)
++        map_visible=TitleDetector().score(frame)>=.64
++        if not map_visible and (not self.package or package is None):
++            raise BackgroundInputError('Open the large Loong Haven map once, then Test connection. No Windows mouse input was sent.')
++        if package and map_visible:self.package=package
++        self.start_touch()
++        return dict(package=self.package or '',map_visible=map_visible,width=self.size[0],height=self.size[1],transport='Android screenshots and persistent touch')
++
++    def focus(self):
++        # The interface name is shared with WindowsBackend. No Windows focus
++        # changes, desktop capture or cursor functions occur in this backend.
++        self.connect();frame=self.render(self.capture_raw());self.verify_game(frame);self.last_frame=frame
++
++    def capture(self):
++        self.check()
++        if self.touch is not None:self.touch.check()
++        self.check_app();frame=self.render(self.capture_raw())
++        if self.pending_motion is not None:
++            from vision import patrol_map_mask
++            before=self.pending_motion;mask=patrol_map_mask(frame.shape)!=0;deadline=time.monotonic()+2.5
++            while float(np.mean(cv2.absdiff(before,frame).max(axis=2)[mask]>10))<.004:
++                if time.monotonic()>=deadline:
++                    raise BackgroundInputError('No map movement was confirmed after Android touch. Move away from the map edge and retry; minimized BlueStacks may have paused rendering.')
++                self.wait(.05);frame=self.render(self.capture_raw())
++            self.pending_motion=None
++        if self.touch is not None:self.touch.check()
++        self.last_frame=frame
++        return frame
++
++    def point(self,reference):
++        x,y=reference;l,t,r,b=self.settings.content_rect
++        if not all(math.isfinite(v) for v in (x,y)) or not(l<=x<r and t<=y<b):raise ValueError('Touch lies outside the Android display area.')
++        if self.size is None:raise BackgroundInputError('Capture the Android screen before touching it.')
++        w,h=self.size
++        return min(w-1,round((x-l)*w/(r-l))),min(h-1,round((y-t)*h/(b-t)))
++
++    def guard(self):
++        self.check();self.check_app()
++        if self.touch is None:raise BackgroundInputError('Android touch channel has not been initialized.')
++        self.touch.check()
++
++    def release(self):
++        with self.state_lock:
++            if self.down:
++                try:
++                    if self.touch is not None:self.touch.release()
++                finally:self.down=False
++
++    @contextmanager
++    def hold_drag(self,start):
++        self.guard();point=self.point(start)
++        with self.state_lock:
++            if self.down:raise BackgroundInputError('Android finger is already down.')
++            self.down=True;self.position=start
++        try:
++            self.touch.send('D',point);self.wait(.025);yield
++            self.wait(.18)
++        finally:self.release()
++
++    def drag_held_to(self,end):
++        self.guard();point=self.point(end)
++        if not self.down or not self.touch.down:raise BackgroundInputError('Android touch hold ended before the map movement.')
++        before=self.last_frame.copy() if self.last_frame is not None else None
++        self.touch.send('M',point);self.position=end
++        if before is not None:self.pending_motion=before
++
++    def click(self,reference):
++        self.guard();point=self.point(reference)
++        with self.state_lock:
++            if self.down:raise BackgroundInputError('Android finger is already down.')
++            self.down=True
++        try:self.touch.send('D',point);self.wait(.05)
++        finally:self.release()
++
++    def drag(self,start,end):
++        self.point(end)
++        with self.hold_drag(start):self.drag_held_to(end)
++
++    def input_not_responding(self,message):
++        raise BackgroundInputError(message+' In ADB mode, run Test map pan with BlueStacks minimized to check background rendering.')
++
++    def close(self):
++        try:self.release()
++        finally:
++            if self.touch is not None:self.touch.close();self.touch=None
++
++
++def align_android_display(raw,desktop):
++    """One-time, read-only registration to the user's existing map geometry."""
++    desktop=cv2.resize(desktop,(570,1029),interpolation=cv2.INTER_AREA)
++    small=cv2.resize(raw,(570,round(raw.shape[0]*570/raw.shape[1])),interpolation=cv2.INTER_AREA)
++    sift=cv2.SIFT_create(nfeatures=2400,contrastThreshold=.025)
++    a,da=sift.detectAndCompute(cv2.cvtColor(small,cv2.COLOR_BGR2GRAY),None)
++    b,db=sift.detectAndCompute(cv2.cvtColor(desktop,cv2.COLOR_BGR2GRAY),None)
++    if da is None or db is None:raise ValueError('Open a still map to align Android screenshots.')
++    good=[m for pair in cv2.BFMatcher().knnMatch(da,db,k=2) if len(pair)==2 for m,n in [pair] if m.distance<.65*n.distance]
++    if len(good)<25:raise ValueError('Not enough shared map detail to align screenshots.')
++    source=np.float32([a[m.queryIdx].pt for m in good]);target=np.float32([b[m.trainIdx].pt for m in good])
++    matrix,inliers=cv2.estimateAffine2D(source,target,method=cv2.RANSAC,ransacReprojThreshold=2.5,confidence=.999)
++    if matrix is None or inliers is None or int(inliers.sum())<22:raise ValueError('Android screen alignment is uncertain.')
++    keep=inliers[:,0].astype(bool);source=source[keep];target=target[keep]
++    if np.ptp(source,axis=0).min()<100 or abs(matrix[0,1])>.008 or abs(matrix[1,0])>.008:raise ValueError('Keep the same upright game map visible while aligning.')
++    ui=(source[:,1]<150)|(source[:,1]>small.shape[0]*.9)|((source[:,0]>480)&(source[:,1]>600))
++    if int(ui.sum())<8:raise ValueError('Game controls do not agree with this window alignment.')
++    sx,tx=np.polyfit(source[:,0],target[:,0],1);sy,ty=np.polyfit(source[:,1],target[:,1],1)
++    error=np.linalg.norm(source*np.array((sx,sy))+np.array((tx,ty))-target,axis=1)
++    if not(.75<sx<1.15 and .75<sy<1.15 and np.median(error)<1.8):raise ValueError('Android alignment is not accurate enough.')
++    rect=(max(0.,float(tx)),max(0.,float(ty)),min(570.,float(tx+sx*small.shape[1])),min(1029.,float(ty+sy*small.shape[0])))
++    if rect[0]>40 or rect[1]>100 or rect[2]<530 or rect[3]<940:raise ValueError('The screenshot does not match the visible Android display.')
++    return InputSettings(content_rect=rect).content_rect
+--- a/LoongLens/patrol_live.py
++++ b/LoongLens/patrol_live.py
+@@ -231,6 +231,7 @@
+             self.check();frame=backend.capture()
+             if self.is_map(frame):return frame
+             backend.wait(.2)
++        if hasattr(backend,'input_not_responding'):backend.input_not_responding('Android did not confirm the large map.')
+         raise RuntimeError('The large map was not confirmed. Check Open map in Sniper settings; patrol stopped.')
+ 
+     def open_map(self,backend):
+@@ -410,7 +411,9 @@
+                         raise MapAlignmentLost('Map target changed direction during the held drag.')
+                     distance=math.hypot(*delta)
+                     stalled=stalled+1 if previous_distance is not None and distance>=previous_distance-2 else 0
+-                    if stalled>=3:raise RuntimeError('Map panning is not moving toward the dot. Patrol stopped.')
++                    if stalled>=3:
++                        if hasattr(backend,'input_not_responding'):backend.input_not_responding('Android map panning did not move toward the target.')
++                        raise RuntimeError('Map panning is not moving toward the dot. Patrol stopped.')
+                     previous_distance=distance
+                     end=route_drag_step(cursor,direction,bounds=getattr(backend,'drag_bounds',None))
+                     if end is None:break  # At the window edge: settle, release, then re-anchor.
+--- a/LoongLens/patrol_live_panel.py
++++ b/LoongLens/patrol_live_panel.py
+@@ -16,6 +16,7 @@
+ from sighting_capture import SightingCapture
+ from resources import user_dir
+ from sniper_counter import SniperQuota
++from patrol_adb import AdbBackend,InputSettings
+ 
+ 
+ class LivePatrolPanel:
+@@ -32,9 +33,17 @@
+         self.events=queue.Queue();self.keys=None;self.closed=False;self.busy=False
+         self.job=None;self.photo=None;self.futures=[];self.editing=False;self.editor=None;self.switching=False
+         self.path=user_dir()/'patrol-live-settings.json'
++        self.input_settings=InputSettings();self.adb_map=dict(map_open=(480.,170.),map_close=(64.,980.))
++        self.adb_factory=AdbBackend;self.reference_capture=WindowsBackend.peek;self.settings_dialog=None
+         try:
+             config=json.loads(self.path.read_text('utf-8'))
+             self.settings,key,migrated=load_live_config(config)
++            try:self.input_settings=InputSettings(**config.get('input',{}))
++            except (ValueError,TypeError):self.input_settings=InputSettings()
++            try:
++                points=config.get('adb_map',self.adb_map)
++                validate=replace(self.settings,**points);self.adb_map=dict(map_open=validate.map_open,map_close=validate.map_close)
++            except (ValueError,TypeError):pass
+             self.key.set(key);self.endless.set(bool(config.get('endless_mode',False)))
+             if migrated:self.status.set('Updated Open map to the top-right minimap.')
+         except (OSError,ValueError,KeyError,TypeError):self.settings=LiveSettings()
+@@ -49,7 +58,7 @@
+             if self.routes.active!=RouteProfiles.DEFAULT:self.route_path=self.routes.path(self.routes.active)
+         except (OSError,ValueError,TypeError) as exc:
+             self.routes=None;views=self.base_views;warning=f'Using Default; saved route list needs attention: {exc}'
+-        self.runner=LiveRunner(views,WindowsBackend,self.events.put,
++        self.runner=LiveRunner(views,self.make_backend,self.events.put,
+                                quota=SniperQuota(self.services.sighting_history.path))
+         self.runner.set_endless(self.endless.get())
+         from sniper_history_panel import DailyGemsControls
+@@ -85,7 +94,8 @@
+         for w in (quota,*quota.winfo_children()):w.bind('<Button-1>',lambda _:self.show_daily_gems())
+         # Action bar remains visible while the middle area grows with the window.
+         footer=ttk.Frame(body);footer.pack(side='bottom',fill='x',pady=(12,0))
+-        ttk.Label(footer,text='Click Daily gems to edit obtained finds. Keep BlueStacks visible. On a gem: collect, wait 20s, return to Emerald Corner.',
++        self.input_label=tk.StringVar();self.update_input_label()
++        ttk.Label(footer,textvariable=self.input_label,
+                   style='Muted.TLabel',font=(FONT,9),wraplength=1100).pack(anchor='w',pady=(9,0),side='bottom')
+         actions=ttk.Frame(footer,style='Panel.TFrame',padding=12);actions.pack(fill='x')
+         play=line_image(actions,'play',20,'#073334');self.ui_images.append(play)
+@@ -295,7 +305,7 @@
+ 
+     def buttons(self):
+         available=self.services.owner in (None,'sniper')
+-        ready=self.keys is not None and available and not self.busy and not self.editing and not self.switching
++        ready=self.keys is not None and available and not self.busy and not self.editing and not self.switching and self.settings_dialog is None
+         for button in (self.snipe,self.repeat):button.configure(state='normal' if ready else 'disabled')
+         self.route_box.configure(state='readonly' if self.services.owner!='spy' and self.routes is not None and not self.editing and not self.switching else 'disabled')
+         self.copy_route_button.configure(state='normal' if self.services.owner is None and self.routes is not None and not self.busy and not self.editing and not self.switching else 'disabled')
+@@ -319,11 +329,14 @@
+         self.bind_keys()
+ 
+     def emergency(self):
++        if self.settings_dialog is not None:self.settings_dialog.cancel_test()
+         self.runner.stop()  # Called directly on the hotkey thread, without Tk delay.
+         if getattr(self,'spy_stop',None):self.spy_stop()
+         self.events.put(dict(kind='panic'))
+ 
+     def start(self,repeat=None):
++        if self.settings_dialog is not None:
++            self.status.set('Save or close input settings before starting.');return
+         if self.keys is None or self.busy or self.editing or self.switching:return
+         if not self.endless.get() and self.services.sighting_history.sniper_seen()>=5:
+             self.status.set('5/5 gems marked obtained for this game day. Stopped until the 16:00 Sofia reset.');return
+@@ -331,10 +344,8 @@
+             self.status.set('Stop Gem Spy before starting Gem Sniper.');return
+         self.runner.cooldown['last']=max(self.runner.cooldown['last'],self.services.last_sighting)
+         self.runner.cooldown['sound']=max(self.runner.cooldown.get('sound',-float('inf')),self.services.last_sound)
+-        settings=LiveSettings(self.settings.map_open,self.settings.map_close,
+-            self.settings.settle_seconds,self.settings.inspect_seconds,
+-            {'Conservative':.84,'Balanced':.77,'Sensitive':.70}[self.services.mode.get()],self.services.mask_hud.get(),True)
+-        
++        settings=self.runtime_settings()
++
+         self.on_active(True);self.busy=True;self.buttons()
+         self.runner.set_endless(self.endless.get())
+         if not self.runner.start(settings,auto=True,repeat=(self.loop_mode.get() or self.endless.get()) if repeat is None else repeat):
+@@ -342,7 +353,7 @@
+ 
+     def stop(self,silent=False):
+         self.runner.stop()
+-        if not silent:self.status.set('Stop requested. Mouse input is being released.')
++        if not silent:self.status.set('Stop requested. Touch input is being released.')
+ 
+     def reset(self):
+         if self.busy:
+@@ -440,63 +451,36 @@
+     def save_config(self):
+         try:
+             tmp=self.path.with_suffix('.tmp')
+-            tmp.write_text(json.dumps(dict(version=LIVE_SETTINGS_VERSION,settings=asdict(self.settings),key=self.key.get(),endless_mode=self.endless.get()),indent=2),'utf-8')
++            tmp.write_text(json.dumps(dict(version=LIVE_SETTINGS_VERSION,settings=asdict(self.settings),key=self.key.get(),endless_mode=self.endless.get(),input=asdict(self.input_settings),adb_map=self.adb_map),indent=2),'utf-8')
+             tmp.replace(self.path)
+         except OSError:
+             import logging
+             logging.exception('Could not save patrol settings')
+ 
++    def make_backend(self,cancel):
++        return self.adb_factory(cancel,self.input_settings) if self.input_settings.mode=='ADB' else WindowsBackend(cancel)
++
++    def runtime_settings(self,approach_gem=True):
++        points=self.adb_map if self.input_settings.mode=='ADB' else {}
++        return replace(self.settings,**points,threshold={'Conservative':.84,'Balanced':.77,'Sensitive':.70}[self.services.mode.get()],
++            mask_hud=self.services.mask_hud.get(),approach_gem=approach_gem)
++
++    def update_input_label(self):
++        if hasattr(self,'input_label'):
++            mode='ADB: mouse stays free.' if self.input_settings.mode=='ADB' else 'Mouse: keep BlueStacks visible.'
++            self.input_label.set(mode+' Daily gems: edit obtained. On a gem: wait 20s, return to Emerald Corner.')
++
+     def show_settings(self):
+         if self.busy or self.services.owner is not None:
+             self.status.set('Stop Gem Sniper and Gem Spy before changing settings.');return
+-        win=tk.Toplevel(self.root);win.title('Gem Sniper settings');win.transient(self.root)
+-        body=ttk.Frame(win,padding=18);body.pack(fill='both',expand=True)
+-        ttk.Label(body,text='Map button positions in the 570×1029 reference screenshot.',font=('Segoe UI',10,'bold')).grid(row=0,column=0,columnspan=3,sticky='w')
+-        ttk.Label(body,text='Open map: click the round minimap in the top-right during gameplay.\nFor Back: manually open the large map first, then pick its Back button.',style='Muted.TLabel').grid(row=1,column=0,columnspan=3,sticky='w',pady=8)
+-        fields={}
+-        for row,name,label in ((2,'map_open','Open map (minimap)'),(3,'map_close','Map Back button')):
+-            ttk.Label(body,text=label).grid(row=row,column=0,sticky='w',pady=6)
+-            field=ttk.Entry(body,width=15);field.insert(0,','.join(str(v) for v in getattr(self.settings,name)))
+-            field.grid(row=row,column=1,padx=8);fields[name]=field
+-            ttk.Button(body,text='Pick on screenshot',command=lambda f=field:self.pick_button(win,f)).grid(row=row,column=2)
+-        for row,name,label in ((4,'settle_seconds','Scene loading wait (seconds)'),(5,'inspect_seconds','Empty-view check (seconds)')):
+-            ttk.Label(body,text=label).grid(row=row,column=0,sticky='w',pady=6)
+-            field=ttk.Entry(body,width=15);field.insert(0,str(getattr(self.settings,name)));field.grid(row=row,column=1,padx=8);fields[name]=field
+-        ttk.Label(body,text='On gem: click, wait 20s, return to (241,107), restart until 5/5.').grid(row=6,column=0,columnspan=3,sticky='w')
+-        detection_mode=tk.StringVar(value=self.services.mode.get())
+-        mask_interface=tk.BooleanVar(value=self.services.mask_hud.get())
+-        sound_alerts=tk.BooleanVar(value=self.services.sound.get())
+-        ttk.Label(body,text='Detection sensitivity').grid(row=7,column=0,sticky='w',pady=6)
+-        ttk.Combobox(body,textvariable=detection_mode,values=('Conservative','Balanced','Sensitive'),state='readonly',width=15).grid(row=7,column=1,sticky='w',padx=8)
+-        ttk.Checkbutton(body,text='Mask interface areas',variable=mask_interface).grid(row=8,column=0,columnspan=2,sticky='w')
+-        ttk.Checkbutton(body,text='Sound alerts',variable=sound_alerts).grid(row=8,column=2,sticky='w')
+-        ttk.Label(body,text='Gem Spy uses these settings and the selected route. It never clicks gems.',wraplength=480).grid(row=9,column=0,columnspan=3,sticky='w',pady=6)
+-        error=tk.StringVar();ttk.Label(body,textvariable=error,wraplength=500).grid(row=10,column=0,columnspan=3,sticky='w')
+-        def apply():
+-            try:
+-                points={name:tuple(float(v.strip()) for v in fields[name].get().split(',')) for name in ('map_open','map_close')}
+-                self.settings=LiveSettings(**points,settle_seconds=float(fields['settle_seconds'].get()),inspect_seconds=float(fields['inspect_seconds'].get()),approach_gem=True)
+-            except (TypeError,ValueError):error.set('Enter X,Y pairs inside 570×1029. Loading wait: 0.2–10s. Check: 1.2–10s.');return
+-            self.services.mode.set(detection_mode.get());self.services.mask_hud.set(mask_interface.get());self.services.sound.set(sound_alerts.get())
+-            self.services.save();self.save_config();win.destroy()
+-        ttk.Button(body,text='Save settings',command=apply).grid(row=11,column=0,sticky='w',pady=10)
+-        ttk.Button(body,text='Cancel',command=win.destroy).grid(row=11,column=2,sticky='e')
+-
+-    def pick_button(self,parent,field):
+-        try:frame=WindowsBackend.peek()
+-        except Exception as exc:messagebox.showerror('Capture unavailable',str(exc),parent=parent);return
+-        image=Image.fromarray(cv2.cvtColor(frame,cv2.COLOR_BGR2RGB));image.thumbnail((500,760))
+-        picker=tk.Toplevel(parent);picker.title('Click the button in this screenshot')
+-        photo=ImageTk.PhotoImage(image)
+-        canvas=tk.Canvas(picker,width=image.width,height=image.height,highlightthickness=0)
+-        canvas.pack();canvas.create_image(0,0,image=photo,anchor='nw');canvas.photo=photo
+-        def select(event):
+-            field.delete(0,'end');field.insert(0,f'{event.x*570/image.width:.1f},{event.y*1029/image.height:.1f}');picker.destroy()
+-        canvas.bind('<Button-1>',select)
++        if self.settings_dialog is not None:self.settings_dialog.window.lift();return
++        from adb_setup_panel import InputDialog
++        self.settings_dialog=InputDialog(self);self.buttons()
+ 
+     def close(self):
+         if self.closed:return
+         self.closed=True;self.runner.stop()
++        if self.settings_dialog is not None:self.settings_dialog.close(wait=True)
+         if self.job is not None:self.root.after_cancel(self.job);self.job=None
+         if self.preview_job is not None:self.root.after_cancel(self.preview_job);self.preview_job=None
+         if self.keys is not None:self.keys.close();self.keys=None
+--- a/LoongLens/spy_panel.py
++++ b/LoongLens/spy_panel.py
+@@ -104,7 +104,7 @@
+ class SpyPanel:
+     def __init__(self,parent,sniper,services,on_active=lambda active:None):
+         self.root=parent.winfo_toplevel();self.parent=parent;self.sniper=sniper;self.services=services;self.on_active=on_active
+-        self.events=queue.Queue();self.runner=SpyRunner(user_dir(),self.events.put)
++        self.events=queue.Queue();self.runner=SpyRunner(user_dir(),self.events.put,backend_factory=sniper.make_backend)
+         self.history=SpyHistory(user_dir()/'sightings.sqlite3');self.history_window=SpyHistoryWindow(self.root,self.history,services)
+         self.status=tk.StringVar(value='Ready — uses the route and settings selected in Gem Sniper.')
+         self.location=tk.StringVar();self.stats=tk.StringVar();self.progress_text=tk.StringVar();self.photo=None
+@@ -148,12 +148,14 @@
+         controls.bind('<Configure>',wrap);state.bind('<Configure>',wrap)
+ 
+     def start(self):
++        if self.sniper.settings_dialog is not None:
++            self.status.set('Save or close input settings before starting Spy.');return
+         if self.runner.running:return
+         if self.sniper.keys is None:
+             self.status.set('The global stop key is unavailable. Resolve hotkey setup in Gem Sniper first.');return
+         if self.sniper.busy or self.sniper.editing or self.sniper.switching or not self.services.acquire('spy'):
+             self.status.set('Stop Gem Sniper and close its route editor before starting Gem Spy.');return
+-        settings=replace(self.sniper.settings,threshold=self.services.threshold,mask_hud=self.services.mask_hud.get(),approach_gem=False)
++        settings=self.sniper.runtime_settings(approach_gem=False)
+         if not self.runner.start(self.sniper.runner.views,settings):self.services.release('spy');return
+         self.status.set('Starting Gem Spy… F10 stops.');self.on_active(True);self.sniper.buttons()
+ 
+@@ -192,7 +194,7 @@
+         self.progress_text.set(f"Run {values['run']} · Processed: {values['processed']} / {values['total']} locations")
+         self.progress.configure(maximum=max(1,values['total']),value=values['processed'])
+         self.location.set('Uses Gem Sniper route: '+self.sniper.route_name.get())
+-        self.start_button.configure(state='disabled' if self.runner.running or self.services.owner is not None or self.sniper.editing else 'normal')
++        self.start_button.configure(state='disabled' if self.runner.running or self.services.owner is not None or self.sniper.editing or self.sniper.settings_dialog is not None else 'normal')
+         self.job=self.root.after(150,self.poll)
+ 
+     def close(self):
+--- a/LoongLens/spy_runner.py
++++ b/LoongLens/spy_runner.py
+@@ -174,6 +174,7 @@
+                         raise
+                     except Exception as exc:
+                         if self.cancel.is_set():break
++                        if getattr(exc,'pause_input',False):raise
+                         LOG.exception('Gem Spy retry at route #%s',self.views[current[0]].route_label)
+                         index=current[0];observer.unclear(self.views[index],str(exc))
+                         failures[index]=failures.get(index,0)+1;consecutive+=1
+--- /dev/null
++++ b/LoongLens/tests/test_adb_background.py
+@@ -0,0 +1,167 @@
++from dataclasses import replace
++import json
++import os
++from pathlib import Path
++import subprocess
++import sys
++import threading
++import time
++import cv2
++import numpy as np
++import pytest
++from patrol_adb import AdbBackend,InputSettings,active_package,align_android_display
++from patrol_windows import PatrolStopped
++from resources import ROOT
++
++
++from adb_fixture import prepare_fixture
++
++
++def process_factory(folder):
++    def spawn(command,**kwargs):
++        assert kwargs.get('shell') is not True
++        return subprocess.Popen([sys.executable,str(ROOT/'adb_fixture.py'),str(folder),*command[1:]],**kwargs)
++    return spawn
++
++
++@pytest.fixture
++def android(tmp_path):
++    image=prepare_fixture(tmp_path)
++    backend=AdbBackend(threading.Event(),InputSettings(adb_path=str(ROOT/'adb_fixture.py')),process_factory(tmp_path))
++    with backend:yield backend,tmp_path,image
++
++
++def state(folder,**changes):
++    path=folder/'state.json';data=json.loads(path.read_text());data.update(changes);path.write_text(json.dumps(data));return data
++
++
++def touches(folder):
++    return [entry[1] for entry in map(json.loads,(folder/'calls.jsonl').read_text().splitlines()) if entry[0]=='touch']
++
++
++def test_background_capture_and_touch_never_use_windows_cursor_or_focus(android,monkeypatch):
++    backend,folder,image=android
++    import patrol_windows
++    monkeypatch.setattr(patrol_windows,'NativeInput',lambda:pytest.fail('Desktop input constructed'))
++    backend.focus();frame=backend.capture();assert frame.shape==(1029,570,3)
++    backend.click((285,400))
++    assert [r[0] for r in touches(folder)]==['D','U']
++    assert touches(folder)[0][1]==[360,480]
++    assert not backend.down and not state(folder)['down']
++
++
++def test_hold_stays_down_across_capture_and_stationary_release(android):
++    backend,folder,_=android;backend.focus()
++    with backend.hold_drag((285,530)):
++        backend.drag_held_to((285,490));backend.capture()
++        assert backend.down and state(folder)['down']
++    assert [r[0] for r in touches(folder)]==['D','M','U']
++    assert not state(folder)['down']
++
++
++def test_no_focused_window_is_ok_when_map_is_verified(android):
++    backend,folder,_=android;state(folder,package=None)
++    backend.focus();assert backend.touch is not None and backend.package is None
++
++
++def test_unknown_app_without_map_requires_visual_confirmation(android):
++    backend,folder,_=android;state(folder,package=None,open=False)
++    with pytest.raises(RuntimeError,match='Open the large Loong Haven map'):backend.focus()
++    assert touches(folder)==[]
++
++
++def test_known_android_app_switch_stops_before_input(android):
++    backend,folder,_=android;backend.focus();state(folder,package='com.other.app');backend.app_check_at=0
++    with pytest.raises(RuntimeError,match='active Android app changed'):backend.click((285,400))
++    assert touches(folder)==[]
++
++
++def test_launcher_stops_before_touch_channel(android):
++    backend,folder,_=android;state(folder,package='com.bluestacks.launcher')
++    with pytest.raises(RuntimeError,match='another Android screen'):backend.focus()
++    assert touches(folder)==[]
++
++
++def test_f10_during_blocked_screenshot_releases_held_android_finger(android):
++    backend,folder,_=android;backend.focus();errors=[]
++    def run():
++        try:
++            with backend.hold_drag((285,530)):
++                (folder/'block-capture').touch();backend.capture()
++        except Exception as exc:errors.append(exc)
++    worker=threading.Thread(target=run);worker.start()
++    deadline=time.monotonic()+4
++    while not (folder/'block-capture').exists() and time.monotonic()<deadline:time.sleep(.02)
++    backend.cancel.set();worker.join(4)
++    assert not worker.is_alive() and errors and isinstance(errors[0],PatrolStopped)
++    assert not state(folder)['down'] and touches(folder)[-1][0]=='U'
++
++
++def test_resolution_change_and_black_png_stop(android):
++    backend,folder,_=android;backend.focus();state(folder,width=900,height=1600)
++    with pytest.raises(RuntimeError,match='resolution changed'):backend.capture()
++    state(folder,width=720,height=1280,black=True)
++    with pytest.raises(RuntimeError,match='black screen'):backend.capture()
++    state(folder,black=False,bad_png=True)
++    with pytest.raises(RuntimeError,match='PNG screenshot'):backend.capture()
++
++
++def test_snapshot_coordinates_use_inverse_android_alignment(android):
++    backend,folder,_=android;backend.focus()
++    assert backend.point((285,530))==(360,650)
++    assert backend.point((0,32))==(0,0)
++    for point in ((0,0),(570,500),(300,1013),(float('nan'),500)):
++        with pytest.raises(ValueError):backend.point(point)
++
++
++def test_registration_preserves_existing_route_geometry(android):
++    backend,folder,desktop=android;backend.connect();raw=backend.capture_raw()
++    rect=align_android_display(raw,desktop)
++    assert np.max(np.abs(np.asarray(rect)-np.array((0,32,570,1013))))<2
++    backend.settings=replace(backend.settings,content_rect=rect)
++    result=backend.render(raw)
++    from vision import Calibrator
++    pose=Calibrator().locate(result)
++    assert pose is not None and 12.05<=pose.scale<=12.85
++
++
++@pytest.mark.parametrize('text,expected',[
++    ('mCurrentFocus=null\nmResumedActivity: ActivityRecord{2 u0 com.example.loong/.Game t1}','com.example.loong'),
++    ('topResumedActivity=ActivityRecord{3 u0 com.example.loong/.Game t4}','com.example.loong'),
++    ('mCurrentFocus=Window{3 u0 com.example.loong/.Game}','com.example.loong'),
++    ('Window #3 com.old.app/.Game\nmCurrentFocus=null',None),
++    ('mResumedActivity: ActivityRecord{2 u0 com.one.app/.Main}\nmResumedActivity: ActivityRecord{3 u0 com.two.app/.Main}',None)])
++def test_foreground_records_do_not_guess_stale_apps(text,expected):assert active_package(text)==expected
++
++
++@pytest.mark.parametrize('serial',['host:5555','127.0.0.1:0','127.0.0.1:5555;echo x','-s','127.0.0.1:65536'])
++def test_only_the_explicit_bluestacks_loopback_is_connected(serial):
++    with pytest.raises(ValueError):InputSettings(serial=serial)
++
++
++def test_adb_is_default_and_input_profile_round_trips():
++    assert InputSettings().mode=='ADB'
++    value=InputSettings(content_rect=(1.,32.,568.,1010.),package='com.example.loong')
++    from dataclasses import asdict
++    assert InputSettings(**json.loads(json.dumps(asdict(value))))==value
++
++
++def test_minimized_pan_probe_confirms_touch_and_restores_map(android,monkeypatch):
++    backend,folder,_=android
++    monkeypatch.setenv('XDG_CACHE_HOME',str(folder/'cache'))
++    from adb_setup_panel import probe_android
++    factory=lambda cancel,settings:AdbBackend(cancel,settings,process_factory(folder))
++    settings,frame,info=probe_android(factory,backend.settings,backend.cancel,pan=True)
++    assert info['pan_verified'] and settings.package=='com.example.loong'
++    values=state(folder)
++    assert abs(values['dx'])<2 and abs(values['dy'])<2 and not values['down']
++
++
++def test_frozen_minimized_screen_cannot_pass_pan_probe(android,monkeypatch):
++    backend,folder,_=android;state(folder,frozen=True)
++    monkeypatch.setenv('XDG_CACHE_HOME',str(folder/'cache'))
++    from adb_setup_panel import probe_android
++    factory=lambda cancel,settings:AdbBackend(cancel,settings,process_factory(folder))
++    with pytest.raises(RuntimeError,match='No map movement was confirmed'):
++        probe_android(factory,backend.settings,backend.cancel,pan=True)
++    assert not state(folder)['down']
+--- a/LoongLens/tests/test_spy_runner.py
++++ b/LoongLens/tests/test_spy_runner.py
+@@ -168,3 +168,15 @@
+     assert len(store.standard.list())==2 and all(row.score>.95 for row in store.standard.list())
+     assert len(list((tmp_path/'screenshots').glob('*.png')))==2
+     store.close()
++
++
++def test_terminal_adb_failure_preserves_point_and_does_not_auto_retry(tmp_path):
++    from patrol_adb import BackgroundInputError
++    runner,backend,events,views=configured(tmp_path)
++    def failed():raise BackgroundInputError('Android app changed')
++    backend.capture=failed
++    runner.start(views,LiveSettings());finish(runner)
++    assert backend.contexts==1 and not backend.selections and not backend.inputs
++    assert not any('Recovering' in e.get('message','') for e in events)
++    assert any('Android app changed' in e.get('message','') for e in events)
++    assert runner.snapshot()['gems']==0
+--- /dev/null
++++ b/LoongLens/tools/build_android_touch.py
+@@ -0,0 +1,48 @@
++"""Rebuild the small Android-only touch JAR from the included Java source."""
++import argparse
++import hashlib
++import json
++from pathlib import Path
++import subprocess
++import tempfile
++import urllib.request
++import zipfile
++
++ROOT=Path(__file__).resolve().parents[1]
++
++
++def build(cache,output):
++    manifest=json.loads((ROOT/'android_touch/BUILD.json').read_text())
++    source=ROOT/'android_touch/TouchBridge.java'
++    assert hashlib.sha256(source.read_bytes()).hexdigest()==manifest['source_sha256'],'Touch source checksum mismatch'
++    cache.mkdir(parents=True,exist_ok=True)
++    for name,item in manifest['tools'].items():
++        file=cache/('platform.zip' if name=='platform' else 'r8.jar')
++        if not file.exists():
++            with urllib.request.urlopen(item['url'],timeout=60) as response:file.write_bytes(response.read())
++        assert hashlib.sha256(file.read_bytes()).hexdigest()==item['sha256'],name+' tool checksum mismatch'
++    with zipfile.ZipFile(cache/'platform.zip') as archive:
++        name=next(n for n in archive.namelist() if n.endswith('/android.jar'));(cache/'android.jar').write_bytes(archive.read(name))
++    with tempfile.TemporaryDirectory(prefix='loonglens-touch-') as tmp:
++        tmp=Path(tmp);classes=tmp/'classes';classes.mkdir();dex=tmp/'dex';dex.mkdir()
++        subprocess.run(['java','com.sun.tools.javac.Main','-source','8','-target','8','-Xlint:-options','-classpath',str(cache/'android.jar'),'-d',str(classes),str(source)],check=True)
++        with zipfile.ZipFile(tmp/'classes.jar','w') as archive:
++            for file in sorted(classes.rglob('*.class')):archive.write(file,file.relative_to(classes).as_posix())
++        subprocess.run(['java','-cp',str(cache/'r8.jar'),'com.android.tools.r8.D8','--min-api','26','--lib',str(cache/'android.jar'),'--output',str(dex),str(tmp/'classes.jar')],check=True)
++        output.parent.mkdir(parents=True,exist_ok=True)
++        with zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED) as archive:
++            item=zipfile.ZipInfo('classes.dex',(1980,1,1,0,0,0));item.compress_type=zipfile.ZIP_DEFLATED;item.create_system=3
++            archive.writestr(item,(dex/'classes.dex').read_bytes())
++    return hashlib.sha256(output.read_bytes()).hexdigest()
++
++
++def main():
++    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--cache',type=Path,required=True);parser.add_argument('--verify',action='store_true');args=parser.parse_args()
++    with tempfile.TemporaryDirectory(prefix='touch-verify-') as tmp:
++        out=Path(tmp)/'touch.jar' if args.verify else ROOT/'loonglens-touch.jar';digest=build(args.cache,out)
++        if args.verify:
++            expected=json.loads((ROOT/'android_touch/BUILD.json').read_text())['jar_sha256']
++            assert digest==expected,'Rebuilt Android touch JAR differs from the packaged source build'
++        print('Android touch source/JAR verified:',digest)
++
++if __name__=='__main__':main()
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,7 +4,7 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'CHANGELOG-v37.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'CHANGELOG-v37.md', 'CHANGELOG-v38.md', 'patrol_adb.py', 'adb_setup_panel.py', 'adb_fixture.py', 'adb_diagnostics.py', 'loonglens-touch.jar', 'android_touch/TouchBridge.java', 'android_touch/BUILD.json', 'android_touch/README.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py', 'LoongLens-AppIcon-HD.png', 'ui_assets.py', 'dashboard_shell.py', 'window_capture.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+          'sniper_counter.py', 'sniper_history_panel.py', 'gem_heatmap.py', 'gem_heatmap_panel.py', 'heatmap_map_import.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'map_screen.py', 'tracker.py', 'pose.py',
+--- a/LoongLens/tools/build_windows_exe.py
++++ b/LoongLens/tools/build_windows_exe.py
+@@ -15,7 +15,8 @@
+         'loong_haven_default_atlas.png', 'loong_title_template.png',
+         'loong_haven_map_data.json', 'loong_haven_ingredients.json',
+         'loong_haven_terrain.json',
+-        'gem_templates', 'ocr_models',
++        'gem_templates', 'ocr_models', 'loonglens-touch.jar', 'android_touch',
++        'adb_fixture.py', 'tests/fixtures/map-controls.png',
+     ]
+     command = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean', '--onefile',
+                '--windowed', '--noupx', '--name', 'LoongLens',
+@@ -25,7 +26,7 @@
+         path = ROOT/asset
+         if not path.exists():
+             raise SystemExit(f'Missing asset: {path}')
+-        destination = asset if path.is_dir() else '.'
++        destination = asset if path.is_dir() else str(Path(asset).parent)
+         command.extend(['--add-data', f'{path}:{destination}'])
+     command.append(str(ROOT/'desktop_entry.py'))
+     subprocess.run(command, cwd=ROOT, check=True)
+--- /dev/null
++++ b/LoongLens/tools/check_touch_helper.py
+@@ -0,0 +1,71 @@
++"""Run the actual Java touch protocol against independent Android API stubs."""
++import json
++from pathlib import Path
++import subprocess
++import tempfile
++import time
++
++ROOT=Path(__file__).resolve().parents[1]
++STUBS={
++'android/os/Build.java':'''package android.os; public class Build { public static class VERSION { public static int SDK_INT=30; } }''',
++'android/os/SystemClock.java':'''package android.os; public class SystemClock { public static long uptimeMillis(){return System.nanoTime()/1000000L;} }''',
++'android/view/InputEvent.java':'''package android.view; public class InputEvent {}''',
++'android/view/InputDevice.java':'''package android.view; public class InputDevice { public static final int SOURCE_TOUCHSCREEN=4098; }''',
++'android/view/MotionEvent.java':'''package android.view;
++public class MotionEvent extends InputEvent {
++ public static final int ACTION_DOWN=0,ACTION_UP=1,ACTION_MOVE=2,TOOL_TYPE_FINGER=1;
++ public long downTime,eventTime; public int action,source,device; public float x,y,pressure;
++ public static class PointerProperties { public int id,toolType; }
++ public static class PointerCoords { public float x,y,pressure,size; }
++ public static MotionEvent obtain(long d,long e,int a,int count,PointerProperties[] p,PointerCoords[] c,int meta,int buttons,float xp,float yp,int device,int edge,int source,int flags) {
++  MotionEvent m=new MotionEvent();m.downTime=d;m.eventTime=e;m.action=a;m.source=source;m.device=device;m.x=c[0].x;m.y=c[0].y;m.pressure=c[0].pressure;return m;
++ }
++ public void recycle(){}
++}''',
++'android/hardware/input/InputManager.java':'''package android.hardware.input;
++import android.view.*; import java.io.*;
++public class InputManager {
++ private static final InputManager INSTANCE=new InputManager();
++ public static InputManager getInstance(){return INSTANCE;}
++ public boolean injectInputEvent(InputEvent input,int mode) throws Exception {
++  MotionEvent m=(MotionEvent)input;
++  try(PrintWriter out=new PrintWriter(new FileWriter(System.getProperty("touch.log"),true))){out.println(m.action+","+m.downTime+","+m.eventTime+","+m.x+","+m.y+","+m.pressure+","+m.source+","+m.device);}
++  return true;
++ }
++}'''}
++
++
++def main():
++    with tempfile.TemporaryDirectory(prefix='touch-java-check-') as folder:
++        folder=Path(folder);classes=folder/'classes';classes.mkdir();files=[]
++        for name,source in STUBS.items():
++            path=folder/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(source);files.append(str(path))
++        subprocess.run(['java','com.sun.tools.javac.Main','-source','8','-target','8','-Xlint:-options','-d',str(classes),*files,str(ROOT/'android_touch/TouchBridge.java')],check=True)
++        def process(name):
++            log=folder/(name+'.csv')
++            return subprocess.Popen(['java','-Dtouch.log='+str(log),'-cp',str(classes),'com.loonglens.TouchBridge','720','1280'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE),log
++        def rows(path):return [line.split(',') for line in path.read_text().splitlines()] if path.exists() else []
++        def done(process,input=None):
++            out,err=process.communicate(input=input,timeout=12);assert process.returncode==0,err.decode()
++            return [json.loads(line) for line in out.splitlines()]
++        p,log=process('gesture');output=done(p,b'1 D 100 200\n2 M 150 250\n3 U\n4 Q\n')
++        values=rows(log);assert [r[0] for r in values]==['0','2','1']
++        assert len({r[1] for r in values})==1,'Gesture downTime changed between MOVE and UP'
++        assert all(int(r[2])>=int(r[1]) and r[6:]==['4098','-1'] for r in values)
++        assert [float(r[5]) for r in values]==[1.,1.,0.]
++        assert all(item.get('ok',True) for item in output)
++        p,log=process('watchdog');p.stdin.write(b'1 D 100 200\n');p.stdin.flush();time.sleep(2.2)
++        p.stdin.write(b'2 Q\n');p.stdin.flush();output=done(p)
++        assert [r[0] for r in rows(log)]==['0','1']
++        assert any(item.get('event')=='released' for item in output),'Heartbeat watchdog did not release'
++        p,log=process('eof');done(p,b'1 D 100 200\n2 M 101 201\n')
++        assert [r[0] for r in rows(log)]==['0','2','1'],'EOF failed to release finger'
++        p,log=process('invalid');output=done(p,b'1 D -1 200\n2 Q\n')
++        assert any(item.get('ok') is False for item in output) and rows(log)==[]
++    report=dict(passed=True,version=38,stable_down_time=True,android_touchscreen_source=True,
++        watchdog_released=True,eof_released=True,invalid_points_rejected=True,
++        scope='Actual Java helper executed against independent Android API stubs; not a live Android permission test')
++    (ROOT/'touch-helper-check.json').write_text(json.dumps(report,indent=2)+'\n','utf-8')
++    print('Android touch protocol checks passed:',report)
++
++if __name__=='__main__':main()
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v37 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v38 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -26,10 +26,10 @@
+     with binary.open('rb') as stream:
+         if stream.read(2)!=b'MZ':raise SystemExit('Expected the newly built Windows EXE.')
+     reports=[]
+-    for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check'):
++    for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check','source-adb-check','adb-check','touch-helper-check'):
+         report=ROOT/(mode+'.json')
+         data=json.loads(report.read_text('utf-8-sig'))
+-        if data.get('passed') is not True or data.get('version')!=37:
++        if data.get('passed') is not True or data.get('version')!=38:
+             raise SystemExit(f'{mode} did not pass')
+         if mode=='sniper-ui-check':
+             for key in ('restart_restored_obtained_choice','restart_restored_endless_preference',
+@@ -39,6 +39,12 @@
+             for key in ('heatmap_all_history','heatmap_zoom_pan','heatmap_viewport_bounded',
+                         'heatmap_three_part_import','heatmap_saved_map_reloaded','route_editor_uses_imported_map'):
+                 if data.get(key) is not True:raise SystemExit(f'Missing native heatmap validation: {key}')
++        if mode in ('source-adb-check','adb-check'):
++            for key in ('windows_cursor_unchanged','windows_foreground_unchanged','map_pan_and_return','adb_profile_reloaded','cancellation_released_android'):
++                if data.get(key) is not True:raise SystemExit(f'Missing ADB validation: {key}')
++        if mode=='touch-helper-check':
++            for key in ('stable_down_time','watchdog_released','eof_released'):
++                if data.get(key) is not True:raise SystemExit(f'Missing Android helper validation: {key}')
+         reports.append(report)
+     tests=ROOT/'tests-result.txt'
+     result=re.findall(r'(\d+) passed(?:, (\d+) skipped)?',tests.read_text('utf-8-sig'))
+@@ -46,35 +52,54 @@
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v36','v37'):
++    for version in ('v37','v38'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
+         comparisons[version]=data;reports.append(path)
+-    baseline=comparisons['v36'];latest=comparisons['v37']
++    baseline=comparisons['v37'];latest=comparisons['v38']
+     if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
+         raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+     if latest['held_strokes']>=30 or latest['held_moves']>latest['held_strokes']*5:
+         raise SystemExit('The centre-start route comparison exceeded its movement bounds.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v37-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v38-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+             archive.extractall(folder)
+         app=folder/'LoongLens'
+-        if (app/'patrol_adb.py').exists():raise SystemExit('Unexpected ADB backend in the v24-based package.')
++        for required in ('patrol_adb.py','loonglens-touch.jar','android_touch/BUILD.json'):
++            if not (app/required).is_file():raise SystemExit(f'Missing ADB resource: {required}')
++        metadata=json.loads((app/'android_touch/BUILD.json').read_text())
++        if hashlib.sha256((app/'loonglens-touch.jar').read_bytes()).hexdigest()!=metadata['jar_sha256']:
++            raise SystemExit('Android touch helper checksum mismatch')
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=37,baseline=36,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=38,baseline=37,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+                   speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v37.txt').write_text(
+-            'Loong Lens v37 - reliable map state and filter recovery\n\n'
++        (app/'START-HERE-v38.txt').write_text(
++            'Loong Lens v38 - BlueStacks ADB background input\n\n'
++            'ADB is the default input mode. It uses Android screenshots and touch events.\n'
++            'It does not move the Windows mouse or activate BlueStacks.\n'
++            'Enable Android Debug Bridge in BlueStacks Settings > Advanced. Device: 127.0.0.1:5555.\n'
++            'In Sniper Settings, choose ADB. Open the large map with BlueStacks visible,\n'
++            'then use Test connection / preview to align existing routes to Android pixels.\n'
++            'Minimize BlueStacks and use Test map pan (minimized), then Save and Start.\n'
++            'The pan test moves the camera slightly and restores it; it never walks the character.\n'
++            'BlueStacks must keep running/rendering, and the game must stay active inside Android.\n'
++            'If minimized rendering pauses, the test/run stops with an explanation.\n'
++            'An ADB failure never falls back to the Windows mouse. Mouse is an explicit option.\n'
++            'A persistent Android touch session holds the map across screenshots and releases on F10.\n'
++            'A watchdog releases a stuck Android touch if the program stops responding.\n'
++            'Uses the existing BlueStacks HD-Adb.exe; no APK/root/Java installation is needed.\n'
++            'The small touch helper, all Java/Python source, build recipe and hashes are included.\n'
++            'Native Windows checks use a simulated Android device; run the real pan test on your PC.\n\n'
+             'Map recognition now also checks map controls when the title image does not match.\n'
+             'An already-open map does not get another minimap tap. A transient frame is rechecked.\n'
+             'An open filter panel gets one calibrated Back click; it is observed before proceeding.\n'
+@@ -105,7 +130,8 @@
+             'An ignored tap retries once and never marks that location checked.\n'
+             'Held movement uses lightweight terrain tracking with a SIFT fallback.\n\n'
+             'Exit the old app completely. Extract this whole folder and run LoongLens.exe here.\n'
+-            'This build uses v24 Windows mouse control; keep BlueStacks visible and focused.\n\n'
++            'ADB mode supports background/minimized operation when BlueStacks continues rendering.\n'
++            'The explicit Mouse mode uses the v24 foundation and requires BlueStacks visible.\n\n'
+             'Map panning keeps the button held between movement and screenshot checks.\n'
+             'It starts at the map centre and moves fast opposite the target direction,\n'
+             'holds the cursor still briefly, releases and verifies the position before clicking.\n'
+@@ -113,7 +139,7 @@
+             'No padding or broad right-hand exclusion strip is added.\n'
+             'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
+             'Hide portal icons in the game map as you requested.\n'
+-            'The header shows v37; settings and personal routes remain in LocalAppData.\n'
++            'The header shows v38; settings and personal routes remain in LocalAppData.\n'
+             'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
+             'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
+             'It observes repeatedly, never clicks a gem, and continues after a find.\n'
+@@ -143,7 +169,7 @@
+             'and validation reports are included under validation; live game speed is not measured.\n'
+             'Do not delete %LOCALAPPDATA%\\LoongLens; settings, screenshots and history stay there.\n',
+             'utf-8')
+-        for image in sorted((ROOT/'artifacts').glob('v37-*.png')):shutil.copy2(image,validation/image.name)
++        for image in sorted((ROOT/'artifacts').glob('v38-*.png')):shutil.copy2(image,validation/image.name)
+         manifest={p.relative_to(app).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in sorted(app.rglob('*')) if p.is_file()}
+         (app/'PACKAGE-SHA256.json').write_text(json.dumps(manifest,indent=2)+'\n','utf-8')
+--- /dev/null
++++ b/LoongLens/tools/ui_adb_smoke.py
+@@ -0,0 +1,11 @@
++from pathlib import Path
++import json
++import sys
++ROOT=Path(__file__).resolve().parents[1]
++sys.path.insert(0,str(ROOT))
++from adb_diagnostics import run_check
++
++if __name__=='__main__':
++    result=run_check();result.update(passed=True,version=38)
++    (ROOT/'adb-check.json').write_text(json.dumps(result,indent=2)+'\n','utf-8')
++    print('Native ADB UI/transport:',result)
+--- a/LoongLens/tools/ui_sniper_smoke.py
++++ b/LoongLens/tools/ui_sniper_smoke.py
+@@ -131,7 +131,7 @@
+             assert panel.services.sighting_history.sniper_seen()==5
+             count=len(clicks);panel.snipe.invoke()
+             assert panel.services.owner is None and len(clicks)==count and '5/5' in panel.status.get()
+-            results.append(dict(passed=True,version=37,collection_seconds=20,return_world=[241,107],
++            results.append(dict(passed=True,version=38,collection_seconds=20,return_world=[241,107],
+                                 daily_count=5,stopped_at_goal=True,source_screenshot_saved=True,
+                                 dim_camera_selected_once_per_visit=True,
+                                 reset_kept_daily_counter=True,scope='Native Tk and detector; simulated game input and waits'))
+--- a/LoongLens/tools/ui_spy_smoke.py
++++ b/LoongLens/tools/ui_spy_smoke.py
+@@ -48,7 +48,7 @@
+                 from ctypes import wintypes
+                 user=ctypes.WinDLL('user32');user.GetAncestor.argtypes=(wintypes.HWND,wintypes.UINT);user.GetAncestor.restype=wintypes.HWND
+                 out=ROOT/'artifacts';out.mkdir(exist_ok=True)
+-                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v37-spy-ui-failure.png')
++                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v38-spy-ui-failure.png')
+                 self.exit_app()
+             self.report_callback_exception=failed
+             self.after(1800,self.begin);self.after(120000,self.destroy)
+@@ -64,12 +64,12 @@
+             old_mode=services.mode.get()
+             sniper.show_settings();self.update_idletasks()
+             settings=next(w for w in self.winfo_children() if isinstance(w,tk.Toplevel) and w.title()=='Gem Sniper settings')
+-            next(w for w in descendants(settings) if isinstance(w,ttk.Combobox)).set('Sensitive')
++            next(w for w in descendants(settings) if isinstance(w,ttk.Combobox) and 'Sensitive' in w.cget('values')).set('Sensitive')
+             next(w for w in descendants(settings) if isinstance(w,ttk.Button) and w.cget('text')=='Cancel').invoke()
+             assert services.mode.get()==old_mode,'Cancel changed shared detection preferences'
+             sniper.show_settings();self.update_idletasks()
+             settings=next(w for w in self.winfo_children() if isinstance(w,tk.Toplevel) and w.title()=='Gem Sniper settings')
+-            next(w for w in descendants(settings) if isinstance(w,ttk.Combobox)).set('Sensitive')
++            next(w for w in descendants(settings) if isinstance(w,ttk.Combobox) and 'Sensitive' in w.cget('values')).set('Sensitive')
+             next(w for w in descendants(settings) if isinstance(w,ttk.Button) and w.cget('text')=='Save settings').invoke()
+             assert services.mode.get()=='Sensitive'
+             views=tuple(sniper.base_views[:2])
+@@ -179,7 +179,7 @@
+             assert runner.cancel.is_set() and sniper.services.owner is None
+             assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
+             assert len(spy.history.encounters())==2
+-            completed.append(dict(passed=True,version=37,unique_gems=2,screenshots=2,
++            completed.append(dict(passed=True,version=38,unique_gems=2,screenshots=2,
+                                   passes=2,recovery_kept_progress=True,f10_stays_stopped=True,
+                                   heatmap_all_history=True,heatmap_zoom_pan=True,heatmap_viewport_bounded=True,
+                                   heatmap_three_part_import=True,heatmap_saved_map_reloaded=True,route_editor_uses_imported_map=True))
