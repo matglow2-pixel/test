@@ -1,0 +1,1266 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v41.md
+@@ -0,0 +1,29 @@
++# v41 — Safe gem collection and faster Gem Sniper sweep
++
++Confirmed gems beside the floating portrait, under chat or near an edge now
++trigger a gameplay camera drag in clear central ground. Loong Lens measures
++terrain movement, re-detects the same gem and clicks its fresh position only
++when the whole gem is clear of the interface. It can correct the camera response
++and try up to three drags. If it cannot confirm movement or reacquire the target,
++it pauses without tapping the HUD. F10 releases input and stays stopped.
++Safe gems retain their existing direct click. Each encounter retains one original
++photo and one history/counter entry. Gem Spy remains observation-only.
++
++**Fast map sweep**, enabled by default in Sniper settings, starts inspection after
++two rendered, stable gameplay observations instead of always waiting the default
++0.5 seconds. Blank or changing scenes keep the loading wait. Custom loading waits
++stay fixed. A late scene change restarts the full inspection window and clears
++old detection evidence. The existing three-hit/0.8-second confirmation, inspection
++duration, 20-second collection wait and Emerald Corner return remain unchanged.
++Turn Fast map sweep off to restore fixed loading waits. Spy timing is unchanged.
++
++This update keeps v40's compact UI, MuMuPlayer 6.8.9 Windows mouse input, routes,
++map assets, detector, histories, daily Obtained choices and Endless mode. Keep
++MuMu visible, uncovered and focused; no ADB is used. Settings/history stay in
++LocalAppData. Exit the old app, extract the whole new folder and run LoongLens.exe.
++
++Validation covers translated gameplay fixtures, portrait/chat/edge collection,
++camera response and cancellation, native Windows capture/drag/click/hotkeys in a
++procedural game window, source/frozen app checks and a full-route comparison.
++The comparison uses already-rendered simulated gameplay; live MuMu performance
++and actual game camera behavior cannot be measured in the build environment.
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,3 +1,35 @@
++# v41 — Safe gem collection and faster Gem Sniper sweep
++
++Confirmed gems beside the floating portrait, under chat or near an edge now
++trigger a gameplay camera drag in clear central ground. Loong Lens measures
++terrain movement, re-detects the same gem and clicks its fresh position only
++when the whole gem is clear of the interface. It can correct the camera response
++and try up to three drags. If it cannot confirm movement or reacquire the target,
++it pauses without tapping the HUD. F10 releases input and stays stopped.
++Safe gems retain their existing direct click. Each encounter retains one original
++photo and one history/counter entry. Gem Spy remains observation-only.
++
++**Fast map sweep**, enabled by default in Sniper settings, starts inspection after
++two rendered, stable gameplay observations instead of always waiting the default
++0.5 seconds. Blank or changing scenes keep the loading wait. Custom loading waits
++stay fixed. A late scene change restarts the full inspection window and clears
++old detection evidence. The existing three-hit/0.8-second confirmation, inspection
++duration, 20-second collection wait and Emerald Corner return remain unchanged.
++Turn Fast map sweep off to restore fixed loading waits. Spy timing is unchanged.
++
++This update keeps v40's compact UI, MuMuPlayer 6.8.9 Windows mouse input, routes,
++map assets, detector, histories, daily Obtained choices and Endless mode. Keep
++MuMu visible, uncovered and focused; no ADB is used. Settings/history stay in
++LocalAppData. Exit the old app, extract the whole new folder and run LoongLens.exe.
++
++Validation covers translated gameplay fixtures, portrait/chat/edge collection,
++camera response and cancellation, native Windows capture/drag/click/hotkeys in a
++procedural game window, source/frozen app checks and a full-route comparison.
++The comparison uses already-rendered simulated gameplay; live MuMu performance
++and actual game camera behavior cannot be measured in the build environment.
++
++---
++
+ # v40 — MuMu mouse control and compact Loong Lens UI
+ 
+ This build returns to the v37 codebase and removes the v38/v39 ADB capture/input
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,3 +1,35 @@
++# v41 — Safe gem collection and faster Gem Sniper sweep
++
++Confirmed gems beside the floating portrait, under chat or near an edge now
++trigger a gameplay camera drag in clear central ground. Loong Lens measures
++terrain movement, re-detects the same gem and clicks its fresh position only
++when the whole gem is clear of the interface. It can correct the camera response
++and try up to three drags. If it cannot confirm movement or reacquire the target,
++it pauses without tapping the HUD. F10 releases input and stays stopped.
++Safe gems retain their existing direct click. Each encounter retains one original
++photo and one history/counter entry. Gem Spy remains observation-only.
++
++**Fast map sweep**, enabled by default in Sniper settings, starts inspection after
++two rendered, stable gameplay observations instead of always waiting the default
++0.5 seconds. Blank or changing scenes keep the loading wait. Custom loading waits
++stay fixed. A late scene change restarts the full inspection window and clears
++old detection evidence. The existing three-hit/0.8-second confirmation, inspection
++duration, 20-second collection wait and Emerald Corner return remain unchanged.
++Turn Fast map sweep off to restore fixed loading waits. Spy timing is unchanged.
++
++This update keeps v40's compact UI, MuMuPlayer 6.8.9 Windows mouse input, routes,
++map assets, detector, histories, daily Obtained choices and Endless mode. Keep
++MuMu visible, uncovered and focused; no ADB is used. Settings/history stay in
++LocalAppData. Exit the old app, extract the whole new folder and run LoongLens.exe.
++
++Validation covers translated gameplay fixtures, portrait/chat/edge collection,
++camera response and cancellation, native Windows capture/drag/click/hotkeys in a
++procedural game window, source/frozen app checks and a full-route comparison.
++The comparison uses already-rendered simulated gameplay; live MuMu performance
++and actual game camera behavior cannot be measured in the build environment.
++
++---
++
+ # v40 — MuMu mouse control and compact Loong Lens UI
+ 
+ This build returns to the v37 codebase and removes the v38/v39 ADB capture/input
+--- a/LoongLens/camera_patrol.py
++++ b/LoongLens/camera_patrol.py
+@@ -147,7 +147,7 @@
+ 
+ 
+ def gem_click(gem_center, frame_shape):
+-    """Every confirmed gem's actual centre; no HUD or region veto."""
++    """Translate the verified target centre; the collection caller owns HUD clearance."""
+     h,w = frame_shape[:2]
+     if h<=0 or w<=0:return None
+     gx,gy = gem_center[0]*570/w,gem_center[1]*1029/h
+--- a/LoongLens/dashboard_shell.py
++++ b/LoongLens/dashboard_shell.py
+@@ -12,7 +12,7 @@
+         art=gem_image(self.frame,28);self.images.append(art)
+         ttk.Label(brand,image=art,style='Sidebar.TLabel').pack(side='left',padx=(0,5))
+         ttk.Label(brand,text='Loong Lens',style='Logo.TLabel').pack(side='left')
+-        ttk.Label(self.frame,text='v40',style='Sidebar.TLabel').pack(anchor='w',padx=40,pady=(4,0))
++        ttk.Label(self.frame,text='v41',style='Sidebar.TLabel').pack(anchor='w',padx=40,pady=(4,0))
+         ttk.Label(self.frame,text='Loong Haven companion',style='Sidebar.TLabel',wraplength=130).pack(anchor='w',padx=8,pady=(8,12))
+         ttk.Separator(self.frame).pack(fill='x',padx=6,pady=(0,12))
+         for index,(title,kind) in enumerate((('Map Tweaker','map'),('Gem Sniper','target'),('Gem Spy','gem'))):
+--- a/LoongLens/desktop_entry.py
++++ b/LoongLens/desktop_entry.py
+@@ -59,7 +59,7 @@
+                 if hasattr(self,'capture_user'):
+                     from window_capture import capture_window
+                     out=Path(__file__).resolve().parent/'artifacts';out.mkdir(exist_ok=True)
+-                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v40-layout-failure.png')
++                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v41-layout-failure.png')
+                 button=next((w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit'),None)
+                 if button is None:self.destroy()
+                 else:button.invoke()
+@@ -223,7 +223,7 @@
+                 if i==2:spy.map_preview.thumbnail();self.update()
+                 wrapper=user.GetAncestor(self.winfo_id(),2)
+                 picture=capture_window(int(wrapper))
+-                picture.save(screenshots/('v40-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
++                picture.save(screenshots/('v41-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
+             notebook.select(1);self.update()
+             # Sidebar commands select the existing pages, preserving controllers.
+             nav=[w for w in descendants(self) if isinstance(w,ttk.Button) and str(w.cget('style')).endswith('Nav.TButton')]
+@@ -295,7 +295,7 @@
+ 
+ 
+ def main():
+-    if len(sys.argv) == 3 and sys.argv[1] in ('--self-check-report', '--gui-check-report','--input-check-report','--mumu-check-report'):
++    if len(sys.argv) == 3 and sys.argv[1] in ('--self-check-report', '--gui-check-report','--input-check-report','--mumu-check-report','--gem-recenter-check-report'):
+         path = Path(sys.argv[2])
+         try:
+             details={}
+@@ -306,12 +306,15 @@
+             elif sys.argv[1]=='--mumu-check-report':
+                 from mumu_input_check import check_mumu_input
+                 details=check_mumu_input()
++            elif sys.argv[1]=='--gem-recenter-check-report':
++                from gem_recenter_check import check_gem_recentering
++                details=check_gem_recentering()
+             else:
+                 check_native_input()
+-            result = {'passed': True, 'mode': sys.argv[1], 'version': 40, **details}
++            result = {'passed': True, 'mode': sys.argv[1], 'version': 41, **details}
+             status = 0
+         except Exception:
+-            result = {'passed': False, 'mode': sys.argv[1], 'version': 40, 'error': traceback.format_exc()}
++            result = {'passed': False, 'mode': sys.argv[1], 'version': 41, 'error': traceback.format_exc()}
+             status = 1
+         path.write_text(json.dumps(result, indent=2), encoding='utf-8')
+         return status
+--- /dev/null
++++ b/LoongLens/gem_recenter.py
+@@ -0,0 +1,151 @@
++"""Move a confirmed gameplay gem away from chat, portraits and screen edges."""
++import math
++import cv2
++import numpy as np
++from gem_detector import Detection
++
++
++SAFE_AREA=(.16,.30,.78,.75)
++DRAG_AREA=(.20,.33,.76,.70)
++
++
++class GemRecenterError(RuntimeError):
++    pass
++
++
++def normal(frame):
++    return cv2.resize(frame,(570,1029),interpolation=cv2.INTER_AREA)
++
++
++def reference_box(box,shape):
++    height,width=shape[:2];x,y=box.center
++    bw=float(box.width);bh=float(getattr(box,'height',bw))
++    if not all(math.isfinite(v) for v in (x,y,bw,bh)) or min(bw,bh)<=0:
++        raise GemRecenterError('The confirmed gem has invalid image coordinates.')
++    return Detection((x-bw/2)*570/width,(y-bh/2)*1029/height,
++                     bw*570/width,bh*1029/height,float(box.score))
++
++
++def safe_box(box,shape=(1029,570,3)):
++    box=reference_box(box,shape);margin=6.
++    left,top,right,bottom=(a*b for a,b in zip(SAFE_AREA,(570,1029,570,1029)))
++    return (box.x-margin>=left and box.y-margin>=top and
++            box.x+box.width+margin<=right and box.y+box.height+margin<=bottom)
++
++
++def drag_plan(center,gain=1.):
++    if not all(math.isfinite(v) for v in (*center,gain)) or abs(gain)<.2:
++        raise GemRecenterError('The gameplay camera response could not be measured.')
++    left,top,right,bottom=(a*b for a,b in zip(DRAG_AREA,(570,1029,570,1029)))
++    delta=np.array((285.-center[0],514.5-center[1]))/gain
++    # Keep overlapping terrain even when this game's camera gain is high.
++    delta/=max(1.,abs(delta[0])/min(150.,right-left),abs(delta[1])/min(180.,bottom-top))
++    if np.linalg.norm(delta)<4:
++        raise GemRecenterError('The gem cannot be placed clear of the interface.')
++    middle=np.array(((left+right)/2,(top+bottom)/2))
++    return tuple(middle-delta/2),tuple(middle+delta/2)
++
++
++def ground_mask():
++    mask=np.zeros((1029,570),np.uint8)
++    mask[round(.30*1029):round(.75*1029),round(.14*570):round(.80*570)]=255
++    return mask
++
++
++def stable_scene(before,after,limit=.035):
++    if before.shape!=after.shape:return False
++    a=normal(before);b=normal(after);mask=ground_mask()!=0
++    difference=cv2.absdiff(a,b).max(axis=2)
++    return float(np.mean(difference[mask]>25))<=limit
++
++
++def scene_shift(before,after,exclude=None):
++    """Independent ground features must agree; fixed HUD cannot prove a pan."""
++    a=normal(before);b=normal(after)
++    masks=[ground_mask(),ground_mask()]
++    if exclude is not None:
++        x,y,w,h=exclude.x,exclude.y,exclude.width,exclude.height
++        masks[0][max(0,int(y-12)):min(1029,int(y+h+12)),max(0,int(x-12)):min(570,int(x+w+12))]=0
++    sift=cv2.SIFT_create(nfeatures=1100,contrastThreshold=.025)
++    features=[]
++    for image,mask in zip((a,b),masks):
++        gray=cv2.resize(cv2.cvtColor(image,cv2.COLOR_BGR2GRAY),None,fx=.5,fy=.5,interpolation=cv2.INTER_AREA)
++        small=cv2.resize(mask,(gray.shape[1],gray.shape[0]),interpolation=cv2.INTER_NEAREST)
++        keys,descriptors=sift.detectAndCompute(gray,small)
++        if descriptors is None or len(keys)<12:return None
++        features.append((keys,descriptors))
++    pairs=cv2.BFMatcher().knnMatch(features[0][1],features[1][1],k=2)
++    good=[m for pair in pairs if len(pair)==2 for m,n in [pair] if m.distance<.67*n.distance]
++    unique={m.trainIdx:m for m in sorted(good,key=lambda m:-m.distance)}
++    good=list(unique.values())
++    if len(good)<12:return None
++    source=np.float32([features[0][0][m.queryIdx].pt for m in good])*2
++    target=np.float32([features[1][0][m.trainIdx].pt for m in good])*2
++    matrix,inliers=cv2.estimateAffinePartial2D(source,target,method=cv2.RANSAC,ransacReprojThreshold=2.5)
++    if matrix is None or inliers is None:return None
++    scale=math.hypot(matrix[0,0],matrix[1,0])
++    if abs(scale-1)>.025 or abs(matrix[1,0])>.025:return None
++    shifts=target-source;keep=inliers[:,0].astype(bool)
++    if keep.sum()<12:return None
++    delta=np.median(shifts[keep],axis=0)
++    keep &= np.linalg.norm(shifts-delta,axis=1)<3
++    if keep.sum()<12 or np.ptp(source[keep],axis=0).min()<40:return None
++    delta=np.median(shifts[keep],axis=0)
++    if np.linalg.norm(delta)>800:return None
++    return float(delta[0]),float(delta[1])
++
++
++def nearest_gem(boxes,shape,predicted,width):
++    candidates=[]
++    for box in boxes:
++        candidate=reference_box(box,shape)
++        distance=math.dist(candidate.center,predicted)
++        if distance<=max(28,width*1.8):candidates.append((distance,box))
++    candidates.sort(key=lambda item:item[0])
++    if not candidates:return None
++    if len(candidates)>1 and candidates[1][0]-candidates[0][0]<max(5,width*.3):return None
++    return candidates[0][1]
++
++
++def recenter_gem(backend,detector,found,frame,check,clock,is_map,emit):
++    """At most three measured ground drags, then one fresh safe target.
++
++    No found/history event is emitted here. The original confirmed encounter
++    owns its photo and counter entry. After any movement, old pixels are never
++    used as a click fallback.
++    """
++    box=reference_box(found,frame.shape);predicted=np.array(box.center);gain=1.
++    for attempt in range(3):
++        check();start,end=drag_plan(predicted,gain)
++        emit('status',message=f'Moving the gem clear of chat and portrait ({attempt+1}/3)…')
++        before=frame;old_predicted=predicted.copy();old_box=box
++        backend.drag(start,end);check();backend.wait(.10)
++        deadline=clock()+1.4;previous=None;previous_delta=None;candidate=None;measured=None
++        while True:
++            check();after=backend.capture()
++            if is_map(after):raise GemRecenterError('The map opened during gem centering. Gem click cancelled.')
++            delta=scene_shift(before,after,old_box)
++            boxes=detector.detect(after,exclude_hud=False)
++            emit('frame',frame=after,detections=boxes)
++            if delta is not None and math.hypot(*delta)>=5:
++                measured=np.asarray(delta);predicted=old_predicted+measured
++                candidate=nearest_gem(boxes,after.shape,predicted,old_box.width)
++                settled=(previous is not None and previous_delta is not None and
++                         np.linalg.norm(measured-previous_delta)<=3 and stable_scene(previous,after))
++                footprint=Detection(predicted[0]-old_box.width/2,predicted[1]-old_box.height/2,
++                                    old_box.width,old_box.height,old_box.score)
++                if settled and (candidate is not None or not safe_box(footprint)):
++                    frame=after
++                    if candidate is not None:box=reference_box(candidate,after.shape);predicted=np.array(box.center)
++                    else:box=footprint
++                    requested=np.asarray(end)-np.asarray(start)
++                    response=float(np.dot(measured,requested)/np.dot(requested,requested))
++                    if .2<=abs(response)<=3:gain=response
++                    if candidate is not None and safe_box(candidate,after.shape):
++                        emit('gem_recentered',drags=attempt+1,point=box.center)
++                        return candidate,after
++                    break
++            if clock()>=deadline:
++                raise GemRecenterError('Gem found, but camera movement and a fresh clear target were not confirmed. Stopped without clicking the interface.')
++            previous=after;previous_delta=measured.copy() if measured is not None else None;backend.wait(.08)
++    raise GemRecenterError('Gem found, but it is still near the interface after three camera drags. Stopped without clicking the interface.')
+--- /dev/null
++++ b/LoongLens/gem_recenter_check.py
+@@ -0,0 +1,131 @@
++"""Actual Win32 drag/capture/click checks on a procedural gameplay window."""
++import ctypes
++from ctypes import wintypes
++import queue
++import threading
++import time
++import tkinter as tk
++
++import cv2
++import numpy as np
++from PIL import Image,ImageTk
++
++from camera_patrol import gem_click
++from emulator_view import GameView,REFERENCE_GAME
++from gem_detector import GemDetector
++from gem_recenter import recenter_gem,safe_box
++from gem_scene_fixture import GemCameraScene
++from patrol_windows import WindowsBackend,GlobalPatrolKeys,PatrolStopped
++
++
++def check_gem_recentering():
++    import win_overlay  # DPI awareness before creating the native window.
++    cv2.setNumThreads(2)
++    root=tk.Tk();root.overrideredirect(True);root.geometry('560x1033+40+0')
++    root.title('Loong Lens gameplay recenter validation');root.configure(bg='#202020')
++    tk.Label(root,text='Procedural MuMu gameplay — input validation only',bg='#202020',fg='white').place(x=5,y=8)
++    canvas=tk.Canvas(root,highlightthickness=0,borderwidth=0);canvas.place(x=1,y=40,width=558,height=992)
++    state=dict(scene=GemCameraScene(),pressed=None,last=None,travel=0.,gem=0,hud=0,walk=0,drags=0,stop_on_move=False)
++    results=queue.Queue();completed=[];cancel=threading.Event();thread=[None];native=[None]
++
++    def draw():
++        l,t,r,b=REFERENCE_GAME
++        image=state['scene'].render()[t:b,l:r]
++        picture=Image.fromarray(cv2.cvtColor(image,cv2.COLOR_BGR2RGB)).resize((558,992),Image.Resampling.BILINEAR)
++        photo=ImageTk.PhotoImage(picture,master=root)
++        if hasattr(canvas,'item'):canvas.itemconfigure(canvas.item,image=photo)
++        else:canvas.item=canvas.create_image(0,0,image=photo,anchor='nw')
++        canvas.photo=photo
++
++    def reference(event):return native[0].view.reference((event.x_root,event.y_root))
++    def down(event):
++        if native[0] is None:return
++        point=np.asarray(reference(event));state.update(pressed=point,last=point,travel=0.)
++    def motion(event):
++        if state['pressed'] is None:return
++        point=np.asarray(reference(event));delta=point-state['last']
++        state['travel']+=float(np.linalg.norm(delta));state['scene'].pan(state['last'],point)
++        state['last']=point;draw()
++        if state['stop_on_move']:
++            state['stop_on_move']=False
++            native[0].api.key(0x79);native[0].api.key(0x79,up=True)
++    def up(event):
++        if state['pressed'] is None:return
++        point=reference(event)
++        if state['travel']>=5:state['drags']+=1
++        else:
++            result=state['scene'].click(point)
++            state[result if result in ('gem','HUD') else 'walk' if result=='ground' else 'hud']+=1
++        state['pressed']=None;state['last']=None;draw()
++    # Scene.click returns the literal HUD token; map it to the same counter.
++    state['HUD']=0
++    canvas.bind('<ButtonPress-1>',down);canvas.bind('<B1-Motion>',motion);canvas.bind('<ButtonRelease-1>',up)
++    draw()
++
++    def on_ui(action):
++        finished=threading.Event();failure=[]
++        def apply():
++            try:action()
++            except Exception as exc:failure.append(exc)
++            finally:finished.set()
++        root.after(0,apply)
++        if not finished.wait(5):raise RuntimeError('Gameplay validation UI did not respond.')
++        if failure:raise failure[0]
++
++    def start():
++        user=ctypes.WinDLL('user32');user.GetAncestor.argtypes=[wintypes.HWND,wintypes.UINT];user.GetAncestor.restype=wintypes.HWND
++        user.GetWindowRect.argtypes=[wintypes.HWND,ctypes.POINTER(wintypes.RECT)]
++        hwnd=int(user.GetAncestor(root.winfo_id(),2));r=wintypes.RECT();assert user.GetWindowRect(hwnd,ctypes.byref(r))
++        outer=(r.left,r.top,r.right-r.left,r.bottom-r.top)
++        view=GameView(outer,(canvas.winfo_rootx(),canvas.winfo_rooty(),canvas.winfo_width(),canvas.winfo_height()),int(canvas.winfo_id()))
++        target=(hwnd,outer)
++        def run():
++            keys=None
++            try:
++                detector=GemDetector();events=[]
++                def check():
++                    if cancel.is_set():raise PatrolStopped('Stopped.')
++                def emit(kind,**data):events.append(dict(kind=kind,**data))
++                with WindowsBackend(cancel,find=lambda:target,geometry=lambda *a:view) as backend:
++                    native[0]=backend;backend.focus();original_clip=backend.api.clip_rect()
++                    for center in ((520,680),(320,880),(35,520),(285,220),(285,980)):
++                        on_ui(lambda center=center:(state.update(scene=GemCameraScene(center)),draw()))
++                        backend.wait(.1);frame=backend.capture();boxes=detector.detect(frame,exclude_hud=False)
++                        assert len(boxes)==1,[(b.center,b.score) for b in boxes]
++                        box,frame=recenter_gem(backend,detector,boxes[0],frame,check,time.perf_counter,lambda f:False,emit)
++                        assert safe_box(box,frame.shape)
++                        backend.click(gem_click(box.center,frame.shape));backend.wait(.12)
++                        assert state['scene'].collected and not state['HUD'] and not state['walk'],state
++                    assert state['gem']==5 and sum(e['kind']=='gem_recentered' for e in events)==5
++                    assert backend.api.clip_rect()==original_clip and not backend.api.left_down()
++                    # F10 while the actual native camera drag is in progress.
++                    on_ui(lambda:(state.update(scene=GemCameraScene(),stop_on_move=True),draw()))
++                    backend.wait(.1);keys=GlobalPatrolKeys(lambda:None,lambda:(cancel.set(),backend.release()))
++                    frame=backend.capture();box=detector.detect(frame,exclude_hud=False)[0]
++                    try:recenter_gem(backend,detector,box,frame,check,time.perf_counter,lambda f:False,emit)
++                    except PatrolStopped:pass
++                    else:raise AssertionError('F10 did not interrupt native gameplay dragging')
++                    assert not backend.down and not backend.api.left_down() and backend.api.clip_rect()==original_clip
++                    assert state['gem']==5 and not state['HUD'] and not state['walk']
++                results.put(None)
++            except Exception:
++                import traceback
++                results.put(traceback.format_exc())
++            finally:
++                if keys is not None:keys.close()
++        thread[0]=threading.Thread(target=run,daemon=True);thread[0].start()
++    def poll():
++        try:error=results.get_nowait()
++        except queue.Empty:root.after(100,poll);return
++        completed.append(error);root.destroy()
++    root.after(500,start);root.after(600,poll)
++    root.after(90000,lambda:(cancel.set(),completed.append('Gameplay recenter check timed out'),root.destroy()))
++    try:root.mainloop()
++    finally:
++        cancel.set()
++        if thread[0] is not None:thread[0].join(3)
++    assert completed and completed[0] is None,completed
++    return dict(portrait_gem_centered=True,chat_gem_centered=True,edge_gems_centered=True,
++        fresh_detection_before_click=True,gem_clicks=5,hud_clicks=0,ground_walks=0,
++        native_drag_delivered=True,f10_released=True,
++        scope='Actual Windows capture/drag/click/hotkeys with real gem detector on procedural gameplay. No live MuMu/game session.')
+--- /dev/null
++++ b/LoongLens/gem_scene_fixture.py
+@@ -0,0 +1,62 @@
++"""Procedural gameplay fixture used by collection validation, never live input."""
++from pathlib import Path
++import cv2
++import numpy as np
++from resources import ROOT
++
++
++class GemCameraScene:
++    def __init__(self,center=(520,680),gain=1.,freeze=False):
++        rng=np.random.default_rng(731)
++        gray=rng.integers(0,145,(1500,850),np.uint8)
++        gray=cv2.resize(gray,(1700,3000),interpolation=cv2.INTER_CUBIC)
++        self.world=np.stack((gray//3+55,gray//3+90,gray//3+110),axis=2).astype(np.uint8)
++        for _ in range(100):
++            x=int(rng.integers(20,1680));y=int(rng.integers(20,2980))
++            cv2.circle(self.world,(x,y),int(rng.integers(8,30)),(65,95,110),2)
++        self.template=cv2.imread(str(ROOT/'gem_templates/gem_0.png'))
++        self.center=np.asarray(center,dtype=float);self.offset=np.zeros(2)
++        self.gain=gain;self.freeze=freeze;self.collected=False
++        self.hide_after_pan=False;self.extra_after_pan=False
++        self.drags=[];self.clicks=[];self.hud_clicks=[]
++
++    @property
++    def gem_center(self):return tuple(self.center+self.offset)
++
++    def render(self):
++        dx,dy=self.offset
++        frame=cv2.warpAffine(self.world,np.float32([[1,0,dx-560],[0,1,dy-990]]),(570,1029))
++        if not self.collected and not (self.hide_after_pan and np.linalg.norm(self.offset)>1):
++            self.draw_gem(frame,self.gem_center)
++            if self.extra_after_pan and np.linalg.norm(self.offset)>1:
++                self.draw_gem(frame,(self.gem_center[0]+20,self.gem_center[1]))
++        # Static HUD is deliberately unrelated to camera motion. The icon's
++        # larger logical hit rectangle extends below the visible circle,
++        # matching the reported gem-near-portrait case.
++        cv2.rectangle(frame,(3,34),(240,170),(55,65,75),-1)
++        cv2.circle(frame,(515,135),70,(80,130,80),-1)
++        cv2.circle(frame,(520,625),28,(210,220,220),3)
++        cv2.putText(frame,'HOME',(498,629),cv2.FONT_HERSHEY_SIMPLEX,.3,(230,230,230),1)
++        panel=frame[820:1000,10:560]
++        panel[:]=(panel.astype(np.float32)*.72).astype(np.uint8)
++        cv2.putText(frame,'CHAT',(24,865),cv2.FONT_HERSHEY_SIMPLEX,.5,(210,215,215),1)
++        frame[:34]=0;frame[:,:5]=0;frame[:,565:]=0
++        return frame
++
++    def draw_gem(self,frame,center):
++        h,w=self.template.shape[:2];x=round(center[0]-w/2);y=round(center[1]-h/2)
++        if 0<=x and 0<=y and x+w<=frame.shape[1] and y+h<=frame.shape[0]:
++            frame[y:y+h,x:x+w]=self.template
++
++    def pan(self,start,end):
++        self.drags.append((start,end))
++        if not self.freeze:self.offset+=(np.asarray(end)-np.asarray(start))*self.gain
++
++    def click(self,point):
++        self.clicks.append(point)
++        x,y=point
++        if x>470 and 540<y<800 or y>=800:
++            self.hud_clicks.append(point);return 'HUD'
++        if np.linalg.norm(np.asarray(point)-self.gem_center)<22:
++            self.collected=True;return 'gem'
++        return 'ground'
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -78,7 +78,7 @@
+     folder.mkdir(parents=True, exist_ok=True)
+     logging.basicConfig(filename=folder / 'loonglens.log', level=logging.INFO,
+                         format='%(asctime)s %(levelname)s %(message)s')
+-    logging.getLogger('loonglens').info('Loong Lens v40 executable=%s source=%s',sys.executable,Path(__file__).resolve())
++    logging.getLogger('loonglens').info('Loong Lens v41 executable=%s source=%s',sys.executable,Path(__file__).resolve())
+     settings_path = folder / 'settings.json'
+     coordinates_path = folder / 'coordinates.csv'
+     settings = {}
+@@ -245,7 +245,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Gem Spy v40; persistent observations and recovery'
++            details['version']='Gem Spy v41; persistent observations and recovery'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+--- a/LoongLens/patrol_live.py
++++ b/LoongLens/patrol_live.py
+@@ -26,8 +26,10 @@
+     threshold: float = .77
+     mask_hud: bool = False
+     approach_gem: bool = True  # Legacy saved key; now clicks the gem itself once.
++    fast_sweep: bool = True
+ 
+     def __post_init__(self):
++        if not isinstance(self.fast_sweep,bool):raise ValueError('Fast sweep must be on or off.')
+         for x,y in (self.map_open,self.map_close):
+             if not (math.isfinite(x) and math.isfinite(y) and 0<=x<570 and 0<=y<1029):
+                 raise ValueError('Choose map buttons inside the MuMu screenshot.')
+@@ -43,6 +45,8 @@
+     if migrated:values['map_open']=MINIMAP_OPEN
+     if config.get('version',1)<3 and values.get('settle_seconds',.8)==.8 and values.get('inspect_seconds',1.5)==1.5:
+         values.update(settle_seconds=.5,inspect_seconds=1.2)
++    flag=config.get('fast_map_sweep',values.get('fast_sweep',True))
++    values['fast_sweep']=flag if isinstance(flag,bool) else True
+     settings=LiveSettings(**values)
+     key=config.get('key','F8')
+     return settings,key if key in ('F6','F7','F8','F9') else 'F8',migrated
+@@ -184,6 +188,7 @@
+         self.navigation=navigation if navigation is not None else {}
+         self.map_reference=self.navigation.get('reference')
+         self.observer=observer
++        self.inspection_frame=None;self.adaptive_inspection=False
+         self.pan_scale=self.navigation.get('pan_scale',1.)
+         self.skipped=skipped if skipped is not None else set()
+ 
+@@ -548,10 +553,20 @@
+ 
+     def inspect(self,backend):
+         gate=AlertGate(cooldown=0)
+-        started=self.clock();scans=0
++        started=self.clock();phase_started=started;scans=0;previous=None
+         deadline=started+self.settings.inspect_seconds
+         while True:
+-            self.check();frame=backend.capture()
++            self.check()
++            frame=self.inspection_frame if self.inspection_frame is not None else backend.capture()
++            self.inspection_frame=None
++            if self.adaptive_inspection and previous is not None:
++                from sweep_ready import scene_change
++                if scene_change(previous,frame):
++                    # A delayed camera load is a new observation window; it
++                    # cannot borrow empty time or candidate hits from the old one.
++                    phase_started=self.clock();deadline=phase_started+self.settings.inspect_seconds
++                    scans=0;gate.reset()
++            previous=frame
+             if self.is_map(frame):raise RuntimeError('The map did not close. Set its Back button in Sniping settings.')
+             boxes=self.detector.detect(frame,exclude_hud=self.settings.mask_hud)
+             self.check();gate.update(boxes,self.clock());scans+=1
+@@ -561,7 +576,7 @@
+             # three-hit / 0.8-second confirmation rule. Empty views stay short;
+             # a false positive cannot extend inspection indefinitely.
+             if boxes:
+-                deadline=max(deadline,min(started+self.settings.inspect_seconds+1.,self.clock()+.85))
++                deadline=max(deadline,min(phase_started+self.settings.inspect_seconds+1.,self.clock()+.85))
+             if self.clock()>=deadline and scans>=3:break
+             if self.clock()-started>8:raise RuntimeError('Screenshot detection is too slow to complete this view.')
+             remaining=deadline-self.clock()
+@@ -656,8 +671,14 @@
+                 raise RuntimeError('The accessible camera target moved outside the clickable map; stopped.')
+             # Recognition came from this fresh screenshot; guard input again.
+             self.check();self.send('status',message=f'Clicking {view.near_zone} ({math.floor(view.x)},{math.floor(view.y)})')
+-            self.select_camera(backend,frame,pose,view)
+-            backend.wait(self.settings.settle_seconds)
++            selected=self.select_camera(backend,frame,pose,view)
++            self.inspection_frame=None;self.adaptive_inspection=False
++            if self.observer is None and self.settings.fast_sweep:
++                from sweep_ready import ready_frame
++                self.inspection_frame=ready_frame(backend,selected,self.settings.settle_seconds,
++                    self.clock,self.check,self.is_map)
++                self.adaptive_inspection=abs(self.settings.settle_seconds-.5)<.000001
++            else:backend.wait(self.settings.settle_seconds)
+             self.send('status',message='Inspecting the visible scene…')
+             inspect_started=self.clock()
+             if self.observer is not None:
+@@ -701,9 +722,18 @@
+                     current=self.detector.detect(fresh,exclude_hud=self.settings.mask_hud)
+                     latest=min(current,key=lambda box:math.dist(box.center,found.center),default=None)
+                     if latest is None or math.dist(latest.center,found.center)>=max(30,found.width*2):latest=found
++                    from gem_recenter import safe_box,recenter_gem,GemRecenterError,stable_scene
++                    if gem_click(latest.center,fresh.shape) is None:
++                        return 'Gem found. Its centre is outside the game image; stopped without clicking.'
++                    if latest is found and not current and not stable_scene(frame,fresh,limit=.12):
++                        raise GemRecenterError('The scene changed after the gem was confirmed. Stopped without clicking old coordinates.')
++                    if not safe_box(latest,fresh.shape):
++                        self.navigation.clear();self.map_reference=None;self.reopen_reference=None
++                        latest,fresh=recenter_gem(backend,self.detector,latest,fresh,
++                            self.check,self.clock,self.is_map,self.send)
+                     point=gem_click(latest.center,fresh.shape)
+-                    if point is None:
+-                        return 'Gem found. Its centre is outside the game image; stopped without clicking.'
++                    if point is None or not safe_box(latest,fresh.shape):
++                        raise GemRecenterError('Gem found, but its current click point is not clear of the interface.')
+                     self.check();backend.click(point)
+                     self.send('gem_clicked',point=point)
+                     return 'Gem found. Clicked the gem once; sniping stopped.'
+--- a/LoongLens/patrol_live_panel.py
++++ b/LoongLens/patrol_live_panel.py
+@@ -441,7 +441,8 @@
+     def save_config(self):
+         try:
+             tmp=self.path.with_suffix('.tmp')
+-            tmp.write_text(json.dumps(dict(version=LIVE_SETTINGS_VERSION,settings=asdict(self.settings),key=self.key.get(),endless_mode=self.endless.get()),indent=2),'utf-8')
++            values=asdict(self.settings);fast=values.pop('fast_sweep')
++            tmp.write_text(json.dumps(dict(version=LIVE_SETTINGS_VERSION,settings=values,key=self.key.get(),endless_mode=self.endless.get(),fast_map_sweep=fast),indent=2),'utf-8')
+             tmp.replace(self.path)
+         except OSError:
+             import logging
+@@ -463,25 +464,27 @@
+         for row,name,label in ((4,'settle_seconds','Scene loading wait (seconds)'),(5,'inspect_seconds','Empty-view check (seconds)')):
+             ttk.Label(body,text=label).grid(row=row,column=0,sticky='w',pady=6)
+             field=ttk.Entry(body,width=15);field.insert(0,str(getattr(self.settings,name)));field.grid(row=row,column=1,padx=8);fields[name]=field
+-        ttk.Label(body,text='On gem: click, wait 20s, return to (241,107), restart until 5/5.').grid(row=6,column=0,columnspan=3,sticky='w')
++        ttk.Label(body,text='On gem: center clear of HUD, click, wait 20s, return to (241,107).').grid(row=6,column=0,columnspan=3,sticky='w')
+         detection_mode=tk.StringVar(value=self.services.mode.get())
+         mask_interface=tk.BooleanVar(value=self.services.mask_hud.get())
+         sound_alerts=tk.BooleanVar(value=self.services.sound.get())
++        fast_sweep=tk.BooleanVar(value=self.settings.fast_sweep)
+         ttk.Label(body,text='Detection sensitivity').grid(row=7,column=0,sticky='w',pady=6)
+         ttk.Combobox(body,textvariable=detection_mode,values=('Conservative','Balanced','Sensitive'),state='readonly',width=15).grid(row=7,column=1,sticky='w',padx=8)
+         ttk.Checkbutton(body,text='Mask interface areas',variable=mask_interface).grid(row=8,column=0,columnspan=2,sticky='w')
+         ttk.Checkbutton(body,text='Sound alerts',variable=sound_alerts).grid(row=8,column=2,sticky='w')
+-        ttk.Label(body,text='Gem Spy uses these settings and the selected route. It never clicks gems.',wraplength=480).grid(row=9,column=0,columnspan=3,sticky='w',pady=6)
+-        error=tk.StringVar();ttk.Label(body,textvariable=error,wraplength=500).grid(row=10,column=0,columnspan=3,sticky='w')
++        ttk.Checkbutton(body,text='Fast map sweep',variable=fast_sweep).grid(row=9,column=0,columnspan=3,sticky='w',pady=(6,0))
++        ttk.Label(body,text='Sniper starts checks early when the scene is ready at the default 0.5s loading wait.\nCustom waits stay fixed. Gem Spy keeps its observation timing.',wraplength=500,style='Muted.TLabel').grid(row=10,column=0,columnspan=3,sticky='w',pady=6)
++        error=tk.StringVar();ttk.Label(body,textvariable=error,wraplength=500).grid(row=11,column=0,columnspan=3,sticky='w')
+         def apply():
+             try:
+                 points={name:tuple(float(v.strip()) for v in fields[name].get().split(',')) for name in ('map_open','map_close')}
+-                self.settings=LiveSettings(**points,settle_seconds=float(fields['settle_seconds'].get()),inspect_seconds=float(fields['inspect_seconds'].get()),approach_gem=True)
++                self.settings=LiveSettings(**points,settle_seconds=float(fields['settle_seconds'].get()),inspect_seconds=float(fields['inspect_seconds'].get()),approach_gem=True,fast_sweep=fast_sweep.get())
+             except (TypeError,ValueError):error.set('Enter X,Y pairs inside 570×1029. Loading wait: 0.2–10s. Check: 1.2–10s.');return
+             self.services.mode.set(detection_mode.get());self.services.mask_hud.set(mask_interface.get());self.services.sound.set(sound_alerts.get())
+             self.services.save();self.save_config();win.destroy()
+-        ttk.Button(body,text='Save settings',command=apply).grid(row=11,column=0,sticky='w',pady=10)
+-        ttk.Button(body,text='Cancel',command=win.destroy).grid(row=11,column=2,sticky='e')
++        ttk.Button(body,text='Save settings',command=apply).grid(row=12,column=0,sticky='w',pady=10)
++        ttk.Button(body,text='Cancel',command=win.destroy).grid(row=12,column=2,sticky='e')
+ 
+     def pick_button(self,parent,field):
+         try:frame=WindowsBackend.peek()
+--- /dev/null
++++ b/LoongLens/sweep_ready.py
+@@ -0,0 +1,43 @@
++"""Start Sniper inspection early only after observing a rendered stable scene."""
++import cv2
++import numpy as np
++
++
++def ground_gray(frame):
++    small=cv2.resize(frame,(285,514),interpolation=cv2.INTER_AREA)
++    gray=cv2.cvtColor(small,cv2.COLOR_BGR2GRAY)
++    # The selected scene, not chat, portrait, minimap or emulator chrome.
++    return gray[154:380,40:225]
++
++
++def rendered(frame):
++    gray=ground_gray(frame);average,deviation=cv2.meanStdDev(gray)
++    return float(average[0,0])>25 and float(deviation[0,0])>=8
++
++
++def scene_change(before,after,threshold=.30):
++    if before.shape!=after.shape:return True
++    a=ground_gray(before);b=ground_gray(after)
++    difference=cv2.absdiff(a,b)
++    if float(np.mean(difference>35))>threshold:return True
++    _,sa=cv2.meanStdDev(a);_,sb=cv2.meanStdDev(b)
++    if min(float(sa[0,0]),float(sb[0,0]))<8:return False
++    correlation=float(cv2.matchTemplate(a,b,cv2.TM_CCOEFF_NORMED)[0,0])
++    return correlation<(.85 if threshold<.1 else .55) and float(difference.mean())>3
++
++
++def ready_frame(backend,initial,seconds,clock,check,is_map):
++    """Two consistent rendered observations replace only the default 0.5s wait.
++
++    Custom loading delays are preserved. Loading/blank/changing scenes keep
++    the existing full delay; no input or inspection evidence comes from them.
++    """
++    started=clock()
++    if abs(seconds-.5)>.000001 or not rendered(initial) or is_map(initial):
++        backend.wait(seconds);return None
++    backend.wait(.08);check();fresh=backend.capture();check()
++    if not is_map(fresh) and rendered(fresh) and not scene_change(initial,fresh,threshold=.08):
++        return fresh
++    remaining=seconds-(clock()-started)
++    if remaining>0:backend.wait(remaining)
++    return None
+--- /dev/null
++++ b/LoongLens/tests/test_gem_recenter.py
+@@ -0,0 +1,152 @@
++from types import SimpleNamespace
++import threading
++
++import cv2
++import numpy as np
++import pytest
++
++from gem_detector import GemDetector,Detection
++from gem_recenter import (SAFE_AREA,DRAG_AREA,GemRecenterError,safe_box,drag_plan,
++                          scene_shift,recenter_gem)
++from gem_scene_fixture import GemCameraScene
++from patrol_live import LiveSettings
++from patrol_windows import PatrolStopped
++from test_live_patrol import Clock,setup
++
++cv2.setNumThreads(2)
++
++
++def harness(center=(520,680),gain=1.,freeze=False):
++    scene=GemCameraScene(center,gain,freeze);clock=Clock();cancel=threading.Event();events=[]
++    state=SimpleNamespace(down=False,captures=0)
++    def check():
++        if cancel.is_set():raise PatrolStopped('Stopped.')
++    def wait(seconds):check();clock.now+=seconds
++    def drag(start,end):
++        state.down=True
++        try:check();scene.pan(start,end);wait(.3)
++        finally:state.down=False
++    def capture():check();state.captures+=1;return scene.render()
++    backend=SimpleNamespace(drag=drag,capture=capture,wait=wait)
++    detector=GemDetector()
++    def run():
++        frame=scene.render();boxes=detector.detect(frame,exclude_hud=False)
++        assert len(boxes)==1,boxes
++        return recenter_gem(backend,detector,boxes[0],frame,check,clock,lambda f:False,
++                            lambda kind,**data:events.append(dict(kind=kind,**data)))
++    return scene,backend,detector,state,cancel,events,run
++
++
++@pytest.mark.parametrize('center',[(520,680),(320,880),(35,520),(285,200),(285,980),(535,970)])
++def test_hud_and_edge_gems_are_refound_in_clear_ground(center):
++    scene,backend,detector,state,cancel,events,run=harness(center)
++    box,frame=run()
++    assert safe_box(box,frame.shape) and len(scene.drags)<=3
++    assert np.linalg.norm(np.asarray(box.center)-scene.gem_center)<2
++    assert not state.down and not scene.hud_clicks
++    assert sum(e['kind']=='gem_recentered' for e in events)==1
++    assert not any(e['kind'] in ('found','capture','gem_clicked') for e in events)
++    for start,end in scene.drags:
++        for x,y in (start,end):
++            assert DRAG_AREA[0]*570-1e-6<=x<=DRAG_AREA[2]*570+1e-6
++            assert DRAG_AREA[1]*1029-1e-6<=y<=DRAG_AREA[3]*1029+1e-6
++
++
++@pytest.mark.parametrize('gain',[.5,1.5,2.,-1.])
++def test_only_measured_camera_gain_and_direction_control_a_retry(gain):
++    scene,_,_,_,_,_,run=harness(gain=gain)
++    box,frame=run()
++    assert safe_box(box,frame.shape) and len(scene.drags)<=3
++
++
++def test_no_camera_motion_cannot_authorize_a_hud_or_old_pixel_click():
++    scene,_,_,state,_,_,run=harness(freeze=True)
++    with pytest.raises(GemRecenterError,match='not confirmed'):run()
++    assert len(scene.drags)==1 and not scene.clicks and not state.down
++
++
++def test_missing_gem_after_movement_has_no_old_coordinate_fallback():
++    scene,_,_,state,_,_,run=harness();scene.hide_after_pan=True
++    with pytest.raises(GemRecenterError):run()
++    assert not scene.clicks and not state.down
++
++
++def test_f10_after_a_drag_does_not_produce_a_gem_click():
++    scene,backend,_,state,cancel,_,run=harness();original=backend.drag
++    def stop(start,end):original(start,end);cancel.set()
++    backend.drag=stop
++    with pytest.raises(PatrolStopped):run()
++    assert not state.down and not scene.clicks
++
++
++def test_terrain_estimate_ignores_static_portrait_and_chat():
++    scene=GemCameraScene();before=scene.render()
++    scene.pan((400,600),(280,500));after=scene.render()
++    assert scene_shift(before,after)==pytest.approx((-120,-100),abs=2)
++    assert scene_shift(before,before)==pytest.approx((0,0),abs=1)
++    assert scene_shift(np.zeros_like(before),np.zeros_like(before)) is None
++
++
++@pytest.mark.parametrize('center',[(285,515),(200,400),(380,600)])
++@pytest.mark.parametrize('scale',[1,2])
++def test_clear_ground_stays_safe_at_each_capture_scale(center,scale):
++    box=Detection((center[0]-12)*scale,(center[1]-12)*scale,24*scale,24*scale,.95)
++    assert safe_box(box,(1029*scale,570*scale,3))
++
++
++@pytest.mark.parametrize('center',[(50,500),(530,680),(300,900),(300,200)])
++def test_unsafe_core_is_kept_as_a_find_but_requires_recentering(center):
++    assert not safe_box(Detection(center[0]-12,center[1]-12,24,24,.95))
++
++
++def live_scene(center=(520,680)):
++    engine,backend,events=setup();scene=GemCameraScene(center)
++    engine.settings=LiveSettings(approach_gem=True,mask_hud=False)
++    engine.detector=GemDetector();original_capture=backend.capture;original_click=backend.click;original_drag=backend.drag
++    def capture():return original_capture() if backend.open else scene.render()
++    def drag(start,end):
++        if backend.open:return original_drag(start,end)
++        backend.wait(.3);scene.pan(start,end);backend.inputs.append(('ground_drag',start,end))
++    def click(point):
++        if not backend.open and point!=engine.settings.map_open:scene.click(point)
++        return original_click(point)
++    backend.capture=capture;backend.drag=drag;backend.click=click
++    return engine,backend,events,scene
++
++
++def test_live_collection_records_one_original_photo_and_one_find_after_recentering():
++    engine,backend,events,scene=live_scene()
++    assert 'Clicked the gem once' in engine.run(backend)
++    assert len(scene.clicks)==1 and scene.collected and not scene.hud_clicks
++    assert all(sum(e['kind']==kind for e in events)==1 for kind in ('found','capture','gem_clicked','gem_recentered'))
++    original=next(e['frame'] for e in events if e['kind']=='capture')
++    assert np.linalg.norm(np.asarray(engine.detector.detect(original,exclude_hud=False)[0].center)-np.array((520,680)))<2
++
++
++def test_safe_live_collection_has_no_extra_drag_and_keeps_the_direct_click():
++    engine,backend,events,scene=live_scene((285,515))
++    assert 'Clicked the gem once' in engine.run(backend)
++    assert not scene.drags and len(scene.clicks)==1 and scene.collected
++    assert not any(e['kind']=='gem_recentered' for e in events)
++
++
++def test_recenter_collection_keeps_one_daily_entry_and_twenty_second_return_wait(tmp_path):
++    from test_sniper_collection_cycle import collecting_runner
++    runner,backend,events,quota,times,_=collecting_runner(tmp_path,stop_at=lambda e:e['kind']=='returned_home')
++    scene=GemCameraScene();capture=backend.capture;drag=backend.drag;click=backend.click
++    backend.capture=lambda:capture() if backend.open else scene.render()
++    def pan(start,end):
++        if backend.open:return drag(start,end)
++        backend.wait(.3);scene.pan(start,end);backend.inputs.append(('ground_drag',start,end))
++    def target(point):
++        if not backend.open and point!=LiveSettings().map_open:scene.click(point)
++        return click(point)
++    backend.drag=pan;backend.click=target;runner.detector=GemDetector()
++    assert runner.start(LiveSettings(mask_hud=False),repeat=True)
++    runner.thread.join(15)
++    if runner.running:runner.stop();runner.thread.join(3)
++    assert not runner.running and quota.count(runner.wall())==1 and runner.stats.snapshot()['gems']==1
++    assert not scene.hud_clicks and all(sum(e['kind']==kind for e in events)==1 for kind in ('found','capture','gem_clicked','gem_recentered'))
++    stamp=next(t for point,t,opened in times if not opened and point!=LiveSettings().map_open)
++    opener=next(t for point,t,opened in times if point==LiveSettings().map_open and t>stamp)
++    assert opener-stamp>=20
+--- a/LoongLens/tests/test_patrol_approach_and_locks.py
++++ b/LoongLens/tests/test_patrol_approach_and_locks.py
+@@ -103,12 +103,13 @@
+     assert gem_click((348,444),(664,365,3))==pytest.approx((348*570/365,444*1029/664))
+ 
+ 
+-def test_confirmed_right_edge_gem_is_clicked_once_in_live_loop():
++def test_right_edge_gem_never_gets_a_hud_click_if_the_camera_cannot_be_verified():
+     engine,backend,events=setup(positive=True);engine.settings=LiveSettings(approach_gem=True)
+     engine.detector.detect=lambda *a,**kw:[SimpleNamespace(center=(544,688),score=.95,width=20)]
+-    assert 'Clicked the gem once' in engine.run(backend)
+-    assert backend.inputs[-1][1]==(544,688)
+-    assert sum(e['kind']=='gem_clicked' for e in events)==1
++    from gem_recenter import GemRecenterError
++    with pytest.raises(GemRecenterError):engine.run(backend)
++    assert not any(e['kind']=='gem_clicked' for e in events)
++    assert all(row[2] is True for row in backend.inputs if row[0]=='click')
+ 
+ 
+ def test_fresh_detection_centre_is_used_if_gem_moves_a_few_pixels():
+@@ -123,7 +124,7 @@
+     assert len(backend.inputs)==3
+ 
+ 
+-def test_confirmed_gem_is_clicked_at_current_centre_without_a_hud_veto():
++def test_fresh_unsafe_detection_requires_a_measured_recenter_before_clicking():
+     engine,backend,events=setup(positive=True);engine.settings=LiveSettings(approach_gem=True)
+     current=[(485,640)]
+     engine.detector.detect=lambda *a,**kw:[SimpleNamespace(center=current[0],score=.95,width=20)]
+@@ -131,5 +132,7 @@
+         events.append(event)
+         if event['kind']=='found':current[0]=(505,615)
+     engine.emit=emit
+-    assert 'Clicked the gem once' in engine.run(backend)
+-    assert len(backend.inputs)==3 and backend.inputs[-1][1]==(505,615)
++    from gem_recenter import GemRecenterError
++    with pytest.raises(GemRecenterError):engine.run(backend)
++    assert not any(e['kind']=='gem_clicked' for e in events)
++    assert len([row for row in backend.inputs if row[0]=='click'])==2
+--- /dev/null
++++ b/LoongLens/tests/test_sweep_ready.py
+@@ -0,0 +1,97 @@
++from types import SimpleNamespace
++import threading
++import cv2
++import numpy as np
++import pytest
++
++from gem_scene_fixture import GemCameraScene
++from sweep_ready import ready_frame,rendered,scene_change
++from patrol_live import LiveSettings
++from patrol_windows import PatrolStopped
++from test_live_patrol import setup,Clock
++
++cv2.setNumThreads(2)
++
++
++def test_ready_gameplay_starts_after_two_observations_and_reuses_the_fresh_frame():
++    scene=GemCameraScene();frame=scene.render();clock=Clock();captures=[]
++    backend=SimpleNamespace(wait=lambda t:setattr(clock,'now',clock.now+t),
++        capture=lambda:(captures.append(True) or frame.copy()))
++    result=ready_frame(backend,frame,.5,clock,lambda:None,lambda f:False)
++    assert result is not None and clock.now==pytest.approx(.08) and len(captures)==1
++
++
++@pytest.mark.parametrize('seconds',[.2,.75,1.,2.])
++def test_custom_loading_wait_is_preserved(seconds):
++    clock=Clock();frame=GemCameraScene().render()
++    backend=SimpleNamespace(wait=lambda t:setattr(clock,'now',clock.now+t),
++        capture=lambda:pytest.fail('A custom wait must not take the fast path'))
++    assert ready_frame(backend,frame,seconds,clock,lambda:None,lambda f:False) is None
++    assert clock.now==pytest.approx(seconds)
++
++
++def test_blank_or_loading_scene_keeps_the_default_wait():
++    clock=Clock();backend=SimpleNamespace(wait=lambda t:setattr(clock,'now',clock.now+t))
++    assert ready_frame(backend,np.zeros((1029,570,3),np.uint8),.5,clock,lambda:None,lambda f:False) is None
++    assert clock.now==pytest.approx(.5)
++
++
++def test_changing_scene_is_not_mistaken_for_ready():
++    clock=Clock();scene=GemCameraScene();before=scene.render();scene.pan((300,500),(400,600));after=scene.render()
++    backend=SimpleNamespace(wait=lambda t:setattr(clock,'now',clock.now+t),capture=lambda:after)
++    assert scene_change(before,after)
++    assert ready_frame(backend,before,.5,clock,lambda:None,lambda f:False) is None
++    assert clock.now==pytest.approx(.5)
++
++
++def test_late_scene_change_restarts_the_full_empty_inspection_window():
++    engine,backend,_=setup();backend.open=False;engine.adaptive_inspection=True
++    scene=GemCameraScene();initial=scene.render();scene.pan((300,500),(400,600));changed=scene.render()
++    engine.detector=SimpleNamespace(detect=lambda *a,**kw:[])
++    backend.capture=lambda:initial if backend.clock.now<.6 else changed
++    assert engine.inspect(backend)==(None,None)
++    assert 1.8<=backend.clock.now<2.05
++
++
++def test_f10_during_ready_probe_produces_no_input():
++    engine,backend,_=setup();frame=GemCameraScene().render()
++    def wait(t):engine.cancel.set();backend.clock.now+=t
++    backend.wait=wait
++    with pytest.raises(PatrolStopped):ready_frame(backend,frame,.5,engine.clock,engine.check,lambda f:False)
++    assert not backend.inputs
++
++
++def test_fast_sweep_preference_saves_outside_legacy_settings_and_loads_on_restart(tmp_path):
++    import json
++    from patrol_live_panel import LivePatrolPanel
++    from patrol_live import load_live_config
++    panel=LivePatrolPanel.__new__(LivePatrolPanel)
++    panel.path=tmp_path/'settings.json';panel.settings=LiveSettings(fast_sweep=False,map_close=(65,981))
++    panel.key=SimpleNamespace(get=lambda:'F9');panel.endless=SimpleNamespace(get=lambda:True)
++    panel.save_config();data=json.loads(panel.path.read_text())
++    assert data['fast_map_sweep'] is False and 'fast_sweep' not in data['settings']
++    assert data['settings']['map_close']==[65,981] and data['endless_mode'] is True
++    loaded,key,_=load_live_config(data)
++    assert loaded.fast_sweep is False and key=='F9' and loaded.map_close==[65,981]
++
++
++def test_fast_sweep_option_saves_loading_time_without_shortening_gem_confirmation():
++    from dataclasses import replace
++    from test_gem_recenter import live_scene
++    elapsed=[];confirmation=[]
++    for fast in (False,True):
++        engine,backend,events,scene=live_scene((285,515))
++        engine.settings=replace(engine.settings,fast_sweep=fast)
++        inspect=engine.inspect
++        def measured_inspect(backend):
++            started=engine.clock();result=inspect(backend)
++            confirmation.append(engine.clock()-started)
++            return result
++        engine.inspect=measured_inspect
++        assert 'Clicked the gem once' in engine.run(backend)
++        elapsed.append(engine.clock())
++        assert scene.collected and not scene.drags
++    # The 0.2s confirmation cadence can require one extra observation because
++    # of floating-point timestamp boundaries; it must never be shortened.
++    assert all(seconds>=.8-1e-8 for seconds in confirmation)
++    assert .2<=elapsed[0]-elapsed[1]<=.42+1e-8
+--- a/LoongLens/tools/benchmark_sniping.py
++++ b/LoongLens/tools/benchmark_sniping.py
+@@ -28,9 +28,14 @@
+     from patrol_route import load_fixed_route
+     from resources import ResourceStore
+     from test_fixed_route import test_complete_fixed_route_uses_recentered_atlas_screenshots_and_no_transit_camera_clicks
+-    result=dict(scope='Full 76-view atlas route; simulated input, loading and detector. Not live Windows/BlueStacks speed.',
++    result=dict(scope='Full 76-view atlas route with already-rendered textured gameplay; simulated input/loading/detector. Not live MuMu speed.',
+                 captures=0,relative_matches=0,absolute_matches=0,
+                 held_strokes=0,held_moves=0,pan_reference_pixels=0.,per_view=[])
++    # Identical ready-gameplay pixels for both extracted versions. The base
++    # route test uses black placeholders; those intentionally keep full waits.
++    import numpy as np
++    rng=np.random.default_rng(10);gray=rng.integers(20,160,(1029,570),np.uint8)
++    ready_game=np.stack((gray//2+40,gray//2+75,gray//2+95),axis=2);ready_game[0,0]=0
+     original_run=LivePatrol.run
+     original_track=vision.track_map_pan
+     def track(*a,**kw):
+@@ -82,7 +87,9 @@
+                 value=move(end);cursor[0]=end
+                 return value
+             backend.hold_drag=held;backend.drag_held_to=held_move
+-        def screenshot():result['captures']+=1;return capture()
++        def screenshot():
++            result['captures']+=1;frame=capture()
++            return ready_game.copy() if not backend.open else frame
+         def absolute(frame):result['absolute_matches']+=1;return locate(frame)
+         backend.capture=screenshot;engine.locator.locate=absolute
+         started=time.perf_counter()
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,7 +4,7 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'CHANGELOG-v37.md', 'CHANGELOG-v40.md', 'emulator_view.py', 'mumu_input_check.py', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['CHANGELOG-v41.md', 'gem_recenter.py', 'sweep_ready.py', 'gem_scene_fixture.py', 'gem_recenter_check.py', 'GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'CHANGELOG-v37.md', 'CHANGELOG-v40.md', 'emulator_view.py', 'mumu_input_check.py', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py', 'LoongLens-AppIcon-HD.png', 'ui_assets.py', 'dashboard_shell.py', 'window_capture.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+          'sniper_counter.py', 'sniper_history_panel.py', 'gem_heatmap.py', 'gem_heatmap_panel.py', 'heatmap_map_import.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'map_screen.py', 'tracker.py', 'pose.py',
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v40 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v41 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -26,10 +26,10 @@
+     with binary.open('rb') as stream:
+         if stream.read(2)!=b'MZ':raise SystemExit('Expected the newly built Windows EXE.')
+     reports=[]
+-    for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check','source-mumu-check','mumu-check'):
++    for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check','source-mumu-check','mumu-check','source-gem-recenter-check','gem-recenter-check'):
+         report=ROOT/(mode+'.json')
+         data=json.loads(report.read_text('utf-8-sig'))
+-        if data.get('passed') is not True or data.get('version')!=40:
++        if data.get('passed') is not True or data.get('version')!=41:
+             raise SystemExit(f'{mode} did not pass')
+         if mode=='sniper-ui-check':
+             for key in ('restart_restored_obtained_choice','restart_restored_endless_preference',
+@@ -37,11 +37,16 @@
+                 if data.get(key) is not True:raise SystemExit(f'Missing native daily/endless validation: {key}')
+         if mode=='spy-ui-check':
+             for key in ('heatmap_all_history','heatmap_zoom_pan','heatmap_viewport_bounded',
+-                        'heatmap_three_part_import','heatmap_saved_map_reloaded','route_editor_uses_imported_map'):
++                        'heatmap_three_part_import','heatmap_saved_map_reloaded','route_editor_uses_imported_map','fast_setting_cancel_preserved','fast_setting_saved'):
+                 if data.get(key) is not True:raise SystemExit(f'Missing native heatmap validation: {key}')
+         if mode in ('source-mumu-check','mumu-check'):
+             for key in ('device_window_selected','manager_and_browser_ignored','toolbar_excluded','capture_input_overlay_geometry','map_alignment_verified','native_game_click_delivered','held_drag_delivered','f10_released'):
+                 if data.get(key) is not True:raise SystemExit(f'Missing MuMu input validation: {key}')
++        if mode in ('source-gem-recenter-check','gem-recenter-check'):
++            for key in ('portrait_gem_centered','chat_gem_centered','edge_gems_centered','fresh_detection_before_click','native_drag_delivered','f10_released'):
++                if data.get(key) is not True:raise SystemExit(f'Missing native gameplay validation: {key}')
++            if (data.get('gem_clicks'),data.get('hud_clicks'),data.get('ground_walks'))!=(5,0,0):
++                raise SystemExit('Native gem recentering clicked the wrong target.')
+         reports.append(report)
+     tests=ROOT/'tests-result.txt'
+     result=re.findall(r'(\d+) passed(?:, (\d+) skipped)?',tests.read_text('utf-8-sig'))
+@@ -49,36 +54,43 @@
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v37','v40'):
++    for version in ('v40','v41'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
+         comparisons[version]=data;reports.append(path)
+-    baseline=comparisons['v37'];latest=comparisons['v40']
++    baseline=comparisons['v40'];latest=comparisons['v41']
+     if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
+         raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+     if latest['held_strokes']>=30 or latest['held_moves']>latest['held_strokes']*5:
+         raise SystemExit('The centre-start route comparison exceeded its movement bounds.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v40-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v41-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+             archive.extractall(folder)
+         app=folder/'LoongLens'
+-        if any((app/name).exists() for name in ('patrol_adb.py','adb_screen.py','adb_setup_panel.py','loonglens-touch.jar')):raise SystemExit('Unexpected ADB file in the v37-based MuMu package.')
++        if any((app/name).exists() for name in ('patrol_adb.py','adb_screen.py','adb_setup_panel.py','loonglens-touch.jar')):raise SystemExit('Unexpected ADB file in the v40-based MuMu package.')
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=40,baseline=37,mouse_foundation=24,emulator='MuMuPlayer 6.8.9',default_window=[1000,760],minimum_window=[960,720],commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=41,baseline=40,mouse_foundation=24,emulator='MuMuPlayer 6.8.9',default_window=[1000,760],minimum_window=[960,720],commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+-                  speed_scope='76-view atlas simulation; not measured live MuMu performance')
++                  speed_scope='76-view atlas simulation with already-rendered gameplay; not measured live MuMu performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v40.txt').write_text(
+-            'Loong Lens v40 - MuMu mouse control and compact UI\n\n'
+-            'This build starts from v37. The v38/v39 ADB backend is removed.\n'
++        (app/'START-HERE-v41.txt').write_text(
++            'Loong Lens v41 - Safe gem collection and faster Sniper sweep\n\n'
++            'Confirmed gems near portraits, chat or edges are moved into clear gameplay before clicking.\n'
++            'Up to three central camera drags track terrain and re-detect the same gem.\n'
++            'No HUD tap is sent if camera motion or the fresh target cannot be confirmed.\n'
++            'Fast map sweep is enabled in Sniper settings: ready scenes start inspection early.\n'
++            'Only the default 0.5s loading wait is adaptive; custom waits remain fixed.\n'
++            'Gem confirmation, full inspection, 20s collection and Spy observation timing remain.\n'
++            'F10 interrupts gameplay drags; each find keeps its one photo and counter entry.\n\n'
++            'This build preserves the v40 MuMu mouse backend. ADB remains removed.\n'
+             'Targets MuMuPlayer 6.8.9, Android 15, portrait 1080x1920 at 480 DPI.\n'
+             'Start the Android device, launch the game and use the portrait window with top toolbar.\n'
+             'MuMu device tabs can be called Android Device or the game name.\n'
+@@ -88,7 +100,7 @@
+             'Main window defaults to 1000x760 and can shrink to 960x720.\n'
+             'Sidebar, cards, buttons and preview are compact; main controls stay accessible.\n'
+             'When space is available, Loong Lens opens beside the visible MuMu window.\n'
+-            'All v37 routes, detection/collection waits, counters, histories and heatmaps remain.\n'
++            'All v40 routes, detection/collection waits, counters, histories and heatmaps remain.\n'
+             'Windows checks use a simulated MuMu-shaped window; live game speed is unmeasured.\n\n'
+             'Map recognition now also checks map controls when the title image does not match.\n'
+             'An already-open map does not get another minimap tap. A transient frame is rechecked.\n'
+@@ -106,7 +118,7 @@
+             'The counter and choices are saved immediately and survive app restarts.\n'
+             'Endless mode is below Gems found and continues beyond 5/5 until Stop/F10.\n'
+             'The Endless preference is saved. Normal mode stops at five obtained entries.\n'
+-            'Sniper clicks each confirmed gem, waits 20s, returns to Emerald Corner (241,107), then restarts.\n'
++            'Sniper centers gems clear of the HUD, clicks once, waits 20s, returns to Emerald Corner (241,107), then restarts.\n'
+             'The top-right counter and Today only use 16:00 Europe/Sofia game-day reset.\n'
+             'Teal sighting dots last 1 hour and 15 seconds from their original spotted time.\n'
+             'The counter survives route resets and app restarts. In normal mode at 5/5 it finishes collection/return and stops.\n'
+@@ -128,7 +140,7 @@
+             'No padding or broad right-hand exclusion strip is added.\n'
+             'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
+             'Hide portal icons in the game map as you requested.\n'
+-            'The header shows v40; settings and personal routes remain in LocalAppData.\n'
++            'The header shows v41; settings and personal routes remain in LocalAppData.\n'
+             'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
+             'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
+             'It observes repeatedly, never clicks a gem, and continues after a find.\n'
+@@ -153,12 +165,12 @@
+             'Save & reset checks applies edits. Switching routes resets pass progress and timing.\n'
+             'Existing v24 edits are imported as My route; the old route file is retained.\n'
+             'Removing points can omit spawn spots; totals are shown in the editor and panel.\n\n'
+-            'Default loading/inspection waits and gem confirmation are unchanged.\n'
++            'Custom loading waits, inspection duration and gem confirmation are unchanged.\n'
+             'Last view / Map-load / Inspect show timing on your PC. Offline Windows comparison\n'
+             'and validation reports are included under validation; live game speed is not measured.\n'
+             'Do not delete %LOCALAPPDATA%\\LoongLens; settings, screenshots and history stay there.\n',
+             'utf-8')
+-        for image in sorted((ROOT/'artifacts').glob('v40-*.png')):shutil.copy2(image,validation/image.name)
++        for image in sorted((ROOT/'artifacts').glob('v41-*.png')):shutil.copy2(image,validation/image.name)
+         manifest={p.relative_to(app).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in sorted(app.rglob('*')) if p.is_file()}
+         (app/'PACKAGE-SHA256.json').write_text(json.dumps(manifest,indent=2)+'\n','utf-8')
+--- a/LoongLens/tools/ui_sniper_smoke.py
++++ b/LoongLens/tools/ui_sniper_smoke.py
+@@ -131,7 +131,7 @@
+             assert panel.services.sighting_history.sniper_seen()==5
+             count=len(clicks);panel.snipe.invoke()
+             assert panel.services.owner is None and len(clicks)==count and '5/5' in panel.status.get()
+-            results.append(dict(passed=True,version=40,collection_seconds=20,return_world=[241,107],
++            results.append(dict(passed=True,version=41,collection_seconds=20,return_world=[241,107],
+                                 daily_count=5,stopped_at_goal=True,source_screenshot_saved=True,
+                                 dim_camera_selected_once_per_visit=True,
+                                 reset_kept_daily_counter=True,scope='Native Tk and detector; simulated game input and waits'))
+--- a/LoongLens/tools/ui_spy_smoke.py
++++ b/LoongLens/tools/ui_spy_smoke.py
+@@ -48,7 +48,7 @@
+                 from ctypes import wintypes
+                 user=ctypes.WinDLL('user32');user.GetAncestor.argtypes=(wintypes.HWND,wintypes.UINT);user.GetAncestor.restype=wintypes.HWND
+                 out=ROOT/'artifacts';out.mkdir(exist_ok=True)
+-                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v40-spy-ui-failure.png')
++                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v41-spy-ui-failure.png')
+                 self.exit_app()
+             self.report_callback_exception=failed
+             self.after(1800,self.begin);self.after(120000,self.destroy)
+@@ -61,17 +61,22 @@
+             import time
+             sniper.events.put(dict(kind='found',event=None,seen_id='patrol:header-ui',seen_at=time.time(),sound=False))
+             sniper.drain()
+-            old_mode=services.mode.get()
++            old_mode=services.mode.get();old_fast=sniper.settings.fast_sweep
+             sniper.show_settings();self.update_idletasks()
+             settings=next(w for w in self.winfo_children() if isinstance(w,tk.Toplevel) and w.title()=='Gem Sniper settings')
+             next(w for w in descendants(settings) if isinstance(w,ttk.Combobox)).set('Sensitive')
++            next(w for w in descendants(settings) if isinstance(w,ttk.Checkbutton) and w.cget('text')=='Fast map sweep').invoke()
+             next(w for w in descendants(settings) if isinstance(w,ttk.Button) and w.cget('text')=='Cancel').invoke()
+             assert services.mode.get()==old_mode,'Cancel changed shared detection preferences'
++            assert sniper.settings.fast_sweep==old_fast,'Cancel changed fast sweep preference'
+             sniper.show_settings();self.update_idletasks()
+             settings=next(w for w in self.winfo_children() if isinstance(w,tk.Toplevel) and w.title()=='Gem Sniper settings')
+             next(w for w in descendants(settings) if isinstance(w,ttk.Combobox)).set('Sensitive')
++            next(w for w in descendants(settings) if isinstance(w,ttk.Checkbutton) and w.cget('text')=='Fast map sweep').invoke()
+             next(w for w in descendants(settings) if isinstance(w,ttk.Button) and w.cget('text')=='Save settings').invoke()
+             assert services.mode.get()=='Sensitive'
++            assert sniper.settings.fast_sweep is not old_fast
++            assert json.loads(sniper.path.read_text())['fast_map_sweep'] is not old_fast
+             views=tuple(sniper.base_views[:2])
+             sniper.routes.save_copy('Spy UI route',views);sniper.apply_route(views)
+             clock=Clock();backend=SceneBackend(views,clock,fail_index=1);backend.cancel=spy.runner.cancel
+@@ -179,7 +184,8 @@
+             assert runner.cancel.is_set() and sniper.services.owner is None
+             assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
+             assert len(spy.history.encounters())==2
+-            completed.append(dict(passed=True,version=40,unique_gems=2,screenshots=2,
++            completed.append(dict(passed=True,version=41,unique_gems=2,screenshots=2,
++                                  fast_setting_cancel_preserved=True,fast_setting_saved=True,
+                                   passes=2,recovery_kept_progress=True,f10_stays_stopped=True,
+                                   heatmap_all_history=True,heatmap_zoom_pan=True,heatmap_viewport_bounded=True,
+                                   heatmap_three_part_import=True,heatmap_saved_map_reloaded=True,route_editor_uses_imported_map=True))
