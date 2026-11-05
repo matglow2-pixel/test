@@ -1,0 +1,1611 @@
+--- /dev/null
++++ b/LoongLens/CHANGELOG-v40.md
+@@ -0,0 +1,42 @@
++# v40 — MuMu mouse control and compact Loong Lens UI
++
++This build returns to the v37 codebase and removes the v38/v39 ADB capture/input
++changes. It uses desktop screenshots and guarded Windows mouse control for
++MuMuPlayer 6.8.9, Android 15, portrait 1080×1920 at 480 DPI, as supplied.
++
++MuMu's running game tab can be named Android Device or after the game. Window
++selection uses its process identity and portrait dimensions rather than requiring
++a BlueStacks title. The device manager, browser/document windows and unsupported
++landscape layouts are excluded. Native child-window bounds identify the Android
++viewport; when unavailable, its 9:16 portrait area is fitted below the top toolbar
++using native client edges. One transform drives capture, clicks, held drags and
++Map Tweaker markers. Toolbar/resize pixels receive no gameplay clicks or dots.
++A window move, resize, changed render child, loss of focus, cover or F10 releases
++mouse input and stops the current operation. No ADB executable or Android helper
++is included or called.
++
++Loong Lens defaults to 1000×760 rather than 1440×940, with a 960×720 minimum.
++Sidebar, text, card spacing, buttons and preview are compact. Start, Stop/F10,
++Reset, the daily counter, Obtained, Endless and settings stay accessible. The
++main window opens beside a visible MuMu window when the desktop has room.
++
++Exit the older Loong Lens completely, extract the whole folder and run the new
++LoongLens.exe (header v40). Start the MuMu Android device and launch the game;
++keep the portrait window with its toolbar at the top, visible/uncovered/focused.
++Use the game's default map zoom. Configure map-button positions in Sniper
++Settings if your saved calibration differs. The settings picker shows the same
++normalized game image used for route recognition and input.
++
++Existing routes, all histories/screenshots, game-day counter/reset, Obtained
++choices, Endless, 20-second collection/return, F10, route exclusions, four map
++control boxes and heatmap stay on the v37 behavior. No changes to world data,
++recognition atlas or detector assets. Existing LocalAppData data is retained.
++
++Validation includes all prior tests, pure geometry/window-identity regressions,
++source/frozen layout checks at 960×720, 1000×760 and 1120×800, plus actual Windows
++capture/mouse/hotkeys on a disposable MuMu-shaped window. The independent test
++uses the supplied 560×1033 frame, 40-pixel toolbar and 558×992 game surface, verifies
++atlas alignment and actual delivered click coordinates, held motion and F10.
++It does not run a live MuMu/Android game or establish real route speed. A full
++76-view atlas comparison with v37 and archive SHA256 verification are included.
++
+--- a/LoongLens/README.md
++++ b/LoongLens/README.md
+@@ -1,3 +1,46 @@
++# v40 — MuMu mouse control and compact Loong Lens UI
++
++This build returns to the v37 codebase and removes the v38/v39 ADB capture/input
++changes. It uses desktop screenshots and guarded Windows mouse control for
++MuMuPlayer 6.8.9, Android 15, portrait 1080×1920 at 480 DPI, as supplied.
++
++MuMu's running game tab can be named Android Device or after the game. Window
++selection uses its process identity and portrait dimensions rather than requiring
++a BlueStacks title. The device manager, browser/document windows and unsupported
++landscape layouts are excluded. Native child-window bounds identify the Android
++viewport; when unavailable, its 9:16 portrait area is fitted below the top toolbar
++using native client edges. One transform drives capture, clicks, held drags and
++Map Tweaker markers. Toolbar/resize pixels receive no gameplay clicks or dots.
++A window move, resize, changed render child, loss of focus, cover or F10 releases
++mouse input and stops the current operation. No ADB executable or Android helper
++is included or called.
++
++Loong Lens defaults to 1000×760 rather than 1440×940, with a 960×720 minimum.
++Sidebar, text, card spacing, buttons and preview are compact. Start, Stop/F10,
++Reset, the daily counter, Obtained, Endless and settings stay accessible. The
++main window opens beside a visible MuMu window when the desktop has room.
++
++Exit the older Loong Lens completely, extract the whole folder and run the new
++LoongLens.exe (header v40). Start the MuMu Android device and launch the game;
++keep the portrait window with its toolbar at the top, visible/uncovered/focused.
++Use the game's default map zoom. Configure map-button positions in Sniper
++Settings if your saved calibration differs. The settings picker shows the same
++normalized game image used for route recognition and input.
++
++Existing routes, all histories/screenshots, game-day counter/reset, Obtained
++choices, Endless, 20-second collection/return, F10, route exclusions, four map
++control boxes and heatmap stay on the v37 behavior. No changes to world data,
++recognition atlas or detector assets. Existing LocalAppData data is retained.
++
++Validation includes all prior tests, pure geometry/window-identity regressions,
++source/frozen layout checks at 960×720, 1000×760 and 1120×800, plus actual Windows
++capture/mouse/hotkeys on a disposable MuMu-shaped window. The independent test
++uses the supplied 560×1033 frame, 40-pixel toolbar and 558×992 game surface, verifies
++atlas alignment and actual delivered click coordinates, held motion and F10.
++It does not run a live MuMu/Android game or establish real route speed. A full
++76-view atlas comparison with v37 and archive SHA256 verification are included.
++
++
+ # Loong Lens v37
+ 
+ Fixes the map/filter stop reported in v36. The map-open check uses independent Back/zoom/world-tab controls when the old title image does not match its background. An open map is not tapped again at the gameplay minimap position. Transitional frames are rechecked without a fixed per-location wait. An already-open filter is dismissed once through the calibrated Back control; the resulting state is observed before another input. Failed recovery preserves progress and Stop/F10 stays stopped.
+@@ -36,7 +79,7 @@
+ 
+ ## Start
+ 
+-Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v35**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
++Exit the previous app completely and run **LoongLens.exe** from this folder. The header must show **v40**. Python and separate icon files are not needed. The portable download contains the EXE and this guide; the full package also includes source, assets and development checks.
+ 
+ The EXE bundles its own code. To run edited Python files, use RUN_LOONG_LENS.bat; editing adjacent source does not alter the EXE. The launcher activates an existing instance, so exit that instance before changing launchers.
+ 
+--- a/LoongLens/VALIDATION.md
++++ b/LoongLens/VALIDATION.md
+@@ -1,3 +1,46 @@
++# v40 — MuMu mouse control and compact Loong Lens UI
++
++This build returns to the v37 codebase and removes the v38/v39 ADB capture/input
++changes. It uses desktop screenshots and guarded Windows mouse control for
++MuMuPlayer 6.8.9, Android 15, portrait 1080×1920 at 480 DPI, as supplied.
++
++MuMu's running game tab can be named Android Device or after the game. Window
++selection uses its process identity and portrait dimensions rather than requiring
++a BlueStacks title. The device manager, browser/document windows and unsupported
++landscape layouts are excluded. Native child-window bounds identify the Android
++viewport; when unavailable, its 9:16 portrait area is fitted below the top toolbar
++using native client edges. One transform drives capture, clicks, held drags and
++Map Tweaker markers. Toolbar/resize pixels receive no gameplay clicks or dots.
++A window move, resize, changed render child, loss of focus, cover or F10 releases
++mouse input and stops the current operation. No ADB executable or Android helper
++is included or called.
++
++Loong Lens defaults to 1000×760 rather than 1440×940, with a 960×720 minimum.
++Sidebar, text, card spacing, buttons and preview are compact. Start, Stop/F10,
++Reset, the daily counter, Obtained, Endless and settings stay accessible. The
++main window opens beside a visible MuMu window when the desktop has room.
++
++Exit the older Loong Lens completely, extract the whole folder and run the new
++LoongLens.exe (header v40). Start the MuMu Android device and launch the game;
++keep the portrait window with its toolbar at the top, visible/uncovered/focused.
++Use the game's default map zoom. Configure map-button positions in Sniper
++Settings if your saved calibration differs. The settings picker shows the same
++normalized game image used for route recognition and input.
++
++Existing routes, all histories/screenshots, game-day counter/reset, Obtained
++choices, Endless, 20-second collection/return, F10, route exclusions, four map
++control boxes and heatmap stay on the v37 behavior. No changes to world data,
++recognition atlas or detector assets. Existing LocalAppData data is retained.
++
++Validation includes all prior tests, pure geometry/window-identity regressions,
++source/frozen layout checks at 960×720, 1000×760 and 1120×800, plus actual Windows
++capture/mouse/hotkeys on a disposable MuMu-shaped window. The independent test
++uses the supplied 560×1033 frame, 40-pixel toolbar and 558×992 game surface, verifies
++atlas alignment and actual delivered click coordinates, held motion and F10.
++It does not run a live MuMu/Android game or establish real route speed. A full
++76-view atlas comparison with v37 and archive SHA256 verification are included.
++
++
+ # v37 map-screen regression checks
+ 
+ Tests use real Back/zoom/world-tab control pixels extracted from the previously supplied recording, with the rest of the picture removed. No player name, chat or account information is included. The fixtures contain ordinary map controls only. Regressions cover weak title/background changes, gameplay's identical Back arrow, a covered zoom +, filter overlays, no extra minimap input on an open map, exactly one opener from gameplay, both Back behaviors, ignored Back, cancellation during filter recovery and refusing to count an unclosed map as inspected.
+--- a/LoongLens/dashboard_shell.py
++++ b/LoongLens/dashboard_shell.py
+@@ -6,23 +6,23 @@
+ class Sidebar:
+     def __init__(self,parent,notebook,on_exit):
+         self.notebook=notebook;self.images=[];self.buttons=[]
+-        self.frame=ttk.Frame(parent,style='Sidebar.TFrame',width=206,padding=(10,22,10,12))
++        self.frame=ttk.Frame(parent,style='Sidebar.TFrame',width=160,padding=(6,14,6,8))
+         self.frame.pack(side='left',fill='y');self.frame.pack_propagate(False)
+-        brand=ttk.Frame(self.frame,style='Sidebar.TFrame');brand.pack(fill='x',padx=8)
+-        art=gem_image(self.frame,38);self.images.append(art)
+-        ttk.Label(brand,image=art,style='Sidebar.TLabel').pack(side='left',padx=(0,7))
++        brand=ttk.Frame(self.frame,style='Sidebar.TFrame');brand.pack(fill='x',padx=6)
++        art=gem_image(self.frame,28);self.images.append(art)
++        ttk.Label(brand,image=art,style='Sidebar.TLabel').pack(side='left',padx=(0,5))
+         ttk.Label(brand,text='Loong Lens',style='Logo.TLabel').pack(side='left')
+-        ttk.Label(self.frame,text='v37',style='Sidebar.TLabel').pack(anchor='w',padx=55,pady=(4,0))
+-        ttk.Label(self.frame,text='Loong Haven companion',style='Sidebar.TLabel').pack(anchor='w',padx=12,pady=(12,20))
++        ttk.Label(self.frame,text='v40',style='Sidebar.TLabel').pack(anchor='w',padx=40,pady=(4,0))
++        ttk.Label(self.frame,text='Loong Haven companion',style='Sidebar.TLabel',wraplength=130).pack(anchor='w',padx=8,pady=(8,12))
+         ttk.Separator(self.frame).pack(fill='x',padx=6,pady=(0,12))
+         for index,(title,kind) in enumerate((('Map Tweaker','map'),('Gem Sniper','target'),('Gem Spy','gem'))):
+-            icon=gem_image(self.frame,26) if kind=='gem' else line_image(self.frame,kind,26)
++            icon=gem_image(self.frame,22) if kind=='gem' else line_image(self.frame,kind,22)
+             self.images.append(icon)
+             button=ttk.Button(self.frame,text='  '+title,image=icon,compound='left',style='Nav.TButton',
+                 command=lambda i=index:self.notebook.select(i))
+             button.pack(fill='x',pady=3);self.buttons.append(button)
+-        ttk.Button(self.frame,text='Exit',command=on_exit).pack(side='bottom',fill='x',padx=8)
+-        ttk.Label(self.frame,text='F10 · Emergency stop',style='Sidebar.TLabel').pack(side='bottom',anchor='w',padx=10,pady=14)
++        ttk.Button(self.frame,text='Exit',command=on_exit).pack(side='bottom',fill='x',padx=6)
++        ttk.Label(self.frame,text='F10 · Emergency stop',style='Sidebar.TLabel').pack(side='bottom',anchor='w',padx=6,pady=10)
+         self.notebook.bind('<<NotebookTabChanged>>',self.changed,add='+')
+ 
+     def changed(self,event=None):
+--- a/LoongLens/desktop_entry.py
++++ b/LoongLens/desktop_entry.py
+@@ -59,7 +59,7 @@
+                 if hasattr(self,'capture_user'):
+                     from window_capture import capture_window
+                     out=Path(__file__).resolve().parent/'artifacts';out.mkdir(exist_ok=True)
+-                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v37-layout-failure.png')
++                    capture_window(int(self.capture_user.GetAncestor(self.winfo_id(),2))).save(out/'v40-layout-failure.png')
+                 button=next((w for w in descendants(self) if isinstance(w,ttk.Button) and w.cget('text')=='Exit'),None)
+                 if button is None:self.destroy()
+                 else:button.invoke()
+@@ -94,6 +94,8 @@
+ 
+         def check(self):
+             assert self.title() == 'Loong Lens'
++            assert self.winfo_width()<=1000 and self.winfo_height()<=760
++            assert self.minsize()==(960,720)
+             # On Windows wm iconbitmap's getter can return an empty string
+             # after successfully loading an ICO. Verify the real setter/path
+             # and the native window's icon handles instead.
+@@ -207,11 +209,11 @@
+             # Visit every page at the minimum supported size. Primary controls
+             # must remain visible without resizing or scrolling.
+             panel.performance.set('Last view: 2.8s · Map/load 1.6s · Inspect 1.2s')
+-            for size in ('1000x820','1200x860','1440x940'):
++            for size in ('960x720','1000x760','1120x800'):
+                 self.geometry(size)
+                 self.update()
+                 self.check_layout(notebook,size)
+-            self.geometry('1440x940')
++            self.geometry('1000x760')
+             self.update()
+             from window_capture import capture_window
+             screenshots=Path(__file__).resolve().parent/'artifacts';screenshots.mkdir(exist_ok=True)
+@@ -221,7 +223,7 @@
+                 if i==2:spy.map_preview.thumbnail();self.update()
+                 wrapper=user.GetAncestor(self.winfo_id(),2)
+                 picture=capture_window(int(wrapper))
+-                picture.save(screenshots/('v37-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
++                picture.save(screenshots/('v40-'+('Map-Tweaker','Gem-Sniper','Gem-Spy')[i]+'.png'))
+             notebook.select(1);self.update()
+             # Sidebar commands select the existing pages, preserving controllers.
+             nav=[w for w in descendants(self) if isinstance(w,ttk.Button) and str(w.cget('style')).endswith('Nav.TButton')]
+@@ -293,19 +295,23 @@
+ 
+ 
+ def main():
+-    if len(sys.argv) == 3 and sys.argv[1] in ('--self-check-report', '--gui-check-report','--input-check-report'):
++    if len(sys.argv) == 3 and sys.argv[1] in ('--self-check-report', '--gui-check-report','--input-check-report','--mumu-check-report'):
+         path = Path(sys.argv[2])
+         try:
++            details={}
+             if sys.argv[1] == '--self-check-report':
+                 loong_lens.self_check()
+             elif sys.argv[1] == '--gui-check-report':
+                 gui_check()
++            elif sys.argv[1]=='--mumu-check-report':
++                from mumu_input_check import check_mumu_input
++                details=check_mumu_input()
+             else:
+                 check_native_input()
+-            result = {'passed': True, 'mode': sys.argv[1], 'version': 37}
++            result = {'passed': True, 'mode': sys.argv[1], 'version': 40, **details}
+             status = 0
+         except Exception:
+-            result = {'passed': False, 'mode': sys.argv[1], 'version': 37, 'error': traceback.format_exc()}
++            result = {'passed': False, 'mode': sys.argv[1], 'version': 40, 'error': traceback.format_exc()}
+             status = 1
+         path.write_text(json.dumps(result, indent=2), encoding='utf-8')
+         return status
+--- /dev/null
++++ b/LoongLens/emulator_view.py
+@@ -0,0 +1,98 @@
++"""MuMu desktop viewport geometry, shared by capture, input and overlay."""
++from dataclasses import dataclass
++import math
++from pathlib import PureWindowsPath
++import re
++
++import cv2
++import numpy as np
++from PIL import Image
++
++
++REFERENCE_GAME = (5, 34, 565, 1029)
++ANDROID_ASPECT = 1080 / 1920
++
++
++def mumu_device_window(title, executable, width, height):
++    """MuMu device tabs can be named Android Device or after the game."""
++    name = PureWindowsPath(executable).name.casefold()
++    known = name in ('mumunxdevice.exe', 'mumuplayer.exe', 'nemuplayer.exe',
++                     'mumunxmain.exe', 'mumuvmheadless.exe')
++    if not known:
++        return False
++    words = re.sub(r'[ _-]+', ' ', title.casefold())
++    if words in ('mumuplayer','mumu player') and name in ('mumuplayer.exe','mumunxmain.exe'):return False
++    if any(word in words for word in ('multi instance', 'multi player', 'manager',
++                                      'installer', '多开', '多開')):
++        return False
++    # The supplied device window is portrait; the MuMu device manager is wide.
++    return width >= 300 and height >= 500 and .43 <= width / height <= .64
++
++
++@dataclass(frozen=True)
++class GameView:
++    window: tuple  # root window x,y,width,height, used to detect movement
++    content: tuple  # Android pixels x,y,width,height, excludes desktop toolbar
++    child: int = 0
++
++    def __post_init__(self):
++        x, y, w, h = self.window
++        a, b, width, height = self.content
++        if not (w > 0 and h > 0 and width > 0 and height > 0 and
++                x <= a < a + width <= x + w and y <= b < b + height <= y + h):
++            raise ValueError('The Android view must lie inside its MuMu window.')
++
++    def point(self, reference):
++        x, y = reference
++        left, top, right, bottom = REFERENCE_GAME
++        if not (math.isfinite(x) and math.isfinite(y) and left <= x < right and top <= y < bottom):
++            raise RuntimeError('Mouse target is outside the MuMu game area, on its toolbar or border.')
++        a, b, w, h = self.content
++        return (min(a + w - 1, max(a, round(a + (x - left) * w / (right - left)))),
++                min(b + h - 1, max(b, round(b + (y - top) * h / (bottom - top)))))
++
++    def reference(self, native):
++        a, b, w, h = self.content
++        left, top, right, bottom = REFERENCE_GAME
++        return left + (native[0] - a) * (right - left) / w, top + (native[1] - b) * (bottom - top) / h
++
++    def normalize(self, image):
++        x, y, w, h = self.content
++        if image.shape[:2] != (h, w):
++            raise ValueError('MuMu capture size changed before normalization.')
++        left, top, right, bottom = REFERENCE_GAME
++        output = np.zeros((1029, 570, 3), np.uint8)
++        output[top:bottom, left:right] = cv2.resize(image[:, :, :3], (right - left, bottom - top), interpolation=cv2.INTER_AREA)
++        return output
++
++    def overlay(self, image):
++        """Undo normalization for markers; the toolbar never receives dots."""
++        return image.crop(REFERENCE_GAME).resize(self.content[2:], Image.Resampling.LANCZOS)
++
++
++def portrait_view(window, client, children=()):
++    """Prefer an actual Android child window; otherwise fit the known 9:16 view.
++
++    The fallback follows the supplied MuMu 6.8.9 layout: a top toolbar, one
++    portrait game surface and the native border. Native hit testing supplies
++    the client edges; no arbitrary mouse padding is introduced.
++    """
++    left, top, right, bottom = client
++    width, height = right - left, bottom - top
++    if width < 250 or height < 450:
++        raise RuntimeError('MuMu has no usable portrait game area.')
++    candidates = []
++    for hwnd, rect in children:
++        x, y, w, h = rect
++        if (w >= width * .8 and h > 450 and abs(w / h - ANDROID_ASPECT) < .004 and
++                left <= x and top <= y and x + w <= right and y + h <= bottom and
++                bottom - y - h < max(5, height * .01)):
++            candidates.append((hwnd, rect))
++    if candidates:
++        hwnd, rect = max(candidates, key=lambda item: item[1][2] * item[1][3])
++        return GameView(tuple(window), tuple(rect), int(hwnd))
++    game_height = round(width / ANDROID_ASPECT)
++    toolbar = height - game_height
++    if toolbar < 0 or toolbar > max(100, width * .18):
++        raise RuntimeError('Use MuMu’s portrait window with its toolbar at the top, as in your screenshots.')
++    return GameView(tuple(window), (left, bottom - game_height, width, game_height))
+--- a/LoongLens/gem_watch.py
++++ b/LoongLens/gem_watch.py
+@@ -1,4 +1,4 @@
+-"""Gem Watch — visible-gameplay alerts for Windows / BlueStacks."""
++"""Gem Watch — visible-gameplay alerts for Windows / MuMu."""
+ from __future__ import annotations
+ import argparse
+ import json
+--- a/LoongLens/gem_watch_panel.py
++++ b/LoongLens/gem_watch_panel.py
+@@ -88,7 +88,7 @@
+         footer=ttk.Frame(body)
+         footer.pack(side='bottom',fill='x')
+         ttk.Label(footer, textvariable=self.sighting_controls.summary, style='Muted.TLabel', wraplength=470).pack(anchor='w', pady=(10,4))
+-        ttk.Label(footer, text='Pink boxes mark gem candidates. Keep BlueStacks visible.\nHistory & screenshots: 20-second cooldown. Sound: 30 seconds.', style='Muted.TLabel', font=(FONT,9)).pack(anchor='w')
++        ttk.Label(footer, text='Pink boxes mark gem candidates. Keep MuMu visible.\nHistory & screenshots: 20-second cooldown. Sound: 30 seconds.', style='Muted.TLabel', font=(FONT,9)).pack(anchor='w')
+         ttk.Label(footer, textvariable=self.metrics, style='Muted.TLabel', font=(FONT,9), wraplength=470).pack(anchor='w', pady=(7,0))
+         viewport = tk.Frame(body, bg=CARD, height=260)
+         viewport.pack(fill='both', expand=True); viewport.pack_propagate(False)
+@@ -119,14 +119,14 @@
+             self.paused = False
+             self.worker.watch_game()
+             self.start_button.configure(text='Pause')
+-            self.state.set('Returning to live BlueStacks capture…')
++            self.state.set('Returning to live MuMu capture…')
+             self.last_alert.set('Live mode — previous photo alerts were tests')
+             self.last_frame = None
+             return
+         self.paused = not self.paused
+         self.worker.configure(paused=self.paused)
+         self.start_button.configure(text='Start watching' if self.paused else 'Pause')
+-        self.state.set('Paused' if self.paused else 'Looking for BlueStacks…')
++        self.state.set('Paused' if self.paused else 'Looking for MuMu…')
+ 
+     def test_image(self):
+         if self.patrol_busy:return
+@@ -174,7 +174,7 @@
+         snapshot = self.worker.get()
+         frame = snapshot['frame']
+         if frame is None:
+-            messagebox.showinfo('Scan area','Start watching with BlueStacks visible first.',parent=self.root)
++            messagebox.showinfo('Scan area','Start watching with MuMu visible first.',parent=self.root)
+             return
+         if self.selector is not None and self.selector.winfo_exists():
+             self.selector.lift();return
+@@ -255,7 +255,7 @@
+                 self.preview.configure(image=self.preview_photo,text='')
+             if frame is None:
+                 self.last_frame = None
+-                self.preview.configure(image='',text='Keep BlueStacks visible to capture gameplay')
++                self.preview.configure(image='',text='Keep MuMu visible to capture gameplay')
+             self.metrics.set(f"Last scan: {snapshot['scan_ms']:.0f} ms · target 2 scans/sec\nConfirm: 3 sightings over 0.8 sec · re-arm after 10 sec absent")
+         except Exception:
+             logging.exception('Gem Watch panel update failed')
+--- a/LoongLens/gem_watch_worker.py
++++ b/LoongLens/gem_watch_worker.py
+@@ -46,7 +46,7 @@
+             with self.lock:
+                 self.sightings.extend(events)
+ 
+-    def capture_due(self, now, frame=None, target=None, reason='BlueStacks was not visible at capture time.', generation=None):
++    def capture_due(self, now, frame=None, target=None, reason='MuMu was not visible at capture time.', generation=None):
+         if self.capture is None:
+             return
+         with self.lock:
+@@ -63,7 +63,7 @@
+                     rows = max(2, (h+23)//24)
+                     unobscured = all(self.visible_at(hwnd,x+px,y+py)
+                         for py in np.linspace(10,h-11,rows) for px in np.linspace(10,w-11,columns))
+-                    reason = 'Another window covered BlueStacks at the five-second capture.'
++                    reason = 'Another window covered MuMu at the five-second capture.'
+                 self.capture.due(now, frame, target, unobscured, reason)
+             self.sightings.extend(self.capture.poll())
+ 
+@@ -105,7 +105,7 @@
+             self.reset_requested = True
+             self.generation += 1
+             self.alerts.clear()
+-            self.snapshot.update(state='Returning to live BlueStacks capture…', frame=None,
++            self.snapshot.update(state='Returning to live MuMu capture…', frame=None,
+                                  detections=[], rect=None, test_mode=False)
+ 
+     def get(self):
+@@ -173,7 +173,7 @@
+             self.capture_due(now)
+             self.gate.reset()
+             self.target = None
+-            self.publish(state='Waiting for a visible BlueStacks window', frame=None, detections=[])
++            self.publish(state='Waiting for a visible MuMu window', frame=None, detections=[])
+             return
+         hwnd, rect = target
+         x,y,w,h = rect
+@@ -185,8 +185,8 @@
+         if not any(self.visible_at(hwnd, x+w*fx, y+h*fy)
+                    for fx,fy in [(.25,.4),(.5,.4),(.75,.4),(.25,.65),(.5,.65),(.75,.65)]):
+             self.gate.reset()
+-            self.capture_due(now, reason='BlueStacks was covered at the five-second capture.')
+-            self.publish(state='BlueStacks is covered — keep the game visible', frame=None, detections=[])
++            self.capture_due(now, reason='MuMu was covered at the five-second capture.')
++            self.publish(state='MuMu is covered — keep the game visible', frame=None, detections=[])
+             return
+         frame = np.asarray(screen.grab(dict(left=x,top=y,width=w,height=h)))[:,:,:3].copy()
+         self.capture_due(time.perf_counter(), frame, target, generation=generation)
+--- a/LoongLens/loong_lens.py
++++ b/LoongLens/loong_lens.py
+@@ -1,4 +1,4 @@
+-"""Loong Lens — combined Windows / BlueStacks Map Tweaker, Gem Sniper and Gem Spy."""
++"""Loong Lens — combined Windows / MuMu Map Tweaker, Gem Sniper and Gem Spy."""
+ from __future__ import annotations
+ import argparse
+ import json
+@@ -58,11 +58,12 @@
+         self_check()
+         return
+     if sys.platform != 'win32':
+-        parser.error('The live overlay requires Windows 10/11 and BlueStacks. Use --self-check for offline validation.')
++        parser.error('The live overlay requires Windows 10/11 and MuMu. Use --self-check for offline validation.')
+     import cv2
+     cv2.setNumThreads(2)
+     # Activate DPI awareness before Tk creates any window.
+     from win_overlay import PixelAlphaOverlay, find_emulator
++    import win_overlay
+     import tkinter as tk
+     from tkinter import ttk, messagebox
+     from resources import ResourceStore, Renderer, COLORS, user_dir
+@@ -77,7 +78,7 @@
+     folder.mkdir(parents=True, exist_ok=True)
+     logging.basicConfig(filename=folder / 'loonglens.log', level=logging.INFO,
+                         format='%(asctime)s %(levelname)s %(message)s')
+-    logging.getLogger('loonglens').info('Loong Lens v37 executable=%s source=%s',sys.executable,Path(__file__).resolve())
++    logging.getLogger('loonglens').info('Loong Lens v40 executable=%s source=%s',sys.executable,Path(__file__).resolve())
+     settings_path = folder / 'settings.json'
+     coordinates_path = folder / 'coordinates.csv'
+     settings = {}
+@@ -97,12 +98,19 @@
+             # The running window uses the optimized transparent art. The EXE
+             # keeps its separate white badge for Explorer/desktop display.
+             self.root.iconbitmap(str(Path(__file__).resolve().parent / 'LoongLens-Original-Optimized.ico'))
+-            width=max(1000,min(1440,self.root.winfo_screenwidth()-60))
+-            height=max(820,min(940,self.root.winfo_screenheight()-100))
++            width=max(960,min(1000,self.root.winfo_screenwidth()-60))
++            height=max(720,min(760,self.root.winfo_screenheight()-100))
+             left=max(0,(self.root.winfo_screenwidth()-width)//2)
+             top=max(0,(self.root.winfo_screenheight()-height-40)//2)
++            try:
++                target=win_overlay.find_visible_emulator()
++                if target is not None:
++                    x,y,w,h=target[1]
++                    if 0<=x+w+12<=self.root.winfo_screenwidth()-width:left=x+w+12
++                    elif 0<=x-width-12<=self.root.winfo_screenwidth()-width:left=x-width-12
++            except Exception:pass
+             self.root.geometry(f'{width}x{height}+{left}+{top}')
+-            self.root.minsize(1000,820)
++            self.root.minsize(960,720)
+             self.root.configure(bg='#0c1622')
+             self.root.protocol('WM_DELETE_WINDOW', self.close)
+             self.closed = False
+@@ -125,7 +133,7 @@
+             self.pickups = PickupControls(self.root, self.history, self.store, self.changed,
+                                           default_minutes=int(self.setting_number('reminder_minutes', 30, 1, 1440)))
+             self.overlay = PixelAlphaOverlay()
+-            self.worker = VisualWorker(find_emulator, folder, fps=45)
++            self.worker = VisualWorker(getattr(win_overlay,'find_game_view',find_emulator), folder, fps=45)
+             saved_layers = settings.get('layers', {})
+             if not isinstance(saved_layers, dict):
+                 saved_layers = {}
+@@ -140,7 +148,7 @@
+             self.size = tk.IntVar(value=self.setting_number('size', 5, 3, 9))
+             self.opacity = tk.DoubleVar(value=self.setting_number('opacity', .85, .3, 1.))
+             self.state = tk.StringVar(value='Preparing atlas…')
+-            self.info = tk.StringVar(value='Bring BlueStacks to the foreground')
++            self.info = tk.StringVar(value='Bring MuMu to the foreground')
+             self.count = tk.StringVar(value='Waiting for the Loong Haven map')
+             self.metrics = tk.StringVar(value='Recognition runs in the background')
+             self.build_ui()
+@@ -177,11 +185,11 @@
+             self.notebook.add(self.map_tab,text='Map Tweaker')
+             self.notebook.add(self.live_tab,text='Gem Sniper')
+             self.notebook.add(self.spy_tab,text='Gem Spy')
+-            body = ttk.Frame(self.map_tab, padding=(20, 18))
++            body = ttk.Frame(self.map_tab, padding=(12, 12))
+             body.pack(fill='both', expand=True)
+             heading(body, 'Map Tweaker', 'Spawn locations, gathering areas and recent gem sightings.')
+             columns=ttk.Frame(body);columns.pack(fill='both',expand=True)
+-            left=ttk.Frame(columns);left.pack(side='left',fill='both',expand=True,padx=(0,16))
++            left=ttk.Frame(columns);left.pack(side='left',fill='both',expand=True,padx=(0,10))
+             right=ttk.Frame(columns);right.pack(side='left',fill='both',expand=True)
+             status = card(left,'Live alignment')
+             ttk.Label(status, textvariable=self.state, style='Status.TLabel', wraplength=450).pack(anchor='w')
+@@ -228,7 +236,7 @@
+         def save_debug(self):
+             diagnostic=self.worker.get_diagnostics()
+             if diagnostic is None:
+-                messagebox.showinfo('Map diagnostics','Open the map and bring BlueStacks to the foreground for a few seconds first.',parent=self.root)
++                messagebox.showinfo('Map diagnostics','Open the map and bring MuMu to the foreground for a few seconds first.',parent=self.root)
+                 return
+             frame, details=diagnostic
+             details['capture_age_seconds']=round(time.perf_counter()-details.pop('age_reference'),2)
+@@ -237,7 +245,7 @@
+             details['panel_info']=self.info.get()
+             details['overlay_created']=bool(self.overlay.hwnd)
+             details['overlay_capture_excluded']=self.overlay.excluded_from_capture
+-            details['version']='Gem Spy v37; persistent observations and recovery'
++            details['version']='Gem Spy v40; persistent observations and recovery'
+             try:
+                 success,encoded=cv2.imencode('.png',frame)
+                 if not success:raise OSError('Could not encode the captured map.')
+@@ -299,11 +307,13 @@
+                 else:
+                     rect = snapshot['rect']
+                     start = time.perf_counter()
+-                    image, counts, changed = self.renderer.render(rect[2:], snapshot['match'], enabled,
++                    geometry=snapshot.get('geometry')
++                    image, counts, changed = self.renderer.render((570,1029) if geometry is not None else rect[2:], snapshot['match'], enabled,
+                                              self.size.get(), self.opacity.get(), self.fill.get(),
+                                              pickup_markers=self.pickups.markers if self.show_timers.get() else (),
+                                              sighting_markers=self.sightings.sighting_history.active_markers()
+                                                  if self.show_sighting_timers.get() and enabled['gems'] else ())
++                    if geometry is not None and (changed or self.last_rect!=rect):image=geometry.overlay(image)
+                     self.render_ms = (time.perf_counter() - start) * 1000
+                     if changed or self.last_rect != rect:
+                         start = time.perf_counter()
+--- /dev/null
++++ b/LoongLens/mumu_input_check.py
+@@ -0,0 +1,132 @@
++"""Native Windows checks on a disposable MuMu-shaped Tk device window."""
++import ctypes
++from ctypes import wintypes
++from pathlib import Path
++import queue
++import threading
++import time
++import tkinter as tk
++
++import cv2
++import numpy as np
++from PIL import Image, ImageTk
++
++from emulator_view import REFERENCE_GAME
++from patrol_windows import WindowsBackend, GlobalPatrolKeys, PatrolStopped
++from resources import ROOT
++
++
++def map_fixture():
++    atlas=cv2.imread(str(ROOT/'loong_haven_default_atlas.png'))
++    tx=285-130*12.45;ty=530+160*12.45
++    frame=cv2.warpAffine(atlas,np.float32([[1,0,tx],[0,1,ty-279*12.45]]),(570,1029))
++    controls=cv2.imread(str(ROOT/'tests/fixtures/map-controls.png'))
++    for l,t,r,b in ((12,938,124,1026),(520,620,557,927),(138,940,555,1016)):
++        frame[t:b,l:r]=controls[t:b,l:r]
++    title=cv2.imread(str(ROOT/'loong_title_template.png'));h,w=title.shape[:2]
++    frame[55:55+h,20:20+w]=title
++    return frame
++
++
++def check_mumu_input():
++    import win_overlay
++    cv2.setNumThreads(2)
++    root=tk.Tk();root.title('Android Device');root.overrideredirect(True)
++    root.geometry('560x1033+40+0');root.configure(bg='#222222')
++    toolbar=tk.Frame(root,bg='#242424');toolbar.place(x=0,y=0,width=560,height=40)
++    tk.Label(toolbar,text='Android Device',bg='#242424',fg='white').pack(side='left',padx=8)
++    toolbar_clicks=[]
++    tk.Button(toolbar,text='Keyboard',command=lambda:toolbar_clicks.append(True)).pack(side='right')
++    canvas=tk.Canvas(root,bg='#152a32',highlightthickness=0,borderwidth=0)
++    canvas.place(x=1,y=40,width=558,height=992)
++    expected=map_fixture();l,t,r,b=REFERENCE_GAME
++    source=cv2.cvtColor(expected[t:b,l:r],cv2.COLOR_BGR2RGB)
++    photo=ImageTk.PhotoImage(Image.fromarray(source).resize((558,992),Image.Resampling.BILINEAR),master=root)
++    canvas.create_image(0,0,image=photo,anchor='nw');canvas.photo=photo
++    manager=tk.Toplevel(root);manager.title('MuMuPlayer');manager.geometry('860x580+800+60')
++    tk.Label(manager,text='Disposable MuMu device manager — must not be selected').pack()
++    decoy=tk.Toplevel(root);decoy.title('MuMuPlayer documentation');decoy.geometry('400x650+1100+160')
++    counts={'down':0,'up':0,'motion':0};positions=[];result=queue.Queue();completed=[]
++    canvas.bind('<ButtonPress-1>',lambda e:(counts.update(down=counts['down']+1),positions.append((e.x_root,e.y_root))))
++    canvas.bind('<ButtonRelease-1>',lambda e:counts.update(up=counts['up']+1))
++    canvas.bind('<B1-Motion>',lambda e:counts.update(motion=counts['motion']+1))
++    saved_name=win_overlay.process_name
++    user=ctypes.WinDLL('user32',use_last_error=True)
++    user.GetAncestor.argtypes=[wintypes.HWND,wintypes.UINT];user.GetAncestor.restype=wintypes.HWND
++    ids={};thread=[None]
++
++    def start():
++        for name,window in (('device',root),('manager',manager),('decoy',decoy)):
++            ids[name]=int(user.GetAncestor(window.winfo_id(),2))
++        def executable(hwnd):
++            return ('MuMuNxDevice.exe' if hwnd==ids['device'] else
++                    'MuMuPlayer.exe' if hwnd==ids['manager'] else
++                    'chrome.exe' if hwnd==ids['decoy'] else saved_name(hwnd))
++        win_overlay.process_name=executable
++        def run():
++            cancel=threading.Event();keys=None
++            try:
++                with WindowsBackend(cancel) as backend:
++                    backend.focus()
++                    assert backend.target[0]==ids['device'],'Manager or browser was selected'
++                    assert backend.view is not None
++                    x,y,w,h=backend.view.content
++                    assert (x,y,w,h)==(41,40,558,992),backend.view
++                    assert win_overlay.find_game_view()==backend.view
++                    original_clip=backend.api.clip_rect();before=backend.api.cursor()
++                    try:backend.click((285,20))
++                    except RuntimeError as exc:assert 'border' in str(exc)
++                    else:raise AssertionError('Toolbar accepted a gameplay click')
++                    assert backend.api.cursor()==before and backend.api.clip_rect()==original_clip
++                    frame=backend.capture()
++                    assert frame.shape==(1029,570,3) and not frame[:34].any()
++                    from vision import TitleDetector,Calibrator
++                    assert TitleDetector().score(frame)>=.64
++                    pose=Calibrator().locate(frame)
++                    assert pose is not None and abs(pose.scale-12.45)<.15
++                    assert np.linalg.norm(np.asarray(pose.project(130,160))-np.array((285,530)))<4
++                    backend.click((285,530));backend.wait(.1)
++                    # Independent native coordinates from the supplied body
++                    # dimensions, not from the conversion under test.
++                    assert positions and positions[-1]==(320,535),positions
++                    with backend.hold_drag((285,530)):
++                        backend.drag_held_to((380,450));backend.capture()
++                        assert backend.api.left_down() and backend.api.clip_rect()==(41,40,599,1032)
++                    assert not backend.down and backend.api.clip_rect()==original_clip
++                    keys=GlobalPatrolKeys(lambda:None,lambda:(cancel.set(),backend.release()))
++                    try:
++                        with backend.hold_drag((285,530)):
++                            backend.drag_held_to((300,500))
++                            backend.api.key(0x79);backend.api.key(0x79,up=True)
++                            if not cancel.wait(2):raise AssertionError('F10 did not cancel the MuMu hold')
++                            backend.wait(.01)
++                    except PatrolStopped:pass
++                    else:raise AssertionError('F10 did not stop input')
++                    assert not backend.down and not backend.api.left_down()
++                    assert backend.api.clip_rect()==original_clip
++                assert not toolbar_clicks
++                result.put(None)
++            except Exception:
++                import traceback
++                result.put(traceback.format_exc())
++            finally:
++                if keys is not None:keys.close()
++        thread[0]=threading.Thread(target=run,daemon=True);thread[0].start()
++
++    def finish():
++        try:error=result.get_nowait()
++        except queue.Empty:root.after(100,finish);return
++        completed.append(error);root.destroy()
++    root.after(500,start);root.after(600,finish)
++    root.after(90000,lambda:(completed.append('MuMu input check timed out'),root.destroy()))
++    try:root.mainloop()
++    finally:
++        win_overlay.process_name=saved_name
++        win_overlay._game_views.clear()
++        if thread[0] is not None:thread[0].join(3)
++    assert completed and completed[0] is None,completed
++    assert counts['down']>=3 and counts['up']>=3 and counts['motion']>0,counts
++    return dict(device_window_selected=True,manager_and_browser_ignored=True,
++        toolbar_excluded=True,capture_input_overlay_geometry=True,map_alignment_verified=True,
++        native_game_click_delivered=True,held_drag_delivered=True,f10_released=True,
++        scope='Actual Win32 mouse/capture/hotkeys on a simulated MuMu 6.8.9-shaped window. No live MuMu game session.')
+--- a/LoongLens/patrol_live.py
++++ b/LoongLens/patrol_live.py
+@@ -30,7 +30,7 @@
+     def __post_init__(self):
+         for x,y in (self.map_open,self.map_close):
+             if not (math.isfinite(x) and math.isfinite(y) and 0<=x<570 and 0<=y<1029):
+-                raise ValueError('Choose map buttons inside the BlueStacks screenshot.')
++                raise ValueError('Choose map buttons inside the MuMu screenshot.')
+         if not (math.isfinite(self.settle_seconds) and .2<=self.settle_seconds<=10
+                 and math.isfinite(self.inspect_seconds) and 1.2<=self.inspect_seconds<=10
+                 and .5<=self.threshold<=.99):raise ValueError('Invalid patrol timing or detector settings.')
+--- a/LoongLens/patrol_live_panel.py
++++ b/LoongLens/patrol_live_panel.py
+@@ -1,4 +1,4 @@
+-"""User-controlled real BlueStacks input and patrol status/history integration."""
++"""User-controlled real MuMu input and patrol status/history integration."""
+ from concurrent.futures import ThreadPoolExecutor
+ from dataclasses import asdict,replace
+ import json
+@@ -70,53 +70,54 @@
+         self.gems_value=tk.StringVar(value='0');self.elapsed_value=tk.StringVar(value='00:00')
+         self.views_value=tk.StringVar();self.spots_value=tk.StringVar();self.progress_value=tk.StringVar();self.skip_value=tk.StringVar()
+         self.run_state=tk.StringVar(value='Ready')
+-        body=ttk.Frame(self.parent,padding=(22,20));body.pack(fill='both',expand=True)
++        body=ttk.Frame(self.parent,padding=(12,12));body.pack(fill='both',expand=True)
+         self.body=body
+-        header=ttk.Frame(body);header.pack(fill='x',pady=(0,18))
++        header=ttk.Frame(body);header.pack(fill='x',pady=(0,10))
+         intro=ttk.Frame(header);intro.pack(side='left',fill='x',expand=True)
+         ttk.Label(intro,text='Gem Sniper',style='Title.TLabel').pack(anchor='w')
+         ttk.Label(intro,text='Find gems, collect, and return to Emerald Corner.',style='Muted.TLabel').pack(anchor='w',pady=(4,0))
+-        quota=ttk.Frame(header,style='Panel.TFrame',padding=(16,10));quota.pack(side='right',padx=(12,0))
+-        art=gem_image(quota,36);self.ui_images.append(art)
++        quota=ttk.Frame(header,style='Panel.TFrame',padding=(10,7));quota.pack(side='right',padx=(12,0))
++        art=gem_image(quota,28);self.ui_images.append(art)
+         ttk.Label(quota,image=art,style='Card.TLabel').pack(side='left',padx=(0,10))
+-        ttk.Label(quota,text='Daily gems',style='Card.TLabel').pack(side='left',padx=(0,16))
++        ttk.Label(quota,text='Daily gems',style='Card.TLabel').pack(side='left',padx=(0,10))
+         self.seen_label=ttk.Label(quota,textvariable=self.seen_text,style='Quota.TLabel',cursor='hand2')
+         self.seen_label.pack(side='left')
+         for w in (quota,*quota.winfo_children()):w.bind('<Button-1>',lambda _:self.show_daily_gems())
+         # Action bar remains visible while the middle area grows with the window.
+-        footer=ttk.Frame(body);footer.pack(side='bottom',fill='x',pady=(12,0))
+-        ttk.Label(footer,text='Click Daily gems to edit obtained finds. Keep BlueStacks visible. On a gem: collect, wait 20s, return to Emerald Corner.',
+-                  style='Muted.TLabel',font=(FONT,9),wraplength=1100).pack(anchor='w',pady=(9,0),side='bottom')
+-        actions=ttk.Frame(footer,style='Panel.TFrame',padding=12);actions.pack(fill='x')
++        footer=ttk.Frame(body);footer.pack(side='bottom',fill='x',pady=(8,0))
++        ttk.Label(footer,text='Click Daily gems to edit obtained finds. Keep MuMu visible. On a gem: collect, wait 20s, return to Emerald Corner.',
++                  style='Muted.TLabel',font=(FONT,9),wraplength=740).pack(anchor='w',pady=(9,0),side='bottom')
++        actions=ttk.Frame(footer,style='Panel.TFrame',padding=8);actions.pack(fill='x')
+         play=line_image(actions,'play',20,'#073334');self.ui_images.append(play)
+-        self.snipe=ttk.Button(actions,text='Start sniping',image=play,compound='left',style='Primary.TButton',command=self.start,padding=(20,13))
++        self.snipe=ttk.Button(actions,text='Start sniping',image=play,compound='left',style='Primary.TButton',command=self.start,padding=(12,9))
+         self.snipe.pack(side='left')
+-        loop=ttk.Frame(actions,style='Card.TFrame');loop.pack(side='left',padx=18)
++        loop=ttk.Frame(actions,style='Card.TFrame');loop.pack(side='left',padx=10)
+         self.repeat=ttk.Checkbutton(loop,text='  Loop sniping',variable=self.loop_mode,style='Switch.TCheckbutton')
+         self.repeat.pack(anchor='w')
+         ttk.Label(loop,text='Repeat full routes · F10 stops',style='CardMuted.TLabel').pack(anchor='w')
+         reset_icon=line_image(actions,'reset',20);self.ui_images.append(reset_icon)
+-        self.reset_button=ttk.Button(actions,text='Reset checks',image=reset_icon,compound='left',command=self.reset,padding=(14,13))
++        self.reset_button=ttk.Button(actions,text='Reset checks',image=reset_icon,compound='left',command=self.reset,padding=(10,9))
+         self.reset_button.pack(side='right')
+         stop_icon=line_image(actions,'stop',18,'#ffb9c9');self.ui_images.append(stop_icon)
+-        self.stop_button=ttk.Button(actions,text='Stop  F10',image=stop_icon,compound='left',style='Stop.TButton',command=self.stop,padding=(20,13))
+-        self.stop_button.pack(side='right',padx=(0,14))
++        self.stop_button=ttk.Button(actions,text='Stop  F10',image=stop_icon,compound='left',style='Stop.TButton',command=self.stop,padding=(12,9))
++        self.stop_button.pack(side='right',padx=(0,9))
+         middle=ttk.Frame(body);middle.pack(fill='both',expand=True)
+-        middle.columnconfigure(0,weight=3);middle.columnconfigure(1,weight=1,minsize=210);middle.rowconfigure(0,weight=1)
+-        stack=ttk.Frame(middle);stack.grid(row=0,column=0,sticky='nsew',padx=(0,16))
++        middle.columnconfigure(0,weight=1);middle.columnconfigure(1,weight=0,minsize=190);middle.rowconfigure(0,weight=1)
++        middle.bind('<Configure>',lambda e:middle.columnconfigure(1,minsize=max(170,min(240,round(e.width*.23)))))
++        stack=ttk.Frame(middle);stack.grid(row=0,column=0,sticky='nsew',padx=(0,10))
+         self.controls=controls=card(stack,'Sniping controls')
+         controls.columnconfigure(0,weight=1)
+         fields=ttk.Frame(controls,style='Card.TFrame');fields.pack(side='left',fill='both',expand=True)
+         line=row(fields)
+         ttk.Label(line,text='Snipe key',style='Card.TLabel',width=9).pack(side='left')
+         self.key_box=ttk.Combobox(line,textvariable=self.key,values=('F6','F7','F8','F9'),state='readonly',width=5)
+-        self.key_box.pack(side='left',padx=(0,14));self.key_box.bind('<<ComboboxSelected>>',self.change_key)
++        self.key_box.pack(side='left',padx=(0,9));self.key_box.bind('<<ComboboxSelected>>',self.change_key)
+         self.edit_button=ttk.Button(line,text='Edit route',command=self.show_route_editor,padding=(12,7));self.edit_button.pack(side='left')
+-        line=row(fields);line.pack_configure(pady=(12,0))
++        line=row(fields);line.pack_configure(pady=(8,0))
+         ttk.Label(line,text='Route',style='Card.TLabel',width=9).pack(side='left')
+         self.route_box=ttk.Combobox(line,textvariable=self.route_name,state='readonly',width=15)
+         self.route_box.pack(side='left',fill='x',expand=True);self.route_box.bind('<<ComboboxSelected>>',self.change_route)
+-        tools=ttk.Frame(controls,style='Card.TFrame',padding=(12,0,0,0));tools.pack(side='right',fill='y')
++        tools=ttk.Frame(controls,style='Card.TFrame',padding=(8,0,0,0));tools.pack(side='right',fill='y')
+         icon=line_image(tools,'history',18);self.ui_images.append(icon)
+         self.history_button=ttk.Button(tools,text='History',image=icon,compound='left',command=self.show_history,padding=(9,6));self.history_button.pack(fill='x')
+         icon=line_image(tools,'settings',18);self.ui_images.append(icon)
+@@ -130,25 +131,25 @@
+         metrics=ttk.Frame(status,style='Card.TFrame');metrics.pack(fill='x')
+         self.metric_frames=[];self.metric_fonts=[]
+         from tkinter import font as tkfont
+-        self.metric_probe=tkfont.Font(root=self.root,family=FONT,size=20,weight='bold')
++        self.metric_probe=tkfont.Font(root=self.root,family=FONT,size=16,weight='bold')
+         for index,(label,value,kind) in enumerate((('Gems found',self.gems_value,'gem'),('Time spent',self.elapsed_value,'clock'),('Views checked',self.views_value,'map'),('Spawn spots',self.spots_value,'target'))):
+             metrics.columnconfigure(index,weight=1,uniform='metrics')
+-            tile=ttk.Frame(metrics,style='Panel.TFrame',padding=(7,8));tile.grid(row=0,column=index,sticky='nsew',padx=(0,8 if index<3 else 0));self.metric_frames.append(tile)
++            tile=ttk.Frame(metrics,style='Panel.TFrame',padding=(6,6));tile.grid(row=0,column=index,sticky='nsew',padx=(0,8 if index<3 else 0));self.metric_frames.append(tile)
+             ttk.Label(tile,text=label,style='CardMuted.TLabel').pack(anchor='w')
+             line=row(tile)
+-            icon=gem_image(tile,26) if kind=='gem' else line_image(tile,kind,22)
++            icon=gem_image(tile,22) if kind=='gem' else line_image(tile,kind,20)
+             self.ui_images.append(icon);ttk.Label(line,image=icon,style='Card.TLabel').pack(side='left',padx=(0,5))
+             from tkinter import font as tkfont
+-            numeric_font=tkfont.Font(root=self.root,family=FONT,size=18,weight='bold');self.metric_fonts.append(numeric_font)
++            numeric_font=tkfont.Font(root=self.root,family=FONT,size=16,weight='bold');self.metric_fonts.append(numeric_font)
+             value_label=ttk.Label(line,textvariable=value,style='Metric.TLabel',font=numeric_font);value_label.pack(side='left')
+             measured=[None]
+             def fit_metric(event=None,tile=tile,value=value,font=numeric_font,measured=measured):
+                 key=(tile.winfo_width(),value.get())
+                 if key==measured[0]:return
+-                measured[0]=key;available=max(35,key[0]-58);chosen=11
++                measured[0]=key;available=max(35,key[0]-42);chosen=11
+                 # Measure with an unbound font. Mutating the displayed font
+                 # while probing sizes can continually invalidate Tk geometry.
+-                for size in range(20,10,-1):
++                for size in range(18,10,-1):
+                     self.metric_probe.configure(size=size)
+                     if self.metric_probe.measure(key[1])<=available:chosen=size;break
+                 if int(font.cget('size'))!=chosen:font.configure(size=chosen)
+@@ -162,12 +163,12 @@
+         ttk.Label(status,textvariable=self.skip_value,style='CardMuted.TLabel').pack(anchor='w')
+         ttk.Label(status,textvariable=self.performance,style='CardMuted.TLabel',wraplength=600).pack(anchor='w',pady=(3,0))
+         ttk.Label(status,textvariable=self.pass_text,style='CardMuted.TLabel',wraplength=600).pack(anchor='w',pady=(3,0))
+-        preview_card=ttk.Frame(middle,style='Panel.TFrame',padding=14)
++        preview_card=ttk.Frame(middle,style='Panel.TFrame',padding=10)
+         preview_card.grid(row=0,column=1,sticky='nsew')
+         ttk.Label(preview_card,text='Live preview',style='CardTitle.TLabel').pack(anchor='w',pady=(0,10))
+-        ttk.Label(preview_card,textvariable=self.location,style='CardMuted.TLabel',wraplength=260).pack(side='bottom',anchor='w',pady=(12,0))
++        ttk.Label(preview_card,textvariable=self.location,style='CardMuted.TLabel',wraplength=160).pack(side='bottom',anchor='w',pady=(8,0))
+         viewport=tk.Frame(preview_card,bg='#09121b');viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
+-        self.preview=tk.Label(viewport,bg='#09121b',fg=MUTED,text='Your latest camera check\nwill appear here.',wraplength=185)
++        self.preview=tk.Label(viewport,bg='#09121b',fg=MUTED,text='Your latest camera check\nwill appear here.',wraplength=145)
+         self.preview.pack(fill='both',expand=True)
+         # Keep the full-resolution frame so resizing the preview never stretches
+         # a previous thumbnail or adds work to map navigation.
+--- a/LoongLens/patrol_windows.py
++++ b/LoongLens/patrol_windows.py
+@@ -1,4 +1,4 @@
+-"""Real Windows mouse input, scoped to the selected foreground BlueStacks window."""
++"""Real Windows mouse input, scoped to the selected foreground MuMu window."""
+ from __future__ import annotations
+ import ctypes
+ from contextlib import contextmanager
+@@ -67,13 +67,13 @@
+         x,y=point;result=ctypes.c_size_t()
+         location=(x&0xffff)|((y&0xffff)<<16)
+         if not self.user.SendMessageTimeoutW(hwnd,0x84,0,location,0x2,100,ctypes.byref(result)):
+-            raise RuntimeError('BlueStacks did not answer its window-border check.')
++            raise RuntimeError('MuMu did not answer its window-border check.')
+         return result.value==1  # HTCLIENT; resize borders/caption are not map input.
+ 
+     def input_rect(self,hwnd):
+         rect=wintypes.RECT();origin=wintypes.POINT()
+         if not self.user.GetClientRect(hwnd,ctypes.byref(rect)) or not self.user.ClientToScreen(hwnd,ctypes.byref(origin)):
+-            raise RuntimeError('Could not read the BlueStacks client area.')
++            raise RuntimeError('Could not read the MuMu client area.')
+         left,top,right,bottom=origin.x,origin.y,origin.x+rect.right,origin.y+rect.bottom
+         cx,cy=(left+right)//2,(top+bottom)//2
+         # Some frameless emulator windows include resize pixels in their client
+@@ -83,12 +83,12 @@
+         while top<cy and not self.client_hit(hwnd,(cx,top)):top+=1
+         while bottom>cy and not self.client_hit(hwnd,(cx,bottom-1)):bottom-=1
+         if left>=cx or right<=cx or top>=cy or bottom<=cy:
+-            raise RuntimeError('BlueStacks has no usable client input area.')
++            raise RuntimeError('MuMu has no usable client input area.')
+         return left,top,right,bottom
+ 
+     def clip(self,rect):
+         native=wintypes.RECT(*rect)
+-        if not self.user.ClipCursor(ctypes.byref(native)):raise OSError('Could not confine the mouse to BlueStacks.')
++        if not self.user.ClipCursor(ctypes.byref(native)):raise OSError('Could not confine the mouse to MuMu.')
+ 
+     def clip_rect(self):
+         rect=wintypes.RECT()
+@@ -98,7 +98,7 @@
+     def mouse(self,flags):
+         event=self.Input();event.type=0;event.mi.dwFlags=flags
+         if self.user.SendInput(1,ctypes.byref(event),ctypes.sizeof(event))!=1:
+-            raise OSError('Windows refused mouse input. Run Loong Lens and BlueStacks at the same privilege level.')
++            raise OSError('Windows refused mouse input. Run Loong Lens and MuMu at the same privilege level.')
+ 
+     def left_down(self):
+         return bool(self.user.GetAsyncKeyState(0x01)&0x8000)
+@@ -110,10 +110,12 @@
+ 
+ 
+ class WindowsBackend:
+-    def __init__(self,cancel,find=None):
+-        from win_overlay import find_visible_emulator,window_visible_at
+-        self.find=find or find_visible_emulator
+-        self.visible_at=window_visible_at
++    def __init__(self,cancel,find=None,geometry=None):
++        import win_overlay as overlay
++        self.find=find or overlay.find_visible_emulator
++        self.visible_at=overlay.window_visible_at
++        self.geometry_provider=geometry or (getattr(overlay,'game_geometry',None) if find is None else None)
++        self.view=None
+         self.cancel=cancel;self.api=NativeInput();self.target=None;self.screen=None
+         self.down=False
+         self.input_rect=None;self._clip_saved=None;self._clip_owned=None
+@@ -132,40 +134,54 @@
+     def focus(self):
+         if self.cancel.is_set():raise PatrolStopped('Stopped.')
+         self.target=self.find()
+-        if self.target is None:raise RuntimeError('BlueStacks was not found. Keep its window visible.')
++        if self.target is None:raise RuntimeError('MuMu was not found. Keep its window visible.')
+         hwnd,_=self.target
+         self.api.user.SetForegroundWindow(hwnd)
+         self.wait(.25)
+         self.guard()
+         self.input_rect=self.api.input_rect(hwnd)
+-        x,y,w,h=self.target[1];left,top,right,bottom=self.input_rect
+-        self.drag_bounds=((left-x)*570/w,(top-y)*1029/h,
+-                          (right-1-x)*570/w,(bottom-1-y)*1029/h)
++        self.view=self.geometry_provider(*self.target) if self.geometry_provider is not None else None
++        if self.view is not None:
++            x,y,w,h=self.view.content;a,b,c,d=self.input_rect
++            self.input_rect=(max(a,x),max(b,y),min(c,x+w),min(d,y+h))
++            left,top,right,bottom=self.input_rect
++            self.drag_bounds=(*self.view.reference((left,top)),*self.view.reference((right-1,bottom-1)))
++        else:
++            x,y,w,h=self.target[1];left,top,right,bottom=self.input_rect
++            self.drag_bounds=((left-x)*570/w,(top-y)*1029/h,
++                              (right-1-x)*570/w,(bottom-1-y)*1029/h)
+ 
+     def guard(self):
+         if self.cancel.is_set():raise PatrolStopped('Stopped.')
+         hwnd,rect=self.target
+         current=wintypes.RECT()
+         if not self.api.user.GetWindowRect(hwnd,ctypes.byref(current)):
+-            raise RuntimeError('BlueStacks was closed.')
++            raise RuntimeError('MuMu was closed.')
+         bounds=(current.left,current.top,current.right-current.left,current.bottom-current.top)
+-        if bounds!=tuple(rect):raise RuntimeError('BlueStacks moved or resized. Start the check again.')
++        if bounds!=tuple(rect):raise RuntimeError('MuMu moved or resized. Start the check again.')
++        view=getattr(self,'view',None)
++        if view is not None and view.child:
++            child=wintypes.RECT()
++            if not self.api.user.GetWindowRect(view.child,ctypes.byref(child)) or (child.left,child.top,child.right-child.left,child.bottom-child.top)!=view.content:
++                raise RuntimeError('MuMu game area changed. Start the check again.')
+         active=self.api.user.GetAncestor(self.api.user.GetForegroundWindow(),2)
+-        if active!=hwnd:raise RuntimeError('BlueStacks lost focus; patrol stopped.')
++        if active!=hwnd:raise RuntimeError('MuMu lost focus; patrol stopped.')
+ 
+     def point(self,reference):
+         rx,ry=reference
+         if not (math.isfinite(rx) and math.isfinite(ry) and 0<=rx<570 and 0<=ry<1029):
+-            raise ValueError('Input point is outside the BlueStacks screenshot.')
++            raise ValueError('Input point is outside the MuMu screenshot.')
++        view=getattr(self,'view',None)
++        if view is not None:return view.point(reference)
+         x,y,w,h=self.target[1]
+         return min(x+w-1,round(x+rx*w/570)),min(y+h-1,round(y+ry*h/1029))
+ 
+     def client_point(self,point):
+         rect=getattr(self,'input_rect',None)
+         if rect is not None and not (rect[0]<=point[0]<rect[2] and rect[1]<=point[1]<rect[3]):
+-            raise RuntimeError('Mouse target is on the BlueStacks window border, not its map surface.')
++            raise RuntimeError('Mouse target is on the MuMu window border, not its map surface.')
+         if not self.api.client_hit(self.target[0],point):
+-            raise RuntimeError('Mouse target is a BlueStacks resize border or title bar.')
++            raise RuntimeError('Mouse target is a MuMu resize border or title bar.')
+ 
+     def verify_cursor(self,expected):
+         actual=self.api.cursor()
+@@ -259,24 +275,29 @@
+ 
+     def capture(self):
+         self.guard()
+-        hwnd,(x,y,w,h)=self.target
++        hwnd,rect=self.target
++        view=getattr(self,'view',None);x,y,w,h=view.content if view is not None else rect
+         # No other desktop window may contribute pixels to detection/history.
+         if not all(self.visible_at(hwnd,x+px,y+py)
+                    for py in np.linspace(10,h-11,max(2,(h+47)//48))
+                    for px in np.linspace(10,w-11,max(2,(w+47)//48))):
+-            raise RuntimeError('BlueStacks is covered. Move Loong Lens and other windows aside.')
+-        return np.asarray(self.screen.grab(dict(left=x,top=y,width=w,height=h)))[:,:,:3].copy()
++            raise RuntimeError('MuMu is covered. Move Loong Lens and other windows aside.')
++        frame=np.asarray(self.screen.grab(dict(left=x,top=y,width=w,height=h)))[:,:,:3].copy()
++        return view.normalize(frame) if view is not None else frame
+ 
+     @staticmethod
+     def peek():
+         """A calibration screenshot; no focus changes or inputs."""
+         import mss
+-        from win_overlay import find_visible_emulator
++        from win_overlay import find_visible_emulator,game_geometry,window_visible_at
+         target=find_visible_emulator()
+-        if target is None:raise RuntimeError('Keep BlueStacks visible first.')
+-        _,(x,y,w,h)=target
++        if target is None:raise RuntimeError('Keep MuMu visible first.')
++        view=game_geometry(*target);x,y,w,h=view.content
++        if not all(window_visible_at(target[0],x+px,y+py) for py in np.linspace(10,h-11,6) for px in np.linspace(10,w-11,4)):
++            raise RuntimeError('MuMu is covered. Move other windows aside before picking a map button.')
+         with mss.mss() as screen:
+-            return np.asarray(screen.grab(dict(left=x,top=y,width=w,height=h)))[:,:,:3].copy()
++            frame=np.asarray(screen.grab(dict(left=x,top=y,width=w,height=h)))[:,:,:3].copy()
++        return view.normalize(frame)
+ 
+ 
+ class GlobalPatrolKeys:
+--- a/LoongLens/sighting_capture.py
++++ b/LoongLens/sighting_capture.py
+@@ -49,13 +49,13 @@
+             self.ready.append(self.unavailable(item.event, reason, 'cancelled'))
+         self.waiting.clear()
+ 
+-    def due(self, now, frame=None, target=None, unobscured=False, reason='BlueStacks was not visible at capture time.'):
++    def due(self, now, frame=None, target=None, unobscured=False, reason='MuMu was not visible at capture time.'):
+         future = []
+         for item in self.waiting:
+             if now < item.due:
+                 future.append(item)
+             elif frame is None or target is None or target[0] != item.hwnd or not unobscured:
+-                detail = 'A different BlueStacks window was selected at capture time.' if target is not None and target[0] != item.hwnd else reason
++                detail = 'A different MuMu window was selected at capture time.' if target is not None and target[0] != item.hwnd else reason
+                 self.ready.append(self.unavailable(item.event, detail))
+             else:
+                 self.submit(item.event, frame)
+--- a/LoongLens/spy_panel.py
++++ b/LoongLens/spy_panel.py
+@@ -113,16 +113,16 @@
+ 
+     def build_ui(self):
+         from ui_theme import heading,card,row,CARD,MUTED,FONT
+-        body=ttk.Frame(self.parent,padding=(22,20));body.pack(fill='both',expand=True)
++        body=ttk.Frame(self.parent,padding=(12,12));body.pack(fill='both',expand=True)
+         heading(body,'Gem Spy','Observe, record and continue. Your character stays where it is.')
+         footer=ttk.Frame(body);footer.pack(side='bottom',fill='x',pady=(14,0))
+-        actions=ttk.Frame(footer,style='Panel.TFrame',padding=12);actions.pack(fill='x')
+-        self.start_button=ttk.Button(actions,text='Start / Resume',style='Primary.TButton',command=self.start,padding=(22,13));self.start_button.pack(side='left')
+-        self.stop_button=ttk.Button(actions,text='Stop  F10',style='Stop.TButton',command=self.stop,padding=(20,13));self.stop_button.pack(side='right')
+-        ttk.Label(footer,text='One entry per continuing gem. Automatic recovery keeps progress. Stop / F10 always stays stopped.',style='Muted.TLabel',font=(FONT,9)).pack(anchor='w',pady=(10,0))
+-        middle=ttk.Frame(body,height=440);middle.pack(fill='both',expand=True);middle.grid_propagate(False)
+-        middle.columnconfigure(0,weight=0,minsize=300);middle.columnconfigure(1,weight=1);middle.rowconfigure(0,weight=1)
+-        stack=ttk.Frame(middle);stack.grid(row=0,column=0,sticky='nsew',padx=(0,16));stack.pack_propagate(False)
++        actions=ttk.Frame(footer,style='Panel.TFrame',padding=8);actions.pack(fill='x')
++        self.start_button=ttk.Button(actions,text='Start / Resume',style='Primary.TButton',command=self.start,padding=(14,9));self.start_button.pack(side='left')
++        self.stop_button=ttk.Button(actions,text='Stop  F10',style='Stop.TButton',command=self.stop,padding=(14,9));self.stop_button.pack(side='right')
++        ttk.Label(footer,text='One entry per continuing gem. Automatic recovery keeps progress. Stop / F10 always stays stopped.',style='Muted.TLabel',font=(FONT,9),wraplength=750).pack(anchor='w',pady=(8,0))
++        middle=ttk.Frame(body,height=360);middle.pack(fill='both',expand=True);middle.grid_propagate(False)
++        middle.columnconfigure(0,weight=0,minsize=280);middle.columnconfigure(1,weight=1);middle.rowconfigure(0,weight=1)
++        stack=ttk.Frame(middle);stack.grid(row=0,column=0,sticky='nsew',padx=(0,10));stack.pack_propagate(False)
+         controls=card(stack,'Spy controls')
+         ttk.Label(controls,textvariable=self.location,style='CardMuted.TLabel',wraplength=300).pack(anchor='w',pady=(0,12))
+         line=row(controls)
+@@ -133,10 +133,10 @@
+         ttk.Label(state,textvariable=self.progress_text,style='CardMuted.TLabel',wraplength=300).pack(anchor='w',pady=14)
+         ttk.Label(state,textvariable=self.stats,style='Metric.TLabel').pack(anchor='w',pady=(0,16))
+         self.progress=ttk.Progressbar(state);self.progress.pack(fill='x')
+-        map_card=ttk.Frame(middle,style='Panel.TFrame',padding=16);map_card.grid(row=0,column=1,sticky='nsew');map_card.pack_propagate(False)
++        map_card=ttk.Frame(middle,style='Panel.TFrame',padding=10);map_card.grid(row=0,column=1,sticky='nsew');map_card.pack_propagate(False)
+         # Wrapped text must not request a new outer grid width on each pass.
+         # Size the columns from the viewport rather than their wrapped labels.
+-        middle.bind('<Configure>',lambda e:middle.columnconfigure(0,minsize=max(300,min(380,int(e.width*.32)))))
++        middle.bind('<Configure>',lambda e:middle.columnconfigure(0,minsize=max(280,min(330,int(e.width*.32)))))
+         ttk.Label(map_card,text='Gem sightings map',style='CardTitle.TLabel').pack(anchor='w',pady=(0,12))
+         viewport=tk.Frame(map_card,bg=CARD);viewport.pack(fill='both',expand=True);viewport.pack_propagate(False)
+         from gem_heatmap_panel import HeatmapPreview
+--- /dev/null
++++ b/LoongLens/tests/test_mumu_view.py
+@@ -0,0 +1,89 @@
++from types import SimpleNamespace
++import threading
++
++import cv2
++import numpy as np
++import pytest
++from PIL import Image, ImageDraw
++
++from emulator_view import GameView, REFERENCE_GAME, mumu_device_window, portrait_view
++from patrol_windows import WindowsBackend
++
++cv2.setNumThreads(2)
++
++
++@pytest.mark.parametrize('title,name', [('Android Device','MuMuNxDevice.exe'),
++    ('Sword x Staff','MuMuNxDevice.exe'),('',r'C:\Program Files\MuMu\MuMuNxDevice.exe'),
++    ('MuMuPlayer','MuMuNxDevice.exe'),('MuMu Player 12','MuMuPlayer.exe'),
++    ('MuMu','NemuPlayer.exe')])
++def test_actual_device_identity_does_not_require_a_mumu_tab_title(title,name):
++    assert mumu_device_window(title,name,560,1033)
++
++
++@pytest.mark.parametrize('title,name,w,h', [('MuMuPlayer','MuMuPlayer.exe',860,580),
++    ('MuMuPlayer','MuMuPlayer.exe',540,1000),('MuMuPlayer','Chrome.exe',560,1033),
++    ('MuMuPlayer','notepad.exe',560,1033),('MuMu Multi-Instance Manager','MuMuNxDevice.exe',560,1033),
++    ('Android Device','MuMuMultiPlayer.exe',560,1033),('Android Device','MuMuNxDevice.exe',1033,560)])
++def test_manager_non_emulator_and_landscape_windows_are_not_mouse_targets(title,name,w,h):
++    assert not mumu_device_window(title,name,w,h)
++
++
++@pytest.mark.parametrize('offset', [(21,0),(110,0),(-900,100)])
++def test_user_560_by_1033_window_excludes_40_pixel_toolbar(offset):
++    x,y=offset
++    view=portrait_view((x,y,560,1033),(x+1,y+1,x+559,y+1032))
++    assert view.content==(x+1,y+40,558,992)
++    assert view.point((285,531.5))==(x+280,y+536)
++    assert view.point((64,980))[1]>y+970
++
++
++def test_real_android_child_overrides_inferred_toolbar_geometry():
++    outer=(100,50,560,1033);client=(100,50,660,1083)
++    child=(101,90,558,992)
++    view=portrait_view(outer,client,[(23,(100,50,560,40)),(24,child)])
++    assert view.child==24 and view.content==child
++
++
++@pytest.mark.parametrize('size', [(279,496),(558,992),(837,1488)])
++def test_resize_and_dpi_use_one_capture_input_overlay_transform(size):
++    w,h=size
++    view=GameView((100,10,w+2,h+42),(101,50,w,h))
++    for p in ((30,100),(285,530),(500,700),(64,980)):
++        native=view.point(p);returned=view.reference(native)
++        assert np.max(np.abs(np.asarray(p)-returned))<=1.9
++    native=np.zeros((h,w,3),np.uint8);native[:]=(33,110,180)
++    normalized=view.normalize(native)
++    l,t,r,b=REFERENCE_GAME
++    assert normalized.shape==(1029,570,3) and np.all(normalized[t:b,l:r]==[33,110,180])
++    assert not normalized[:t].any()
++    rgba=Image.new('RGBA',(570,1029));ImageDraw.Draw(rgba).ellipse((280,525,290,535),fill=(255,0,0,255))
++    overlay=view.overlay(rgba);assert overlay.size==size
++    ax,ay=view.point((285,530));assert overlay.getpixel((ax-101,ay-50))[3]>200
++
++
++@pytest.mark.parametrize('point',[(0,500),(4,500),(565,500),(285,20),(285,1029)])
++def test_toolbar_border_and_outside_pixels_cannot_be_translated_into_clicks(point):
++    view=GameView((21,0,560,1033),(22,40,558,992))
++    with pytest.raises(RuntimeError,match='toolbar or border'):view.point(point)
++
++
++def test_capture_uses_only_game_pixels_and_point_uses_identical_mapping():
++    value=WindowsBackend.__new__(WindowsBackend)
++    value.view=GameView((110,0,560,1033),(111,40,558,992))
++    value.target=(123,value.view.window);value.guard=lambda:None;value.visible_at=lambda *a:True
++    grabs=[]
++    def grab(rect):
++        grabs.append(rect);frame=np.zeros((rect['height'],rect['width'],4),np.uint8)
++        frame[:,:,:3]=(30,90,150);return frame
++    value.screen=SimpleNamespace(grab=grab)
++    frame=value.capture()
++    assert grabs==[dict(left=111,top=40,width=558,height=992)]
++    assert np.all(frame[34:1029,5:565]==[30,90,150])
++    assert value.point((285,531.5))==(390,536)
++
++
++def test_crop_mismatch_and_invalid_portrait_geometry_are_rejected():
++    view=GameView((0,0,560,1033),(1,40,558,992))
++    with pytest.raises(ValueError):view.normalize(np.zeros((1033,560,3),np.uint8))
++    with pytest.raises(RuntimeError):portrait_view((0,0,860,580),(0,0,860,580))
++    with pytest.raises(ValueError):GameView((0,0,560,1033),(1,40,600,992))
+--- a/LoongLens/tests/test_spy_runner.py
++++ b/LoongLens/tests/test_spy_runner.py
+@@ -2,6 +2,7 @@
+ from pathlib import Path
+ from types import SimpleNamespace
+ import threading
++import faulthandler
+ import cv2
+ import numpy as np
+ import pytest
+@@ -68,8 +69,11 @@
+ 
+ 
+ def finish(runner):
+-    runner.thread.join(15)
+-    if runner.running:runner.stop();runner.thread.join(3)
++    runner.thread.join(30)
++    if runner.running:
++        faulthandler.dump_traceback(all_threads=True)
++        runner.stop();runner.thread.join(5)
++        pytest.fail('Spy fixture exceeded its bounded completion budget')
+     assert not runner.running
+ 
+ 
+--- a/LoongLens/tests/test_worker.py
++++ b/LoongLens/tests/test_worker.py
+@@ -96,3 +96,18 @@
+     worker.step(capture,10.)
+     _,details=worker.get_diagnostics()
+     assert details['state']=='Map closed' and details['title_score']==.2
++
++
++def test_mumu_worker_captures_and_normalizes_the_same_game_area_as_input(worker):
++    from emulator_view import GameView
++    view=GameView((110,0,560,1033),(111,40,558,992))
++    worker.find_window=lambda:view
++    class GameCapture:
++        def grab(self,rect):
++            assert rect==dict(left=111,top=40,width=558,height=992)
++            return np.full((992,558,4),100,np.uint8)
++    worker.step(GameCapture(),10.)
++    frame,details=worker.get_diagnostics()
++    assert worker.get()['geometry']==view and details['rect']==[111,40,558,992]
++    assert frame.shape==(1029,570,3) and not frame[:34].any()
++    assert np.all(frame[34:1029,5:565]==100)
+--- a/LoongLens/tools/build_release.py
++++ b/LoongLens/tools/build_release.py
+@@ -4,7 +4,7 @@
+ import zipfile
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'CHANGELOG-v37.md', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
++FILES = ['GemSniping-Fixed-Route.png', 'GemSniping-Fixed-Route.svg', 'GemSniping-Fixed-Route.csv', 'README.md', 'VALIDATION.md', 'CHANGELOG-v26.md', 'CHANGELOG-v27.md', 'CHANGELOG-v28.md', 'CHANGELOG-v29.md', 'CHANGELOG-v30.md', 'CHANGELOG-v31.md', 'CHANGELOG-v32.md', 'CHANGELOG-v33.md', 'CHANGELOG-v34.md', 'CHANGELOG-v35.md', 'CHANGELOG-v36.md', 'CHANGELOG-v37.md', 'CHANGELOG-v40.md', 'emulator_view.py', 'mumu_input_check.py', 'GEM_WATCH.md', 'RUN_LOONG_LENS.bat', 'RUN_GEM_WATCH.bat', 'requirements.txt',
+          'LoongLens-WhiteIcon.ico', 'LoongLens-Original-Optimized.ico', 'desktop_entry.py', 'LoongLens-AppIcon-HD.png', 'ui_assets.py', 'dashboard_shell.py', 'window_capture.py',
+          'loong_lens.py', 'camera_patrol.py', 'patrol_route.py', 'route_editor.py', 'route_profiles.py', 'gem_sniping_route.json', 'ui_theme.py', 'patrol_live.py', 'patrol_live_panel.py',
+          'sniper_counter.py', 'sniper_history_panel.py', 'gem_heatmap.py', 'gem_heatmap_panel.py', 'heatmap_map_import.py', 'spy_history.py', 'spy_runner.py', 'spy_panel.py', 'sighting_service.py', 'RUN_GEM_SPY.bat', 'patrol_windows.py', 'patrol_input_check.py', 'resources.py', 'vision.py', 'map_screen.py', 'tracker.py', 'pose.py',
+--- a/LoongLens/tools/build_windows_exe.py
++++ b/LoongLens/tools/build_windows_exe.py
+@@ -15,7 +15,7 @@
+         'loong_haven_default_atlas.png', 'loong_title_template.png',
+         'loong_haven_map_data.json', 'loong_haven_ingredients.json',
+         'loong_haven_terrain.json',
+-        'gem_templates', 'ocr_models',
++        'gem_templates', 'ocr_models', 'tests/fixtures/map-controls.png',
+     ]
+     command = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean', '--onefile',
+                '--windowed', '--noupx', '--name', 'LoongLens',
+@@ -25,7 +25,7 @@
+         path = ROOT/asset
+         if not path.exists():
+             raise SystemExit(f'Missing asset: {path}')
+-        destination = asset if path.is_dir() else '.'
++        destination = asset if path.is_dir() else str(Path(asset).parent)
+         command.extend(['--add-data', f'{path}:{destination}'])
+     command.append(str(ROOT/'desktop_entry.py'))
+     subprocess.run(command, cwd=ROOT, check=True)
+--- a/LoongLens/tools/package_full_windows.py
++++ b/LoongLens/tools/package_full_windows.py
+@@ -1,4 +1,4 @@
+-"""Build and round-trip verify the complete v37 Windows folder as one 7z."""
++"""Build and round-trip verify the complete v40 Windows folder as one 7z."""
+ import argparse
+ import hashlib
+ import json
+@@ -26,10 +26,10 @@
+     with binary.open('rb') as stream:
+         if stream.read(2)!=b'MZ':raise SystemExit('Expected the newly built Windows EXE.')
+     reports=[]
+-    for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check'):
++    for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check','source-mumu-check','mumu-check'):
+         report=ROOT/(mode+'.json')
+         data=json.loads(report.read_text('utf-8-sig'))
+-        if data.get('passed') is not True or data.get('version')!=37:
++        if data.get('passed') is not True or data.get('version')!=40:
+             raise SystemExit(f'{mode} did not pass')
+         if mode=='sniper-ui-check':
+             for key in ('restart_restored_obtained_choice','restart_restored_endless_preference',
+@@ -39,6 +39,9 @@
+             for key in ('heatmap_all_history','heatmap_zoom_pan','heatmap_viewport_bounded',
+                         'heatmap_three_part_import','heatmap_saved_map_reloaded','route_editor_uses_imported_map'):
+                 if data.get(key) is not True:raise SystemExit(f'Missing native heatmap validation: {key}')
++        if mode in ('source-mumu-check','mumu-check'):
++            for key in ('device_window_selected','manager_and_browser_ignored','toolbar_excluded','capture_input_overlay_geometry','map_alignment_verified','native_game_click_delivered','held_drag_delivered','f10_released'):
++                if data.get(key) is not True:raise SystemExit(f'Missing MuMu input validation: {key}')
+         reports.append(report)
+     tests=ROOT/'tests-result.txt'
+     result=re.findall(r'(\d+) passed(?:, (\d+) skipped)?',tests.read_text('utf-8-sig'))
+@@ -46,35 +49,47 @@
+     passed,skipped=result[-1]
+     reports.append(tests)
+     comparisons={}
+-    for version in ('v36','v37'):
++    for version in ('v37','v40'):
+         path=ROOT/'artifacts'/f'benchmark-{version}.json'
+         data=json.loads(path.read_text())
+         if data.get('views_checked')!=76:raise SystemExit('Benchmark did not complete the default route.')
+         if len(data.get('per_view',[]))!=76:raise SystemExit('Missing per-view timing comparison.')
+         comparisons[version]=data;reports.append(path)
+-    baseline=comparisons['v36'];latest=comparisons['v37']
++    baseline=comparisons['v37'];latest=comparisons['v40']
+     if latest.get('held_strokes',0)<1 or latest.get('held_moves',0)<latest['held_strokes']:
+         raise SystemExit('Full-route benchmark did not exercise continuous held panning.')
+     if latest['held_strokes']>=30 or latest['held_moves']>latest['held_strokes']*5:
+         raise SystemExit('The centre-start route comparison exceeded its movement bounds.')
+     out.parent.mkdir(parents=True,exist_ok=True)
+-    with tempfile.TemporaryDirectory(prefix='loonglens-v37-full-') as temporary:
++    with tempfile.TemporaryDirectory(prefix='loonglens-v40-full-') as temporary:
+         folder=Path(temporary);source_zip=folder/'source.zip'
+         subprocess.run([sys.executable,str(ROOT/'tools/build_release.py'),'--output',str(source_zip)],check=True)
+         with zipfile.ZipFile(source_zip) as archive:
+             archive.extractall(folder)
+         app=folder/'LoongLens'
+-        if (app/'patrol_adb.py').exists():raise SystemExit('Unexpected ADB backend in the v24-based package.')
++        if any((app/name).exists() for name in ('patrol_adb.py','adb_screen.py','adb_setup_panel.py','loonglens-touch.jar')):raise SystemExit('Unexpected ADB file in the v37-based MuMu package.')
+         shutil.copy2(binary,app/'LoongLens.exe')
+         validation=app/'validation';validation.mkdir()
+         for report in reports:shutil.copy2(report,validation/report.name)
+-        info=dict(version=37,baseline=36,mouse_foundation=24,commit=os.environ.get('GITHUB_SHA','local build'),
++        info=dict(version=40,baseline=37,mouse_foundation=24,emulator='MuMuPlayer 6.8.9',default_window=[1000,760],minimum_window=[960,720],commit=os.environ.get('GITHUB_SHA','local build'),
+                   windows_tests=dict(passed=int(passed),skipped=int(skipped or 0)),
+                   exe_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+-                  speed_scope='76-view atlas simulation; not measured live BlueStacks performance')
++                  speed_scope='76-view atlas simulation; not measured live MuMu performance')
+         (app/'BUILD-INFO.json').write_text(json.dumps(info,indent=2)+'\n','utf-8')
+-        (app/'START-HERE-v37.txt').write_text(
+-            'Loong Lens v37 - reliable map state and filter recovery\n\n'
++        (app/'START-HERE-v40.txt').write_text(
++            'Loong Lens v40 - MuMu mouse control and compact UI\n\n'
++            'This build starts from v37. The v38/v39 ADB backend is removed.\n'
++            'Targets MuMuPlayer 6.8.9, Android 15, portrait 1080x1920 at 480 DPI.\n'
++            'Start the Android device, launch the game and use the portrait window with top toolbar.\n'
++            'MuMu device tabs can be called Android Device or the game name.\n'
++            'Device identity and game geometry exclude the manager, toolbar and native borders.\n'
++            'Capture, clicks, drags and Map Tweaker markers share the same coordinate transform.\n'
++            'Keep MuMu visible, uncovered and focused while running; Windows mouse is used.\n'
++            'Main window defaults to 1000x760 and can shrink to 960x720.\n'
++            'Sidebar, cards, buttons and preview are compact; main controls stay accessible.\n'
++            'When space is available, Loong Lens opens beside the visible MuMu window.\n'
++            'All v37 routes, detection/collection waits, counters, histories and heatmaps remain.\n'
++            'Windows checks use a simulated MuMu-shaped window; live game speed is unmeasured.\n\n'
+             'Map recognition now also checks map controls when the title image does not match.\n'
+             'An already-open map does not get another minimap tap. A transient frame is rechecked.\n'
+             'An open filter panel gets one calibrated Back click; it is observed before proceeding.\n'
+@@ -105,7 +120,7 @@
+             'An ignored tap retries once and never marks that location checked.\n'
+             'Held movement uses lightweight terrain tracking with a SIFT fallback.\n\n'
+             'Exit the old app completely. Extract this whole folder and run LoongLens.exe here.\n'
+-            'This build uses v24 Windows mouse control; keep BlueStacks visible and focused.\n\n'
++            'This build uses v24 Windows mouse control; keep MuMu visible and focused.\n\n'
+             'Map panning keeps the button held between movement and screenshot checks.\n'
+             'It starts at the map centre and moves fast opposite the target direction,\n'
+             'holds the cursor still briefly, releases and verifies the position before clicking.\n'
+@@ -113,7 +128,7 @@
+             'No padding or broad right-hand exclusion strip is added.\n'
+             'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
+             'Hide portal icons in the game map as you requested.\n'
+-            'The header shows v37; settings and personal routes remain in LocalAppData.\n'
++            'The header shows v40; settings and personal routes remain in LocalAppData.\n'
+             'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
+             'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
+             'It observes repeatedly, never clicks a gem, and continues after a find.\n'
+@@ -143,7 +158,7 @@
+             'and validation reports are included under validation; live game speed is not measured.\n'
+             'Do not delete %LOCALAPPDATA%\\LoongLens; settings, screenshots and history stay there.\n',
+             'utf-8')
+-        for image in sorted((ROOT/'artifacts').glob('v37-*.png')):shutil.copy2(image,validation/image.name)
++        for image in sorted((ROOT/'artifacts').glob('v40-*.png')):shutil.copy2(image,validation/image.name)
+         manifest={p.relative_to(app).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in sorted(app.rglob('*')) if p.is_file()}
+         (app/'PACKAGE-SHA256.json').write_text(json.dumps(manifest,indent=2)+'\n','utf-8')
+--- a/LoongLens/tools/ui_sniper_smoke.py
++++ b/LoongLens/tools/ui_sniper_smoke.py
+@@ -131,7 +131,7 @@
+             assert panel.services.sighting_history.sniper_seen()==5
+             count=len(clicks);panel.snipe.invoke()
+             assert panel.services.owner is None and len(clicks)==count and '5/5' in panel.status.get()
+-            results.append(dict(passed=True,version=37,collection_seconds=20,return_world=[241,107],
++            results.append(dict(passed=True,version=40,collection_seconds=20,return_world=[241,107],
+                                 daily_count=5,stopped_at_goal=True,source_screenshot_saved=True,
+                                 dim_camera_selected_once_per_visit=True,
+                                 reset_kept_daily_counter=True,scope='Native Tk and detector; simulated game input and waits'))
+--- a/LoongLens/tools/ui_spy_smoke.py
++++ b/LoongLens/tools/ui_spy_smoke.py
+@@ -48,7 +48,7 @@
+                 from ctypes import wintypes
+                 user=ctypes.WinDLL('user32');user.GetAncestor.argtypes=(wintypes.HWND,wintypes.UINT);user.GetAncestor.restype=wintypes.HWND
+                 out=ROOT/'artifacts';out.mkdir(exist_ok=True)
+-                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v37-spy-ui-failure.png')
++                capture_window(user.GetAncestor(self.winfo_id(),2)).save(out/'v40-spy-ui-failure.png')
+                 self.exit_app()
+             self.report_callback_exception=failed
+             self.after(1800,self.begin);self.after(120000,self.destroy)
+@@ -179,7 +179,7 @@
+             assert runner.cancel.is_set() and sniper.services.owner is None
+             assert runner.snapshot()['gems']==2 and runner.snapshot()['elapsed']>=state['elapsed']
+             assert len(spy.history.encounters())==2
+-            completed.append(dict(passed=True,version=37,unique_gems=2,screenshots=2,
++            completed.append(dict(passed=True,version=40,unique_gems=2,screenshots=2,
+                                   passes=2,recovery_kept_progress=True,f10_stays_stopped=True,
+                                   heatmap_all_history=True,heatmap_zoom_pan=True,heatmap_viewport_bounded=True,
+                                   heatmap_three_part_import=True,heatmap_saved_map_reloaded=True,route_editor_uses_imported_map=True))
+--- a/LoongLens/tracker.py
++++ b/LoongLens/tracker.py
+@@ -7,6 +7,7 @@
+ import cv2
+ import numpy as np
+ from resources import REF_W, REF_H
++from emulator_view import GameView
+ from vision import Calibrator, MotionTracker, TitleDetector, Session, reconcile
+ 
+ LOG = logging.getLogger('loonglens')
+@@ -124,17 +125,20 @@
+         if self.pause_event.is_set():
+             self._hide('Paused', 'Resume to follow the map')
+             return
+-        rect = self.find_window()
+-        if rect is None:
+-            self._hide('Waiting for BlueStacks', 'Bring the BlueStacks map window to the foreground')
++        found = self.find_window()
++        if found is None:
++            self._hide('Waiting for MuMu', 'Bring the MuMu map window to the foreground')
+             return
++        geometry=found if isinstance(found,GameView) else None
++        rect=geometry.content if geometry is not None else found
++        self.publish(geometry=geometry)
+         x, y, w, h = rect
+         if self.session.rect != rect:
+             self.session.update(False, rect)
+             self.pose = None
+             self.motion.reset()
+         pixels = np.asarray(capture.grab(dict(left=x, top=y, width=w, height=h)))
+-        frame = cv2.resize(pixels[:, :, :3], (REF_W, REF_H), interpolation=cv2.INTER_AREA)
++        frame = geometry.normalize(pixels) if geometry is not None else cv2.resize(pixels[:, :, :3], (REF_W, REF_H), interpolation=cv2.INTER_AREA)
+         title_score=self.title.score(frame)
+         self.record_capture(frame,rect,title_score)
+         if title_score < .64:
+--- a/LoongLens/ui_theme.py
++++ b/LoongLens/ui_theme.py
+@@ -15,24 +15,24 @@
+ def apply_theme(root):
+     style = ttk.Style(root)
+     style.theme_use('clam')
+-    style.configure('.', background=BG, foreground=TEXT, font=(FONT, 10))
++    style.configure('.', background=BG, foreground=TEXT, font=(FONT, 9))
+     style.configure('TFrame', background=BG)
+     style.configure('TLabel', background=BG)
+     style.configure('Muted.TLabel', foreground=MUTED)
+-    style.configure('Title.TLabel', font=(FONT, 28, 'bold'))
+-    style.configure('Heading.TLabel', font=(FONT, 16, 'bold'))
++    style.configure('Title.TLabel', font=(FONT, 22, 'bold'))
++    style.configure('Heading.TLabel', font=(FONT, 14, 'bold'))
+     style.configure('Brand.TLabel', font=(FONT, 12, 'bold'))
+     style.configure('Card.TFrame', background=CARD)
+     style.configure('Panel.TFrame', background=CARD, borderwidth=1, relief='solid', bordercolor=BORDER)
+     style.configure('Card.TLabel', background=CARD)
+     style.configure('CardMuted.TLabel', background=CARD, foreground=MUTED, font=(FONT, 9))
+-    style.configure('CardTitle.TLabel', background=CARD, foreground=TEXT, font=(FONT, 13, 'bold'))
+-    style.configure('Metric.TLabel', background=CARD, foreground=TEXT, font=(FONT, 16, 'bold'))
+-    style.configure('Quota.TLabel', background=CARD, foreground=ACCENT, font=(FONT, 26, 'bold'))
+-    style.configure('Status.TLabel', background=CARD, font=(FONT, 11, 'bold'))
++    style.configure('CardTitle.TLabel', background=CARD, foreground=TEXT, font=(FONT, 10, 'bold'))
++    style.configure('Metric.TLabel', background=CARD, foreground=TEXT, font=(FONT, 14, 'bold'))
++    style.configure('Quota.TLabel', background=CARD, foreground=ACCENT, font=(FONT, 22, 'bold'))
++    style.configure('Status.TLabel', background=CARD, font=(FONT, 10, 'bold'))
+     style.configure('Alert.TLabel', background=CARD, foreground='#f486dd')
+-    style.configure('Stats.TLabel', background=CARD, font=(FONT, 11, 'bold'))
+-    style.configure('TButton', background='#28394d', foreground=TEXT, borderwidth=0, padding=(12, 9))
++    style.configure('Stats.TLabel', background=CARD, font=(FONT, 10, 'bold'))
++    style.configure('TButton', background='#28394d', foreground=TEXT, borderwidth=0, padding=(9, 6))
+     style.map('TButton', background=[('disabled', '#202b39'), ('pressed', '#354d66'), ('active', '#354d66')],
+               foreground=[('disabled', '#718195')])
+     style.configure('Primary.TButton', background=ACCENT, foreground='#102c29', font=(FONT, 10, 'bold'))
+@@ -60,10 +60,10 @@
+     style.configure('TSeparator', background='#2a394b')
+     style.configure('Sidebar.TFrame', background='#0b1723')
+     style.configure('Sidebar.TLabel', background='#0b1723', foreground=MUTED)
+-    style.configure('Logo.TLabel', background='#0b1723', foreground=TEXT, font=(FONT, 16, 'bold'))
+-    style.configure('Nav.TButton', background='#0b1723', foreground=MUTED, anchor='w', padding=(16,16), borderwidth=0, font=(FONT,11))
++    style.configure('Logo.TLabel', background='#0b1723', foreground=TEXT, font=(FONT, 12, 'bold'))
++    style.configure('Nav.TButton', background='#0b1723', foreground=MUTED, anchor='w', padding=(10,11), borderwidth=0, font=(FONT,9))
+     style.map('Nav.TButton', background=[('active','#142b3d')], foreground=[('active',TEXT)])
+-    style.configure('Selected.Nav.TButton', background='#123044', foreground=TEXT, font=(FONT,11,'bold'))
++    style.configure('Selected.Nav.TButton', background='#123044', foreground=TEXT, font=(FONT,9,'bold'))
+     style.map('Selected.Nav.TButton', background=[('active','#173b50')])
+     from PIL import Image,ImageDraw,ImageTk
+     switches=[]
+@@ -88,11 +88,11 @@
+ 
+ def heading(parent, title, description):
+     ttk.Label(parent, text=title, style='Title.TLabel').pack(anchor='w')
+-    ttk.Label(parent, text=description, style='Muted.TLabel', wraplength=470).pack(anchor='w', pady=(3, 14))
++    ttk.Label(parent, text=description, style='Muted.TLabel', wraplength=470).pack(anchor='w', pady=(3, 10))
+ 
+ 
+ def card(parent, title=None):
+-    frame = ttk.Frame(parent, style='Panel.TFrame', padding=16)
++    frame = ttk.Frame(parent, style='Panel.TFrame', padding=10)
+     frame.pack(fill='x', pady=(0, 8))
+     if title:
+         ttk.Label(frame, text=title, style='CardTitle.TLabel').pack(anchor='w', pady=(0, 7))
+--- a/LoongLens/win_overlay.py
++++ b/LoongLens/win_overlay.py
+@@ -1,6 +1,8 @@
+ """Windows screenshot-only, click-through per-pixel-alpha display backend."""
+ import ctypes
+ import sys
++from pathlib import PureWindowsPath
++from emulator_view import mumu_device_window,portrait_view
+ from ctypes import wintypes
+ import numpy as np
+ 
+@@ -75,21 +77,46 @@
+ user32.GetForegroundWindow.restype=wintypes.HWND
+ user32.GetAncestor.argtypes=[wintypes.HWND,wintypes.UINT]
+ user32.GetAncestor.restype=wintypes.HWND
++user32.GetWindowThreadProcessId.argtypes=[wintypes.HWND,ctypes.POINTER(wintypes.DWORD)]
++user32.GetWindowThreadProcessId.restype=wintypes.DWORD
++user32.EnumChildWindows.argtypes=[wintypes.HWND,ctypes.c_void_p,wintypes.LPARAM]
++user32.EnumChildWindows.restype=wintypes.BOOL
++kernel32.OpenProcess.argtypes=[wintypes.DWORD,wintypes.BOOL,wintypes.DWORD]
++kernel32.OpenProcess.restype=wintypes.HANDLE
++kernel32.QueryFullProcessImageNameW.argtypes=[wintypes.HANDLE,wintypes.DWORD,wintypes.LPWSTR,ctypes.POINTER(wintypes.DWORD)]
++kernel32.QueryFullProcessImageNameW.restype=wintypes.BOOL
++kernel32.CloseHandle.argtypes=[wintypes.HANDLE]
++_process_names={}
++_game_views={}
++
++def process_name(hwnd):
++    pid=wintypes.DWORD();user32.GetWindowThreadProcessId(hwnd,ctypes.byref(pid))
++    key=(int(hwnd),pid.value)
++    if key in _process_names:return _process_names[key]
++    handle=kernel32.OpenProcess(0x1000,False,pid.value)
++    if not handle:return ''
++    try:
++        size=wintypes.DWORD(32768);name=ctypes.create_unicode_buffer(size.value)
++        result=PureWindowsPath(name.value).name if kernel32.QueryFullProcessImageNameW(handle,0,name,ctypes.byref(size)) else ''
++    finally:kernel32.CloseHandle(handle)
++    # A window/PID change invalidates the identity; never cache full paths.
++    if len(_process_names)>128:_process_names.clear()
++    _process_names[key]=result
++    return result
++
+ EMULATOR_WINDOWS=[]
+ @ctypes.WINFUNCTYPE(wintypes.BOOL,wintypes.HWND,wintypes.LPARAM)
+ def _enum_window(hwnd,_):
+     if not user32.IsWindowVisible(hwnd) or user32.IsIconic(hwnd):
+         return True
+     n=user32.GetWindowTextLengthW(hwnd)
+-    if n < 5: return True
++    if n < 0: return True
+     title=ctypes.create_unicode_buffer(n+1)
+     user32.GetWindowTextW(hwnd,title,n+1)
+-    if 'BlueStacks App Player' not in title.value:
+-        return True
+     bounds=RECT()
+     if user32.GetWindowRect(hwnd,ctypes.byref(bounds)):
+         width,height=bounds.right-bounds.left,bounds.bottom-bounds.top
+-        if width>=350 and height>=500:
++        if mumu_device_window(title.value,process_name(hwnd),width,height):
+             EMULATOR_WINDOWS.append((int(hwnd),(bounds.left,bounds.top,width,height)))
+     return True
+ 
+@@ -101,10 +128,44 @@
+     return max(active,key=lambda e:e[1][2]*e[1][3])[1] if active else None
+ 
+ def find_visible_emulator():
+-    """Watcher mode: BlueStacks may stay visible on a second monitor without focus."""
++    """Watcher mode: MuMu may stay visible on a second monitor without focus."""
+     EMULATOR_WINDOWS.clear()
+     user32.EnumWindows(_enum_window,0)
+-    return max(EMULATOR_WINDOWS,key=lambda e:e[1][2]*e[1][3]) if EMULATOR_WINDOWS else None
++    active=user32.GetAncestor(user32.GetForegroundWindow(),2)
++    preferred=[entry for entry in EMULATOR_WINDOWS if entry[0]==active]
++    return max(preferred or EMULATOR_WINDOWS,key=lambda e:e[1][2]*e[1][3]) if EMULATOR_WINDOWS else None
++
++def game_geometry(hwnd,window):
++    from patrol_windows import NativeInput
++    cached=_game_views.get(hwnd)
++    if cached is not None and cached.window==tuple(window):
++        if not cached.child:return cached
++        bounds=RECT()
++        if user32.GetWindowRect(cached.child,ctypes.byref(bounds)) and (bounds.left,bounds.top,bounds.right-bounds.left,bounds.bottom-bounds.top)==cached.content:return cached
++    client=NativeInput().input_rect(hwnd)
++    children=[]
++    @ctypes.WINFUNCTYPE(wintypes.BOOL,wintypes.HWND,wintypes.LPARAM)
++    def child(handle,_):
++        if user32.IsWindowVisible(handle):
++            bounds=RECT()
++            if user32.GetWindowRect(handle,ctypes.byref(bounds)):
++                children.append((int(handle),(bounds.left,bounds.top,bounds.right-bounds.left,bounds.bottom-bounds.top)))
++        return True
++    user32.EnumChildWindows(hwnd,child,0)
++    view=portrait_view(window,client,children)
++    if len(_game_views)>32:_game_views.clear()
++    _game_views[hwnd]=view
++    return view
++
++
++def find_game_view():
++    target=find_visible_emulator()
++    if target is None:return None
++    active=user32.GetAncestor(user32.GetForegroundWindow(),2)
++    if active!=target[0]:return None
++    try:return game_geometry(*target)
++    except RuntimeError:return None
++
+ 
+ def window_visible_at(hwnd, x, y):
+     user32.WindowFromPoint.argtypes = [POINT]
+@@ -197,7 +258,7 @@
+         self._create()
+         x,y,w,h=rect
+         if img.size!=(w,h):
+-            raise ValueError('Overlay size does not match BlueStacks window')
++            raise ValueError('Overlay size does not match MuMu window')
+         # UpdateLayeredWindow requires premultiplied BGRA, not opaque chroma-key pixels.
+         rgba=np.asarray(img,dtype=np.uint8)
+         alpha=rgba[:,:,3:4].astype(np.uint16)
