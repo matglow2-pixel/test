@@ -176,6 +176,15 @@
              notebook.select(1);self.update()
              # Sidebar commands select the existing pages, preserving controllers.
              nav=[w for w in descendants(self) if isinstance(w,ttk.Button) and str(w.cget('style')).endswith('Nav.TButton')]
+@@ -300,7 +300,7 @@
+         try:
+             details={}
+             if sys.argv[1] == '--self-check-report':
+-                loong_lens.self_check()
++                details=loong_lens.self_check()
+             elif sys.argv[1] == '--gui-check-report':
+                 gui_check()
+             elif sys.argv[1]=='--mumu-check-report':
 @@ -310,11 +310,11 @@
                  from gem_recenter_check import check_gem_recentering
                  details=check_gem_recentering()
@@ -193,7 +202,32 @@
          return status
 --- a/LoongLens/loong_lens.py
 +++ b/LoongLens/loong_lens.py
-@@ -78,7 +78,7 @@
+@@ -47,7 +47,24 @@
+     assert len(fixed)==76 and len(set().union(*(v.cells for v in fixed)))==83
+     assert [v.route_number for v in fixed]==[i for i in range(1,78) if i not in (26,51,72) for _ in range(2 if i in (40,64) else 1)]
+     print('Fixed Gem Sniper path: 76 checks / 83 spots; route IDs 26, 51 and 72 excluded.')
++    from snapshot_sweep import SnapshotQueue,SnapshotCandidate
++    from gem_scene_fixture import GemCameraScene
++    from gem_detector import GemDetector
++    import threading
++    completed=[]
++    queue=SnapshotQueue(GemDetector(),False,threading.Event(),lambda *args:completed.append(True))
++    try:
++        snapshot=queue.submit(0,fixed[0],GemCameraScene((285,515)).render(),123.,.33)
++        snapshot.future.result(timeout=10)
++        try:queue.poll(wait=True)
++        except SnapshotCandidate as candidate:
++            assert candidate.snapshot is snapshot and candidate.boxes and not snapshot.frame.flags.writeable
++        else:raise AssertionError('The screenshot worker lost a real gem candidate.')
++        assert not completed
++    finally:queue.close()
++    print('Screenshot worker: real detector, owned image and candidate handoff passed; no live input.')
+     print('This offline check does not validate Windows capture, click-through, or the live game.')
++    return dict(snapshot_worker_checked=True)
+ 
+ def main(argv=None, default_tab='map'):
+     parser = argparse.ArgumentParser(description=__doc__)
+@@ -78,7 +95,7 @@
      folder.mkdir(parents=True, exist_ok=True)
      logging.basicConfig(filename=folder / 'loonglens.log', level=logging.INFO,
                          format='%(asctime)s %(levelname)s %(message)s')
@@ -202,7 +236,7 @@
      settings_path = folder / 'settings.json'
      coordinates_path = folder / 'coordinates.csv'
      settings = {}
-@@ -245,7 +245,7 @@
+@@ -245,7 +262,7 @@
              details['panel_info']=self.info.get()
              details['overlay_created']=bool(self.overlay.hwnd)
              details['overlay_capture_excluded']=self.overlay.excluded_from_capture
@@ -619,7 +653,7 @@
          rect=getattr(self,'input_rect',None)
 --- /dev/null
 +++ b/LoongLens/snapshot_sweep.py
-@@ -0,0 +1,85 @@
+@@ -0,0 +1,90 @@
 +"""One owned screenshot in flight; only the patrol thread can move or count."""
 +from concurrent.futures import Future,TimeoutError
 +from dataclasses import dataclass
@@ -692,6 +726,11 @@
 +            if self.cancel.is_set():raise PatrolStopped('Stopped.')
 +            try:boxes,seconds=snapshot.future.result(timeout=.02 if wait else 0.)
 +            except TimeoutError:
++                if snapshot.future.done():
++                    # A detector can itself raise TimeoutError. Do not confuse
++                    # that completed failure with waiting for the worker.
++                    boxes,seconds=snapshot.future.result()
++                    break
 +                if wait:continue
 +                return
 +            break
@@ -827,7 +866,7 @@
 +    assert len(moves)==1 and not any(e[0]=='button' for e in state['events']) and state['clip']==original_clip
 --- /dev/null
 +++ b/LoongLens/tests/test_snapshot_sweep.py
-@@ -0,0 +1,231 @@
+@@ -0,0 +1,241 @@
 +"""Deterministic delayed workers prove ownership, map return and Stop ordering."""
 +from dataclasses import replace
 +from types import SimpleNamespace
@@ -1019,6 +1058,16 @@
 +    assert seen==[55] and complete==[3]
 +
 +
++def test_detector_timeout_is_an_error_and_never_becomes_an_endless_worker_wait():
++    def detect(*args,**kwargs):raise TimeoutError('Image scan timed out')
++    queue=SnapshotQueue(SimpleNamespace(detect=detect),False,threading.Event(),lambda *args:pytest.fail('Failure cannot complete a view'))
++    queue.submit(0,object(),np.zeros((100,100,3),np.uint8),123.,.33)
++    assert isinstance(queue.pending.future.exception(timeout=3),TimeoutError)
++    try:
++        with pytest.raises(TimeoutError,match='Image scan timed out'):queue.poll(wait=True)
++    finally:queue.close()
++
++
 +def test_speed_switch_is_forwarded_to_runner_and_runtime_field_is_not_saved(tmp_path):
 +    import json
 +    from patrol_live_panel import LivePatrolPanel
@@ -1096,13 +1145,15 @@
  import argparse
  import hashlib
  import json
-@@ -29,11 +29,13 @@
+@@ -29,11 +29,15 @@
      for mode in ('self-check','gui-check','input-check','spy-ui-check','sniper-ui-check','source-gui-check','source-input-check','source-mumu-check','mumu-check','source-gem-recenter-check','gem-recenter-check'):
          report=ROOT/(mode+'.json')
          data=json.loads(report.read_text('utf-8-sig'))
 -        if data.get('passed') is not True or data.get('version')!=41:
 +        if data.get('passed') is not True or data.get('version')!=42:
              raise SystemExit(f'{mode} did not pass')
++        if mode=='self-check' and data.get('snapshot_worker_checked') is not True:
++            raise SystemExit('The frozen screenshot worker was not validated.')
 +        if mode in ('source-input-check','input-check') and data.get('transient_cursor_recovered') is not True:
 +            raise SystemExit('Missing native transient cursor recovery validation.')
          if mode=='sniper-ui-check':
@@ -1112,7 +1163,7 @@
                  if data.get(key) is not True:raise SystemExit(f'Missing native daily/endless validation: {key}')
          if mode=='spy-ui-check':
              for key in ('heatmap_all_history','heatmap_zoom_pan','heatmap_viewport_bounded',
-@@ -54,43 +56,51 @@
+@@ -54,43 +58,51 @@
      passed,skipped=result[-1]
      reports.append(tests)
      comparisons={}
@@ -1175,7 +1226,7 @@
              'Targets MuMuPlayer 6.8.9, Android 15, portrait 1080x1920 at 480 DPI.\n'
              'Start the Android device, launch the game and use the portrait window with top toolbar.\n'
              'MuMu device tabs can be called Android Device or the game name.\n'
-@@ -100,7 +110,7 @@
+@@ -100,7 +112,7 @@
              'Main window defaults to 1000x760 and can shrink to 960x720.\n'
              'Sidebar, cards, buttons and preview are compact; main controls stay accessible.\n'
              'When space is available, Loong Lens opens beside the visible MuMu window.\n'
@@ -1184,7 +1235,7 @@
              'Windows checks use a simulated MuMu-shaped window; live game speed is unmeasured.\n\n'
              'Map recognition now also checks map controls when the title image does not match.\n'
              'An already-open map does not get another minimap tap. A transient frame is rechecked.\n'
-@@ -140,7 +150,7 @@
+@@ -140,7 +152,7 @@
              'No padding or broad right-hand exclusion strip is added.\n'
              'Known portal coordinates are allowed in both this EXE and the source launcher.\n'
              'Hide portal icons in the game map as you requested.\n'
@@ -1193,7 +1244,7 @@
              'Tabs: Map Tweaker, Gem Sniper, Gem Spy. Gem Watch tab is removed.\n'
              'Gem Spy uses the route and preferences selected in Gem Sniper.\n'
              'It observes repeatedly, never clicks a gem, and continues after a find.\n'
-@@ -170,7 +180,7 @@
+@@ -170,7 +182,7 @@
              'and validation reports are included under validation; live game speed is not measured.\n'
              'Do not delete %LOCALAPPDATA%\\LoongLens; settings, screenshots and history stay there.\n',
              'utf-8')
